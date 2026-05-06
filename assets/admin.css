@@ -1,0 +1,988 @@
+/* CheckFlow admin — scoped to match CheckFlow_Admin_Panel.html */
+body.checkflow-admin-screen #wpbody-content {
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+}
+
+#checkflow-admin.checkflow-root,
+#checkflow-admin.checkflow-root * {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+#checkflow-admin.checkflow-root {
+	--bg: #0c0e14;
+	--s1: #13161f;
+	--s2: #1a1e2a;
+	--s3: #212636;
+	--bd: #ffffff0f;
+	--bd2: #ffffff18;
+	--pr: #4f8eff;
+	--pr-d: #4f8eff22;
+	--pr-g: #4f8eff40;
+	--gn: #2dd98f;
+	--gn-d: #2dd98f18;
+	--or: #ff9f43;
+	--or-d: #ff9f4318;
+	--rd: #ff5c5c;
+	--rd-d: #ff5c5c18;
+	--pu: #a78bfa;
+	--pu-d: #a78bfa18;
+	--tx: #e8eaf0;
+	--tx2: #8891aa;
+	--tx3: #55607a;
+	--font: "Plus Jakarta Sans", sans-serif;
+	--mono: "JetBrains Mono", monospace;
+	--r: 10px;
+	--r2: 14px;
+	font-family: var(--font);
+	background: var(--bg);
+	color: var(--tx);
+	min-height: calc(100vh - 32px);
+	overflow: hidden;
+	display: flex;
+	font-size: 14px;
+	line-height: 1.4;
+}
+
+#checkflow-admin.checkflow-root .sb {
+	width: 220px;
+	min-height: 100vh;
+	background: var(--s1);
+	border-right: 1px solid var(--bd);
+	display: flex;
+	flex-direction: column;
+	flex-shrink: 0;
+}
+
+#checkflow-admin.checkflow-root .logo {
+	padding: 20px 18px 16px;
+	border-bottom: 1px solid var(--bd);
+}
+#checkflow-admin.checkflow-root .logo-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+#checkflow-admin.checkflow-root .logo-ico {
+	width: 34px;
+	height: 34px;
+	background: linear-gradient(135deg, var(--pr), #7b5ea7);
+	border-radius: 9px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 16px;
+	box-shadow: 0 4px 14px var(--pr-g);
+}
+#checkflow-admin.checkflow-root .logo-name {
+	font-size: 15px;
+	font-weight: 800;
+	letter-spacing: -0.3px;
+}
+#checkflow-admin.checkflow-root .logo-name em {
+	color: var(--pr);
+	font-style: normal;
+}
+#checkflow-admin.checkflow-root .logo-ver {
+	font-size: 10px;
+	color: var(--tx3);
+	margin-top: 1px;
+	font-family: var(--mono);
+	letter-spacing: 0.5px;
+}
+
+#checkflow-admin.checkflow-root .nav {
+	flex: 1;
+	padding: 14px 10px;
+	overflow-y: auto;
+}
+#checkflow-admin.checkflow-root .nav-sec {
+	font-size: 9.5px;
+	font-weight: 700;
+	color: var(--tx3);
+	letter-spacing: 1.2px;
+	text-transform: uppercase;
+	padding: 0 8px;
+	margin: 16px 0 6px;
+}
+#checkflow-admin.checkflow-root .ni {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 10px;
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--tx2);
+	margin-bottom: 2px;
+	position: relative;
+	transition: all 0.15s;
+	user-select: none;
+}
+#checkflow-admin.checkflow-root .ni:hover {
+	background: var(--s2);
+	color: var(--tx);
+}
+#checkflow-admin.checkflow-root .ni.on {
+	background: var(--pr-d);
+	color: var(--pr);
+}
+#checkflow-admin.checkflow-root .ni.on::before {
+	content: "";
+	position: absolute;
+	left: -10px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 3px;
+	height: 18px;
+	background: var(--pr);
+	border-radius: 0 3px 3px 0;
+}
+#checkflow-admin.checkflow-root .ni-ico {
+	font-size: 15px;
+	width: 18px;
+	text-align: center;
+	flex-shrink: 0;
+}
+#checkflow-admin.checkflow-root .badge {
+	margin-left: auto;
+	background: var(--rd);
+	color: #fff;
+	font-size: 9px;
+	font-weight: 700;
+	padding: 1px 5px;
+	border-radius: 10px;
+}
+#checkflow-admin.checkflow-root .badge.g {
+	background: var(--gn);
+	color: #0a1a10;
+}
+
+#checkflow-admin.checkflow-root .sb-foot {
+	padding: 12px 10px;
+	border-top: 1px solid var(--bd);
+}
+#checkflow-admin.checkflow-root .up-card {
+	background: linear-gradient(135deg, #1e2a4a, #2a1e4a);
+	border: 1px solid var(--bd2);
+	border-radius: var(--r);
+	padding: 12px;
+}
+#checkflow-admin.checkflow-root .up-card p {
+	font-size: 11px;
+	color: var(--tx2);
+	margin-bottom: 8px;
+}
+#checkflow-admin.checkflow-root .up-card p strong {
+	color: var(--tx);
+	display: block;
+	font-size: 12px;
+	margin-bottom: 2px;
+}
+#checkflow-admin.checkflow-root .btn-up {
+	width: 100%;
+	background: linear-gradient(135deg, var(--pr), #7b5ea7);
+	color: #fff;
+	border: none;
+	border-radius: 7px;
+	padding: 7px;
+	font-size: 11px;
+	font-weight: 700;
+	cursor: pointer;
+	font-family: var(--font);
+}
+#checkflow-admin.checkflow-root .btn-up:hover {
+	opacity: 0.85;
+}
+
+#checkflow-admin.checkflow-root .main {
+	flex: 1;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+}
+
+#checkflow-admin.checkflow-root .topbar {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 14px 24px;
+	border-bottom: 1px solid var(--bd);
+	background: var(--s1);
+	position: sticky;
+	top: 0;
+	z-index: 5;
+}
+#checkflow-admin.checkflow-root .tb-title {
+	font-size: 16px;
+	font-weight: 700;
+	flex: 1;
+}
+#checkflow-admin.checkflow-root .tb-title span {
+	color: var(--tx3);
+	font-weight: 400;
+	font-size: 13px;
+	margin-left: 6px;
+}
+#checkflow-admin.checkflow-root .tb-acts {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
+#checkflow-admin.checkflow-root .cf-locale-select {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+#checkflow-admin.checkflow-root .cf-locale-select label {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+}
+#checkflow-admin.checkflow-root .cf-locale-select select {
+	background: var(--s2);
+	border: 1px solid var(--bd2);
+	border-radius: 8px;
+	padding: 6px 10px;
+	font-size: 12px;
+	color: var(--tx2);
+	cursor: pointer;
+	font-family: var(--font);
+	max-width: 140px;
+}
+#checkflow-admin.checkflow-root .cf-locale-select select:hover,
+#checkflow-admin.checkflow-root .cf-locale-select select:focus {
+	border-color: var(--pr);
+	color: var(--tx);
+	outline: none;
+}
+
+#checkflow-admin.checkflow-root .tabs-row {
+	display: flex;
+	gap: 2px;
+	background: var(--s2);
+	border-radius: 8px;
+	padding: 3px;
+}
+#checkflow-admin.checkflow-root .tab {
+	padding: 5px 12px;
+	border-radius: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	color: var(--tx3);
+	transition: all 0.15s;
+	user-select: none;
+}
+#checkflow-admin.checkflow-root .tab.on {
+	background: var(--s1);
+	color: var(--tx);
+	box-shadow: 0 1px 4px #0005;
+}
+#checkflow-admin.checkflow-root .tab:hover:not(.on) {
+	color: var(--tx2);
+}
+
+#checkflow-admin.checkflow-root .date-btn {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	background: var(--s2);
+	border: 1px solid var(--bd2);
+	border-radius: 8px;
+	padding: 6px 12px;
+	font-size: 12px;
+	color: var(--tx2);
+	cursor: pointer;
+}
+#checkflow-admin.checkflow-root .date-btn:hover {
+	border-color: var(--pr);
+	color: var(--tx);
+}
+#checkflow-admin.checkflow-root .btn-p {
+	padding: 6px 14px;
+	border-radius: 8px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	border: none;
+	font-family: var(--font);
+	background: var(--pr);
+	color: #fff;
+}
+#checkflow-admin.checkflow-root .btn-p:hover {
+	background: #3d7be8;
+	box-shadow: 0 4px 12px var(--pr-g);
+}
+#checkflow-admin.checkflow-root .avatar {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, var(--pr), var(--pu));
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 12px;
+	font-weight: 700;
+	cursor: pointer;
+	position: relative;
+}
+#checkflow-admin.checkflow-root .ndot {
+	position: absolute;
+	top: -2px;
+	right: -2px;
+	width: 7px;
+	height: 7px;
+	background: var(--rd);
+	border-radius: 50%;
+	box-shadow: 0 0 0 2px var(--s1);
+}
+
+#checkflow-admin.checkflow-root .cnt {
+	padding: 22px 24px;
+	flex: 1;
+}
+
+#checkflow-admin.checkflow-root .sg {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 14px;
+	margin-bottom: 22px;
+}
+#checkflow-admin.checkflow-root .sc {
+	background: var(--s1);
+	border: 1px solid var(--bd);
+	border-radius: var(--r2);
+	padding: 18px;
+	position: relative;
+	overflow: hidden;
+	transition: border-color 0.2s;
+	cursor: default;
+}
+#checkflow-admin.checkflow-root .sc:hover {
+	border-color: var(--bd2);
+}
+#checkflow-admin.checkflow-root .sc::after {
+	content: "";
+	position: absolute;
+	top: -30px;
+	right: -30px;
+	width: 90px;
+	height: 90px;
+	border-radius: 50%;
+	opacity: 0.07;
+}
+#checkflow-admin.checkflow-root .sc.bl::after {
+	background: var(--pr);
+}
+#checkflow-admin.checkflow-root .sc.gn::after {
+	background: var(--gn);
+}
+#checkflow-admin.checkflow-root .sc.or::after {
+	background: var(--or);
+}
+#checkflow-admin.checkflow-root .sc.pu::after {
+	background: var(--pu);
+}
+#checkflow-admin.checkflow-root .slbl {
+	font-size: 11px;
+	color: var(--tx3);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.6px;
+	margin-bottom: 10px;
+}
+#checkflow-admin.checkflow-root .sval {
+	font-size: 26px;
+	font-weight: 800;
+	letter-spacing: -1px;
+	margin-bottom: 6px;
+}
+#checkflow-admin.checkflow-root .sval.bl {
+	color: var(--pr);
+}
+#checkflow-admin.checkflow-root .sval.gn {
+	color: var(--gn);
+}
+#checkflow-admin.checkflow-root .sval.or {
+	color: var(--or);
+}
+#checkflow-admin.checkflow-root .sval.pu {
+	color: var(--pu);
+}
+#checkflow-admin.checkflow-root .sdlt {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 11px;
+	font-weight: 600;
+	padding: 2px 7px;
+	border-radius: 20px;
+}
+#checkflow-admin.checkflow-root .sdlt.up {
+	background: var(--gn-d);
+	color: var(--gn);
+}
+#checkflow-admin.checkflow-root .sdlt.dn {
+	background: var(--rd-d);
+	color: var(--rd);
+}
+#checkflow-admin.checkflow-root .ssub {
+	font-size: 11px;
+	color: var(--tx3);
+	margin-top: 4px;
+}
+
+#checkflow-admin.checkflow-root .g2 {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 14px;
+	margin-bottom: 22px;
+}
+#checkflow-admin.checkflow-root .g3 {
+	display: grid;
+	grid-template-columns: 2fr 1fr;
+	gap: 14px;
+	margin-bottom: 22px;
+}
+#checkflow-admin.checkflow-root .gcol {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+#checkflow-admin.checkflow-root .panel {
+	background: var(--s1);
+	border: 1px solid var(--bd);
+	border-radius: var(--r2);
+	overflow: hidden;
+}
+#checkflow-admin.checkflow-root .ph {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 18px;
+	border-bottom: 1px solid var(--bd);
+}
+#checkflow-admin.checkflow-root .pt {
+	font-size: 13px;
+	font-weight: 700;
+}
+#checkflow-admin.checkflow-root .pa {
+	font-size: 11px;
+	color: var(--pr);
+	cursor: pointer;
+	font-weight: 600;
+}
+#checkflow-admin.checkflow-root .pa:hover {
+	text-decoration: underline;
+}
+#checkflow-admin.checkflow-root .pb {
+	padding: 16px 18px;
+}
+
+#checkflow-admin.checkflow-root .funnel {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+#checkflow-admin.checkflow-root .fr {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+#checkflow-admin.checkflow-root .flbl {
+	font-size: 12px;
+	color: var(--tx2);
+	width: 120px;
+	flex-shrink: 0;
+}
+#checkflow-admin.checkflow-root .fbw {
+	flex: 1;
+	height: 28px;
+	background: var(--s2);
+	border-radius: 6px;
+	overflow: hidden;
+}
+#checkflow-admin.checkflow-root .fb {
+	height: 100%;
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	padding-left: 10px;
+	font-size: 11px;
+	font-weight: 700;
+	color: rgba(255, 255, 255, 0.9);
+}
+#checkflow-admin.checkflow-root .fb.bl {
+	background: linear-gradient(90deg, var(--pr), #7bb3ff);
+}
+#checkflow-admin.checkflow-root .fb.tl {
+	background: linear-gradient(90deg, #2dd9c4, #2dd98f);
+}
+#checkflow-admin.checkflow-root .fb.or {
+	background: linear-gradient(90deg, var(--or), #ffcc70);
+}
+#checkflow-admin.checkflow-root .fb.gn {
+	background: linear-gradient(90deg, var(--gn), #7fffcc);
+}
+#checkflow-admin.checkflow-root .fnum {
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--tx);
+	width: 50px;
+	text-align: right;
+	flex-shrink: 0;
+}
+#checkflow-admin.checkflow-root .fdrop {
+	font-size: 10px;
+	width: 48px;
+	text-align: right;
+	flex-shrink: 0;
+}
+
+#checkflow-admin.checkflow-root .plist {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+#checkflow-admin.checkflow-root .pi {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+#checkflow-admin.checkflow-root .pdot {
+	width: 10px;
+	height: 10px;
+	border-radius: 3px;
+	flex-shrink: 0;
+}
+#checkflow-admin.checkflow-root .pname {
+	font-size: 12px;
+	color: var(--tx2);
+	flex: 1;
+}
+#checkflow-admin.checkflow-root .pbw {
+	width: 80px;
+	height: 5px;
+	background: var(--s2);
+	border-radius: 3px;
+	overflow: hidden;
+}
+#checkflow-admin.checkflow-root .pbar {
+	height: 100%;
+	border-radius: 3px;
+}
+#checkflow-admin.checkflow-root .ppct {
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--tx);
+	width: 36px;
+	text-align: right;
+}
+
+#checkflow-admin.checkflow-root .mct {
+	display: flex;
+	align-items: flex-end;
+	gap: 3px;
+	height: 44px;
+	margin: 12px 0 6px;
+}
+#checkflow-admin.checkflow-root .bc {
+	flex: 1;
+	border-radius: 3px 3px 0 0;
+	min-height: 4px;
+}
+#checkflow-admin.checkflow-root .cx {
+	display: flex;
+	gap: 3px;
+}
+#checkflow-admin.checkflow-root .cx span {
+	flex: 1;
+	font-size: 8.5px;
+	color: var(--tx3);
+	text-align: center;
+}
+
+#checkflow-admin.checkflow-root .ot {
+	width: 100%;
+	border-collapse: collapse;
+}
+#checkflow-admin.checkflow-root .ot th {
+	text-align: left;
+	font-size: 10.5px;
+	font-weight: 700;
+	color: var(--tx3);
+	text-transform: uppercase;
+	letter-spacing: 0.8px;
+	padding: 0 10px 10px;
+}
+#checkflow-admin.checkflow-root .ot td {
+	padding: 10px;
+	border-top: 1px solid var(--bd);
+	font-size: 12.5px;
+	color: var(--tx2);
+}
+#checkflow-admin.checkflow-root .ot tr:hover td {
+	background: var(--s2);
+}
+#checkflow-admin.checkflow-root .oid {
+	font-family: var(--mono);
+	font-size: 12px;
+	color: var(--pr);
+	font-weight: 500;
+}
+#checkflow-admin.checkflow-root .ocust {
+	color: var(--tx);
+	font-weight: 600;
+}
+#checkflow-admin.checkflow-root .oamt {
+	color: var(--gn);
+	font-weight: 700;
+	font-family: var(--mono);
+}
+#checkflow-admin.checkflow-root .stag {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 10px;
+	font-weight: 700;
+	padding: 3px 8px;
+	border-radius: 20px;
+}
+#checkflow-admin.checkflow-root .stag::before {
+	content: "";
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: currentColor;
+}
+#checkflow-admin.checkflow-root .stag.paid {
+	background: var(--gn-d);
+	color: var(--gn);
+}
+#checkflow-admin.checkflow-root .stag.pend {
+	background: var(--or-d);
+	color: var(--or);
+}
+#checkflow-admin.checkflow-root .stag.fail {
+	background: var(--rd-d);
+	color: var(--rd);
+}
+#checkflow-admin.checkflow-root .gtag {
+	font-size: 10px;
+	font-weight: 600;
+	padding: 2px 7px;
+	border-radius: 4px;
+	background: var(--s3);
+	color: var(--tx3);
+}
+#checkflow-admin.checkflow-root .gtag.bkash {
+	background: #d6236322;
+	color: #ff8ab5;
+}
+#checkflow-admin.checkflow-root .gtag.nagad {
+	background: #f8730022;
+	color: #ffab4a;
+}
+#checkflow-admin.checkflow-root .gtag.card {
+	background: var(--pr-d);
+	color: var(--pr);
+}
+#checkflow-admin.checkflow-root .gtag.cod {
+	background: var(--gn-d);
+	color: var(--gn);
+}
+
+#checkflow-admin.checkflow-root .pxl {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+#checkflow-admin.checkflow-root .pxi {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	background: var(--s2);
+	border-radius: 8px;
+	padding: 10px 14px;
+}
+#checkflow-admin.checkflow-root .pxn {
+	font-size: 12.5px;
+	font-weight: 600;
+	color: var(--tx);
+	flex: 1;
+}
+#checkflow-admin.checkflow-root .pxe {
+	font-size: 11px;
+	color: var(--tx3);
+}
+#checkflow-admin.checkflow-root .pxs {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 11px;
+	font-weight: 600;
+}
+#checkflow-admin.checkflow-root .pxs.ok {
+	color: var(--gn);
+}
+#checkflow-admin.checkflow-root .pxs.warn {
+	color: var(--or);
+}
+#checkflow-admin.checkflow-root .pulse {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: currentColor;
+	animation: cf-pulse 2s infinite;
+}
+@keyframes cf-pulse {
+	0%, 100% { opacity: 1; transform: scale(1); }
+	50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+#checkflow-admin.checkflow-root .cg {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	gap: 8px;
+}
+#checkflow-admin.checkflow-root .cc {
+	background: var(--s2);
+	border: 1px solid var(--bd);
+	border-radius: 8px;
+	padding: 12px;
+	text-align: center;
+}
+#checkflow-admin.checkflow-root .ccn {
+	font-size: 11px;
+	font-weight: 700;
+	color: var(--tx);
+	margin-bottom: 4px;
+}
+#checkflow-admin.checkflow-root .cco {
+	font-size: 20px;
+	font-weight: 800;
+	color: var(--pr);
+	margin-bottom: 2px;
+}
+#checkflow-admin.checkflow-root .ccl {
+	font-size: 10px;
+	color: var(--tx3);
+}
+
+#checkflow-admin.checkflow-root .slist {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+#checkflow-admin.checkflow-root .srow {
+	display: flex;
+	align-items: center;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--bd);
+}
+#checkflow-admin.checkflow-root .srow:last-child {
+	border: none;
+	padding-bottom: 0;
+}
+#checkflow-admin.checkflow-root .sinf {
+	flex: 1;
+}
+#checkflow-admin.checkflow-root .sn {
+	font-size: 12.5px;
+	font-weight: 600;
+	color: var(--tx);
+	margin-bottom: 2px;
+}
+#checkflow-admin.checkflow-root .sd {
+	font-size: 11px;
+	color: var(--tx3);
+}
+#checkflow-admin.checkflow-root .tgl {
+	width: 32px;
+	height: 18px;
+	border-radius: 9px;
+	background: var(--s3);
+	position: relative;
+	cursor: pointer;
+	transition: background 0.2s;
+	flex-shrink: 0;
+}
+#checkflow-admin.checkflow-root .tgl.on {
+	background: var(--pr);
+}
+#checkflow-admin.checkflow-root .tgl::after {
+	content: "";
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: #fff;
+	transition: transform 0.2s;
+}
+#checkflow-admin.checkflow-root .tgl.on::after {
+	transform: translateX(14px);
+}
+
+#checkflow-admin.checkflow-root .blist {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+#checkflow-admin.checkflow-root .brow {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+#checkflow-admin.checkflow-root .bimg {
+	width: 38px;
+	height: 38px;
+	border-radius: 8px;
+	background: var(--s3);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 20px;
+	flex-shrink: 0;
+}
+#checkflow-admin.checkflow-root .binf {
+	flex: 1;
+}
+#checkflow-admin.checkflow-root .bn {
+	font-size: 12.5px;
+	font-weight: 600;
+	color: var(--tx);
+	margin-bottom: 2px;
+}
+#checkflow-admin.checkflow-root .bm {
+	font-size: 10.5px;
+	color: var(--tx3);
+}
+#checkflow-admin.checkflow-root .brt {
+	text-align: right;
+}
+#checkflow-admin.checkflow-root .bpct {
+	font-size: 16px;
+	font-weight: 800;
+	color: var(--gn);
+}
+#checkflow-admin.checkflow-root .brlbl {
+	font-size: 10px;
+	color: var(--tx3);
+}
+
+@keyframes cf-fadeUp {
+	from { opacity: 0; transform: translateY(10px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+#checkflow-admin.checkflow-root .cnt > * {
+	animation: cf-fadeUp 0.4s ease both;
+}
+#checkflow-admin.checkflow-root .cnt > *:nth-child(1) {
+	animation-delay: 0.05s;
+}
+#checkflow-admin.checkflow-root .cnt > *:nth-child(2) {
+	animation-delay: 0.1s;
+}
+#checkflow-admin.checkflow-root .cnt > *:nth-child(3) {
+	animation-delay: 0.15s;
+}
+
+#checkflow-admin.checkflow-root ::-webkit-scrollbar {
+	width: 4px;
+	height: 4px;
+}
+#checkflow-admin.checkflow-root ::-webkit-scrollbar-track {
+	background: transparent;
+}
+#checkflow-admin.checkflow-root ::-webkit-scrollbar-thumb {
+	background: var(--s3);
+	border-radius: 4px;
+}
+
+/* View panes */
+#checkflow-admin.checkflow-root .cf-pane {
+	display: none;
+}
+#checkflow-admin.checkflow-root .cf-pane.is-active {
+	display: block;
+}
+
+#checkflow-admin.checkflow-root .cf-stub {
+	text-align: center;
+	padding: 48px 24px;
+	color: var(--tx2);
+}
+#checkflow-admin.checkflow-root .cf-stub h2 {
+	color: var(--tx);
+	font-size: 18px;
+	margin-bottom: 8px;
+}
+#checkflow-admin.checkflow-root .cf-stub .btn-p {
+	margin-top: 16px;
+}
+
+#checkflow-admin.checkflow-root .cf-string-editor {
+	max-height: 420px;
+	overflow: auto;
+	border: 1px solid var(--bd);
+	border-radius: var(--r);
+	background: var(--s2);
+}
+#checkflow-admin.checkflow-root .cf-string-row {
+	display: grid;
+	grid-template-columns: minmax(120px, 1fr) 1fr 1fr;
+	gap: 10px;
+	padding: 10px 12px;
+	border-bottom: 1px solid var(--bd);
+	font-size: 12px;
+	align-items: start;
+}
+#checkflow-admin.checkflow-root .cf-string-row header {
+	grid-column: 1 / -1;
+	font-weight: 700;
+	color: var(--tx);
+	margin-bottom: 4px;
+}
+#checkflow-admin.checkflow-root .cf-string-key {
+	font-family: var(--mono);
+	color: var(--pr);
+	word-break: break-all;
+	padding-top: 6px;
+}
+#checkflow-admin.checkflow-root .cf-string-editor textarea[readonly] {
+	opacity: 0.85;
+	cursor: default;
+}
+#checkflow-admin.checkflow-root .cf-string-editor textarea {
+	width: 100%;
+	min-height: 44px;
+	background: var(--s1);
+	border: 1px solid var(--bd);
+	border-radius: 6px;
+	padding: 8px;
+	color: var(--tx);
+	font-family: var(--font);
+	font-size: 12px;
+	resize: vertical;
+}
+#checkflow-admin.checkflow-root .cf-string-editor small {
+	display: block;
+	color: var(--tx3);
+	margin-top: 4px;
+	line-height: 1.35;
+}
+#checkflow-admin.checkflow-root .cf-save-strings-btn {
+	margin-top: 14px;
+}

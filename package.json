@@ -1,0 +1,10 @@
+{
+  "name": "checkflow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CheckFlow plugin build tooling",
+  "scripts": {
+    "build": "echo \"No JS build step yet\"",
+    "start": "echo \"No JS watch step yet\""
+  }
+}

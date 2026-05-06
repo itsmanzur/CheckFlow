@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CheckFlow — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg:       #0c0e14;
+  --s1:       #13161f;
+  --s2:       #1a1e2a;
+  --s3:       #212636;
+  --bd:       #ffffff0f;
+  --bd2:      #ffffff18;
+  --pr:       #4f8eff;
+  --pr-d:     #4f8eff22;
+  --pr-g:     #4f8eff40;
+  --gn:       #2dd98f;
+  --gn-d:     #2dd98f18;
+  --or:       #ff9f43;
+  --or-d:     #ff9f4318;
+  --rd:       #ff5c5c;
+  --rd-d:     #ff5c5c18;
+  --pu:       #a78bfa;
+  --pu-d:     #a78bfa18;
+  --tx:       #e8eaf0;
+  --tx2:      #8891aa;
+  --tx3:      #55607a;
+  --font:     'Plus Jakarta Sans', sans-serif;
+  --mono:     'JetBrains Mono', monospace;
+  --r:        10px;
+  --r2:       14px;
+}
+
+body { font-family:var(--font); background:var(--bg); color:var(--tx); min-height:100vh; overflow:hidden; display:flex; }
+
+/* ─ SIDEBAR ──────────────────── */
+.sb { width:220px; min-height:100vh; background:var(--s1); border-right:1px solid var(--bd); display:flex; flex-direction:column; flex-shrink:0; }
+
+.logo { padding:20px 18px 16px; border-bottom:1px solid var(--bd); }
+.logo-row { display:flex; align-items:center; gap:10px; }
+.logo-ico { width:34px; height:34px; background:linear-gradient(135deg,var(--pr),#7b5ea7); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; box-shadow:0 4px 14px var(--pr-g); }
+.logo-name { font-size:15px; font-weight:800; letter-spacing:-0.3px; }
+.logo-name em { color:var(--pr); font-style:normal; }
+.logo-ver { font-size:10px; color:var(--tx3); margin-top:1px; font-family:var(--mono); letter-spacing:.5px; }
+
+.nav { flex:1; padding:14px 10px; overflow-y:auto; }
+.nav-sec { font-size:9.5px; font-weight:700; color:var(--tx3); letter-spacing:1.2px; text-transform:uppercase; padding:0 8px; margin:16px 0 6px; }
+.ni { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:500; color:var(--tx2); margin-bottom:2px; position:relative; transition:all .15s; user-select:none; }
+.ni:hover { background:var(--s2); color:var(--tx); }
+.ni.on { background:var(--pr-d); color:var(--pr); }
+.ni.on::before { content:''; position:absolute; left:-10px; top:50%; transform:translateY(-50%); width:3px; height:18px; background:var(--pr); border-radius:0 3px 3px 0; }
+.ni-ico { font-size:15px; width:18px; text-align:center; flex-shrink:0; }
+.badge { margin-left:auto; background:var(--rd); color:#fff; font-size:9px; font-weight:700; padding:1px 5px; border-radius:10px; }
+.badge.g { background:var(--gn); color:#0a1a10; }
+
+.sb-foot { padding:12px 10px; border-top:1px solid var(--bd); }
+.up-card { background:linear-gradient(135deg,#1e2a4a,#2a1e4a); border:1px solid var(--bd2); border-radius:var(--r); padding:12px; }
+.up-card p { font-size:11px; color:var(--tx2); margin-bottom:8px; }
+.up-card p strong { color:var(--tx); display:block; font-size:12px; margin-bottom:2px; }
+.btn-up { width:100%; background:linear-gradient(135deg,var(--pr),#7b5ea7); color:#fff; border:none; border-radius:7px; padding:7px; font-size:11px; font-weight:700; cursor:pointer; font-family:var(--font); }
+.btn-up:hover { opacity:.85; }
+
+/* ─ MAIN ─────────────────────── */
+.main { flex:1; overflow-y:auto; display:flex; flex-direction:column; }
+
+.topbar { display:flex; align-items:center; gap:16px; padding:14px 24px; border-bottom:1px solid var(--bd); background:var(--s1); position:sticky; top:0; z-index:5; }
+.tb-title { font-size:16px; font-weight:700; flex:1; }
+.tb-title span { color:var(--tx3); font-weight:400; font-size:13px; margin-left:6px; }
+.tb-acts { display:flex; align-items:center; gap:10px; }
+
+.tabs-row { display:flex; gap:2px; background:var(--s2); border-radius:8px; padding:3px; }
+.tab { padding:5px 12px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; color:var(--tx3); transition:all .15s; user-select:none; }
+.tab.on { background:var(--s1); color:var(--tx); box-shadow:0 1px 4px #0005; }
+.tab:hover:not(.on) { color:var(--tx2); }
+
+.date-btn { display:flex; align-items:center; gap:6px; background:var(--s2); border:1px solid var(--bd2); border-radius:8px; padding:6px 12px; font-size:12px; color:var(--tx2); cursor:pointer; }
+.date-btn:hover { border-color:var(--pr); color:var(--tx); }
+.btn-p { padding:6px 14px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:none; font-family:var(--font); background:var(--pr); color:#fff; }
+.btn-p:hover { background:#3d7be8; box-shadow:0 4px 12px var(--pr-g); }
+.avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--pr),var(--pu)); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; cursor:pointer; position:relative; }
+.ndot { position:absolute; top:-2px; right:-2px; width:7px; height:7px; background:var(--rd); border-radius:50%; box-shadow:0 0 0 2px var(--s1); }
+
+/* ─ CONTENT ──────────────────── */
+.cnt { padding:22px 24px; flex:1; }
+
+/* ─ STATS ──────────────────────  */
+.sg { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
+.sc { background:var(--s1); border:1px solid var(--bd); border-radius:var(--r2); padding:18px; position:relative; overflow:hidden; transition:border-color .2s; cursor:default; }
+.sc:hover { border-color:var(--bd2); }
+.sc::after { content:''; position:absolute; top:-30px; right:-30px; width:90px; height:90px; border-radius:50%; opacity:.07; }
+.sc.bl::after { background:var(--pr); }
+.sc.gn::after { background:var(--gn); }
+.sc.or::after { background:var(--or); }
+.sc.pu::after { background:var(--pu); }
+.slbl { font-size:11px; color:var(--tx3); font-weight:600; text-transform:uppercase; letter-spacing:.6px; margin-bottom:10px; }
+.sval { font-size:26px; font-weight:800; letter-spacing:-1px; margin-bottom:6px; }
+.sval.bl { color:var(--pr); }
+.sval.gn { color:var(--gn); }
+.sval.or { color:var(--or); }
+.sval.pu { color:var(--pu); }
+.sdlt { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; padding:2px 7px; border-radius:20px; }
+.sdlt.up { background:var(--gn-d); color:var(--gn); }
+.sdlt.dn { background:var(--rd-d); color:var(--rd); }
+.ssub { font-size:11px; color:var(--tx3); margin-top:4px; }
+
+/* ─ GRIDS ───────────────────── */
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:22px; }
+.g3 { display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:22px; }
+.gcol { display:flex; flex-direction:column; gap:14px; }
+
+.panel { background:var(--s1); border:1px solid var(--bd); border-radius:var(--r2); overflow:hidden; }
+.ph { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--bd); }
+.pt { font-size:13px; font-weight:700; }
+.pa { font-size:11px; color:var(--pr); cursor:pointer; font-weight:600; }
+.pa:hover { text-decoration:underline; }
+.pb { padding:16px 18px; }
+
+/* ─ FUNNEL ──────────────────── */
+.funnel { display:flex; flex-direction:column; gap:8px; }
+.fr { display:flex; align-items:center; gap:12px; }
+.flbl { font-size:12px; color:var(--tx2); width:120px; flex-shrink:0; }
+.fbw { flex:1; height:28px; background:var(--s2); border-radius:6px; overflow:hidden; }
+.fb { height:100%; border-radius:6px; display:flex; align-items:center; padding-left:10px; font-size:11px; font-weight:700; color:rgba(255,255,255,.9); }
+.fb.bl { background:linear-gradient(90deg,var(--pr),#7bb3ff); }
+.fb.tl { background:linear-gradient(90deg,#2dd9c4,#2dd98f); }
+.fb.or { background:linear-gradient(90deg,var(--or),#ffcc70); }
+.fb.gn { background:linear-gradient(90deg,var(--gn),#7fffcc); }
+.fnum { font-size:12px; font-weight:700; color:var(--tx); width:50px; text-align:right; flex-shrink:0; }
+.fdrop { font-size:10px; width:48px; text-align:right; flex-shrink:0; }
+
+/* ─ PAYMENT ─────────────────── */
+.plist { display:flex; flex-direction:column; gap:10px; }
+.pi { display:flex; align-items:center; gap:10px; }
+.pdot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+.pname { font-size:12px; color:var(--tx2); flex:1; }
+.pbw { width:80px; height:5px; background:var(--s2); border-radius:3px; overflow:hidden; }
+.pbar { height:100%; border-radius:3px; }
+.ppct { font-size:12px; font-weight:700; color:var(--tx); width:36px; text-align:right; }
+
+/* ─ MINI CHART ──────────────── */
+.mct { display:flex; align-items:flex-end; gap:3px; height:44px; margin:12px 0 6px; }
+.bc { flex:1; border-radius:3px 3px 0 0; min-height:4px; }
+.cx { display:flex; gap:3px; }
+.cx span { flex:1; font-size:8.5px; color:var(--tx3); text-align:center; }
+
+/* ─ ORDER TABLE ─────────────── */
+.ot { width:100%; border-collapse:collapse; }
+.ot th { text-align:left; font-size:10.5px; font-weight:700; color:var(--tx3); text-transform:uppercase; letter-spacing:.8px; padding:0 10px 10px; }
+.ot td { padding:10px; border-top:1px solid var(--bd); font-size:12.5px; color:var(--tx2); }
+.ot tr:hover td { background:var(--s2); }
+.oid { font-family:var(--mono); font-size:12px; color:var(--pr); font-weight:500; }
+.ocust { color:var(--tx); font-weight:600; }
+.oamt { color:var(--gn); font-weight:700; font-family:var(--mono); }
+.stag { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; }
+.stag::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+.stag.paid { background:var(--gn-d); color:var(--gn); }
+.stag.pend { background:var(--or-d); color:var(--or); }
+.stag.fail { background:var(--rd-d); color:var(--rd); }
+.gtag { font-size:10px; font-weight:600; padding:2px 7px; border-radius:4px; background:var(--s3); color:var(--tx3); }
+.gtag.bkash { background:#d6236322; color:#ff8ab5; }
+.gtag.nagad { background:#f8730022; color:#ffab4a; }
+.gtag.card { background:var(--pr-d); color:var(--pr); }
+.gtag.cod { background:var(--gn-d); color:var(--gn); }
+
+/* ─ PIXEL ───────────────────── */
+.pxl { display:flex; flex-direction:column; gap:8px; }
+.pxi { display:flex; align-items:center; gap:12px; background:var(--s2); border-radius:8px; padding:10px 14px; }
+.pxn { font-size:12.5px; font-weight:600; color:var(--tx); flex:1; }
+.pxe { font-size:11px; color:var(--tx3); }
+.pxs { display:flex; align-items:center; gap:5px; font-size:11px; font-weight:600; }
+.pxs.ok { color:var(--gn); }
+.pxs.warn { color:var(--or); }
+.pulse { width:7px; height:7px; border-radius:50%; background:currentColor; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.85)} }
+
+/* ─ COURIER ─────────────────── */
+.cg { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.cc { background:var(--s2); border:1px solid var(--bd); border-radius:8px; padding:12px; text-align:center; }
+.ccn { font-size:11px; font-weight:700; color:var(--tx); margin-bottom:4px; }
+.cco { font-size:20px; font-weight:800; color:var(--pr); margin-bottom:2px; }
+.ccl { font-size:10px; color:var(--tx3); }
+
+/* ─ TOGGLE ──────────────────── */
+.slist { display:flex; flex-direction:column; gap:12px; }
+.srow { display:flex; align-items:center; padding-bottom:12px; border-bottom:1px solid var(--bd); }
+.srow:last-child { border:none; padding:0; }
+.sinf { flex:1; }
+.sn { font-size:12.5px; font-weight:600; color:var(--tx); margin-bottom:2px; }
+.sd { font-size:11px; color:var(--tx3); }
+.tgl { width:32px; height:18px; border-radius:9px; background:var(--s3); position:relative; cursor:pointer; transition:background .2s; flex-shrink:0; }
+.tgl.on { background:var(--pr); }
+.tgl::after { content:''; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; transition:transform .2s; }
+.tgl.on::after { transform:translateX(14px); }
+
+/* ─ BUMP PERFORMANCE ─────────── */
+.blist { display:flex; flex-direction:column; gap:12px; }
+.brow { display:flex; align-items:center; gap:12px; }
+.bimg { width:38px; height:38px; border-radius:8px; background:var(--s3); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.binf { flex:1; }
+.bn { font-size:12.5px; font-weight:600; color:var(--tx); margin-bottom:2px; }
+.bm { font-size:10.5px; color:var(--tx3); }
+.brt { text-align:right; }
+.bpct { font-size:16px; font-weight:800; color:var(--gn); }
+.brlbl { font-size:10px; color:var(--tx3); }
+
+/* ─ ANIM ─────────────────────── */
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.cnt>*{animation:fadeUp .4s ease both}
+.cnt>*:nth-child(1){animation-delay:.05s}
+.cnt>*:nth-child(2){animation-delay:.1s}
+.cnt>*:nth-child(3){animation-delay:.15s}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--s3);border-radius:4px}
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══════════════════════════ -->
+<aside class="sb">
+  <div class="logo">
+    <div class="logo-row">
+      <div class="logo-ico">⚡</div>
+      <div>
+        <div class="logo-name">Check<em>Flow</em></div>
+        <div class="logo-ver">v1.0.0 · PRO</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-sec">মূল মেনু</div>
+    <div class="ni on" onclick="setActive(this,'ড্যাশবোর্ড','আজকের ওভারভিউ')"><span class="ni-ico">📊</span> ড্যাশবোর্ড</div>
+    <div class="ni" onclick="setActive(this,'অর্ডার','সব অর্ডার দেখুন')"><span class="ni-ico">🛒</span> অর্ডার <span class="badge g">12</span></div>
+    <div class="ni" onclick="setActive(this,'Pixel Tracking','Ad conversion tracking')"><span class="ni-ico">📡</span> Pixel Tracking</div>
+    <div class="ni" onclick="setActive(this,'কুরিয়ার','Pathao · RedX · Steadfast')"><span class="ni-ico">📦</span> কুরিয়ার</div>
+
+    <div class="nav-sec">চেকআউট</div>
+    <div class="ni" onclick="setActive(this,'Field Editor','চেকআউট ফর্ম কাস্টমাইজ করুন')"><span class="ni-ico">🧩</span> Field Editor</div>
+    <div class="ni" onclick="setActive(this,'টেমপ্লেট','৫টি প্রিমিয়াম ডিজাইন')"><span class="ni-ico">🎨</span> টেমপ্লেট</div>
+    <div class="ni" onclick="setActive(this,'Order Bump','অতিরিক্ত অফার সেটআপ')"><span class="ni-ico">🎁</span> Order Bump <span class="badge">!</span></div>
+    <div class="ni" onclick="setActive(this,'Upsell ফানেল','পোস্ট-পেমেন্ট অফার')"><span class="ni-ico">🚀</span> Upsell ফানেল</div>
+
+    <div class="nav-sec">পেমেন্ট</div>
+    <div class="ni" onclick="setActive(this,'bKash / Nagad','Mobile banking সেটিংস')"><span class="ni-ico">💳</span> bKash / Nagad</div>
+    <div class="ni" onclick="setActive(this,'সেটিংস','প্লাগিন কনফিগারেশন')"><span class="ni-ico">⚙️</span> সেটিংস</div>
+  </nav>
+
+  <div class="sb-foot">
+    <div class="up-card">
+      <p><strong>Agency Plan আপগ্রেড করুন</strong>২৫ সাইট + White Label</p>
+      <button class="btn-up">⬆ Upgrade করুন</button>
+    </div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ═════════════════════════════ -->
+<div class="main">
+
+  <div class="topbar">
+    <div class="tb-title" id="ttl">ড্যাশবোর্ড <span>আজকের ওভারভিউ</span></div>
+    <div class="tb-acts">
+      <div class="tabs-row">
+        <div class="tab on" onclick="setTab(this)">৭ দিন</div>
+        <div class="tab" onclick="setTab(this)">৩০ দিন</div>
+        <div class="tab" onclick="setTab(this)">সব সময়</div>
+      </div>
+      <div class="date-btn">📅 ১ মে — ৬ মে ২০২৬</div>
+      <button class="btn-p">+ নতুন Bump</button>
+      <div class="avatar">R<div class="ndot"></div></div>
+    </div>
+  </div>
+
+  <div class="cnt">
+
+    <!-- STAT CARDS -->
+    <div class="sg">
+      <div class="sc bl">
+        <div class="slbl">মোট রেভিনিউ</div>
+        <div class="sval bl">৳৮৪,২৩০</div>
+        <div class="sdlt up">↑ ২৩.৪%</div>
+        <div class="ssub" style="margin-top:5px">গত ৭ দিন তুলনায়</div>
+      </div>
+      <div class="sc gn">
+        <div class="slbl">সফল অর্ডার</div>
+        <div class="sval gn">৩৪৭</div>
+        <div class="sdlt up">↑ ১৮.১%</div>
+        <div class="ssub" style="margin-top:5px">Conversion: ৬৮.৪%</div>
+      </div>
+      <div class="sc or">
+        <div class="slbl">Bump রেভিনিউ</div>
+        <div class="sval or">৳১২,৪৫০</div>
+        <div class="sdlt up">↑ ৪১.২%</div>
+        <div class="ssub" style="margin-top:5px">Take rate: ৩৪.২%</div>
+      </div>
+      <div class="sc pu">
+        <div class="slbl">গড় অর্ডার মূল্য</div>
+        <div class="sval pu">৳২৪২</div>
+        <div class="sdlt dn">↓ ২.৩%</div>
+        <div class="ssub" style="margin-top:5px">টার্গেট: ৳২৮০</div>
+      </div>
+    </div>
+
+    <!-- ROW 2 -->
+    <div class="g2">
+
+      <!-- Funnel -->
+      <div class="panel">
+        <div class="ph"><div class="pt">🔽 Checkout Funnel বিশ্লেষণ</div><div class="pa">বিস্তারিত →</div></div>
+        <div class="pb">
+          <div class="funnel">
+            <div class="fr">
+              <div class="flbl">পেজ ভিউ</div>
+              <div class="fbw"><div class="fb bl" style="width:100%">৫০৮ জন</div></div>
+              <div class="fnum">৫০৮</div>
+              <div class="fdrop"></div>
+            </div>
+            <div class="fr">
+              <div class="flbl">ফর্ম শুরু করেছেন</div>
+              <div class="fbw"><div class="fb tl" style="width:80%">৪০৬ জন</div></div>
+              <div class="fnum">৪০৬</div>
+              <div class="fdrop" style="color:var(--rd)">−২০%</div>
+            </div>
+            <div class="fr">
+              <div class="flbl">পেমেন্ট সিলেক্ট</div>
+              <div class="fbw"><div class="fb or" style="width:71%">৩৬১ জন</div></div>
+              <div class="fnum">৩৬১</div>
+              <div class="fdrop" style="color:var(--or)">−১১%</div>
+            </div>
+            <div class="fr">
+              <div class="flbl">অর্ডার সম্পন্ন ✓</div>
+              <div class="fbw"><div class="fb gn" style="width:68%">৩৪৭ জন</div></div>
+              <div class="fnum">৩৪৭</div>
+              <div class="fdrop" style="color:var(--gn)">৬৮%</div>
+            </div>
+          </div>
+
+          <!-- Bump performance -->
+          <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bd)">
+            <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:12px">🎁 Order Bump পারফরম্যান্স</div>
+            <div class="blist">
+              <div class="brow">
+                <div class="bimg">👕</div>
+                <div class="binf">
+                  <div class="bn">প্রিমিয়াম প্যাকেজিং</div>
+                  <div class="bm">৳৫০ · ২২৪ বার দেখানো হয়েছে</div>
+                </div>
+                <div class="brt"><div class="bpct">৩৮%</div><div class="brlbl">Take Rate</div></div>
+              </div>
+              <div class="brow">
+                <div class="bimg">🎁</div>
+                <div class="binf">
+                  <div class="bn">গিফট র‍্যাপিং সার্ভিস</div>
+                  <div class="bm">৳৩০ · ১৮৯ বার দেখানো হয়েছে</div>
+                </div>
+                <div class="brt"><div class="bpct">২৯%</div><div class="brlbl">Take Rate</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment -->
+      <div class="panel">
+        <div class="ph"><div class="pt">💳 পেমেন্ট মেথড ব্রেকডাউন</div><div class="pa">সেটিংস →</div></div>
+        <div class="pb">
+          <div class="plist">
+            <div class="pi">
+              <div class="pdot" style="background:#ff4081"></div>
+              <div class="pname">bKash</div>
+              <div class="pbw"><div class="pbar" style="width:48%;background:#ff4081"></div></div>
+              <div class="ppct">৪৮%</div>
+            </div>
+            <div class="pi">
+              <div class="pdot" style="background:var(--or)"></div>
+              <div class="pname">Nagad</div>
+              <div class="pbw"><div class="pbar" style="width:22%;background:var(--or)"></div></div>
+              <div class="ppct">২২%</div>
+            </div>
+            <div class="pi">
+              <div class="pdot" style="background:var(--gn)"></div>
+              <div class="pname">Cash on Delivery</div>
+              <div class="pbw"><div class="pbar" style="width:18%;background:var(--gn)"></div></div>
+              <div class="ppct">১৮%</div>
+            </div>
+            <div class="pi">
+              <div class="pdot" style="background:var(--pr)"></div>
+              <div class="pname">Card / SSLCOMMERZ</div>
+              <div class="pbw"><div class="pbar" style="width:12%;background:var(--pr)"></div></div>
+              <div class="ppct">১২%</div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;border-top:1px solid var(--bd);padding-top:14px">
+            <div style="font-size:11px;color:var(--tx3);margin-bottom:8px">দৈনিক অর্ডার — শেষ ৭ দিন</div>
+            <div class="mct" id="mc"></div>
+            <div class="cx" id="cx"></div>
+          </div>
+
+          <div style="margin-top:16px;border-top:1px solid var(--bd);padding-top:14px">
+            <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px">📦 কুরিয়ার সারসংক্ষেপ</div>
+            <div class="cg">
+              <div class="cc"><div class="ccn">Pathao</div><div class="cco">১৮৯</div><div class="ccl">অর্ডার</div></div>
+              <div class="cc"><div class="ccn">RedX</div><div class="cco">৯৮</div><div class="ccl">অর্ডার</div></div>
+              <div class="cc"><div class="ccn">Steadfast</div><div class="cco">৬০</div><div class="ccl">অর্ডার</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3 -->
+    <div class="g3">
+
+      <!-- Orders -->
+      <div class="panel">
+        <div class="ph"><div class="pt">📋 সাম্প্রতিক অর্ডার</div><div class="pa">সব দেখুন →</div></div>
+        <div class="pb" style="padding:0">
+          <table class="ot">
+            <thead>
+              <tr>
+                <th style="padding:12px 10px 10px">অর্ডার #</th>
+                <th>কাস্টমার</th>
+                <th>পেমেন্ট</th>
+                <th>কুরিয়ার</th>
+                <th>পরিমাণ</th>
+                <th>স্ট্যাটাস</th>
+              </tr>
+            </thead>
+            <tbody id="otb"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Right col -->
+      <div class="gcol">
+
+        <!-- Pixel Health -->
+        <div class="panel">
+          <div class="ph"><div class="pt">📡 Pixel স্বাস্থ্য</div><div class="pa">কনফিগ →</div></div>
+          <div class="pb">
+            <div class="pxl">
+              <div class="pxi">
+                <span style="font-size:18px">📘</span>
+                <div><div class="pxn">Meta CAPI</div><div class="pxe">৩৪৭ events আজ</div></div>
+                <div class="pxs ok"><div class="pulse"></div>সক্রিয়</div>
+              </div>
+              <div class="pxi">
+                <span style="font-size:18px">🎯</span>
+                <div><div class="pxn">Google Enhanced</div><div class="pxe">৩৩৯ events আজ</div></div>
+                <div class="pxs ok"><div class="pulse"></div>সক্রিয়</div>
+              </div>
+              <div class="pxi">
+                <span style="font-size:18px">🎵</span>
+                <div><div class="pxn">TikTok Events API</div><div class="pxe">API Key নেই</div></div>
+                <div class="pxs warn"><div class="pulse"></div>সেট করুন</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Settings -->
+        <div class="panel">
+          <div class="ph"><div class="pt">⚙️ দ্রুত সেটিংস</div></div>
+          <div class="pb">
+            <div class="slist">
+              <div class="srow">
+                <div class="sinf"><div class="sn">Popup Checkout</div><div class="sd">পেজ না ছেড়েই কেনা</div></div>
+                <div class="tgl on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="srow">
+                <div class="sinf"><div class="sn">Order Bump</div><div class="sd">এক্সট্রা অফার দেখান</div></div>
+                <div class="tgl on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="srow">
+                <div class="sinf"><div class="sn">Urgency Timer</div><div class="sd">কাউন্টডাউন দেখান</div></div>
+                <div class="tgl" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="srow">
+                <div class="sinf"><div class="sn">reCAPTCHA v3</div><div class="sd">স্প্যাম অর্ডার রোধ</div></div>
+                <div class="tgl on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="srow">
+                <div class="sinf"><div class="sn">Guest Checkout</div><div class="sd">অ্যাকাউন্ট ছাড়া কেনা</div></div>
+                <div class="tgl on" onclick="this.classList.toggle('on')"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Mini chart
+const days=['সো','মঙ','বু','বৃ','শু','শ','র'];
+const vals=[38,55,42,71,63,88,47];
+const mx=Math.max(...vals);
+const mc=document.getElementById('mc');
+const cx=document.getElementById('cx');
+vals.forEach((v,i)=>{
+  const b=document.createElement('div');
+  b.className='bc';
+  b.style.cssText=`height:${(v/mx)*100}%;background:${i===5?'var(--pr)':'var(--s3)'};flex:1;border-radius:3px 3px 0 0;`;
+  mc.appendChild(b);
+  const l=document.createElement('span');
+  l.textContent=days[i];
+  cx.appendChild(l);
+});
+
+// Orders
+const orders=[
+  ['#1047','Rahim Molla','bkash','Pathao','৳৩৪০','paid'],
+  ['#1046','Sumaiya Khatun','nagad','RedX','৳১,২০০','paid'],
+  ['#1045','Karim Hossain','cod','Steadfast','৳৫৬০','pend'],
+  ['#1044','Nasrin Akter','card','Pathao','৳৮৮০','paid'],
+  ['#1043','Shafiqul Islam','bkash','RedX','৳৪৫০','paid'],
+  ['#1042','Mehrin Akter','nagad','Pathao','৳৬৭০','fail'],
+  ['#1041','Tarek Hossain','cod','Steadfast','৳৩৩০','paid'],
+];
+const tb=document.getElementById('otb');
+const gwl={bkash:'bKash',nagad:'Nagad',cod:'COD',card:'Card'};
+const stl={paid:'পেইড',pend:'অপেক্ষায়',fail:'ব্যর্থ'};
+orders.forEach(([id,nm,gw,cr,amt,st])=>{
+  const tr=document.createElement('tr');
+  tr.innerHTML=`
+    <td><span class="oid">${id}</span></td>
+    <td><span class="ocust">${nm}</span></td>
+    <td><span class="gtag ${gw}">${gwl[gw]}</span></td>
+    <td style="color:var(--tx3);font-size:12px">${cr}</td>
+    <td><span class="oamt">${amt}</span></td>
+    <td><span class="stag ${st}">${stl[st]}</span></td>
+  `;
+  tb.appendChild(tr);
+});
+
+// Nav
+function setActive(el,title,sub){
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('ttl').innerHTML=`${title} <span>${sub}</span>`;
+}
+function setTab(el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+}
+</script>
+</body>
+</html>

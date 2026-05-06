@@ -1,0 +1,195 @@
+:root {
+	--cf-primary: #2563eb;
+	--cf-primary-dark: #1d4ed8;
+	--cf-success: #059669;
+	--cf-error: #dc2626;
+	--cf-radius: 8px;
+	--cf-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+	--cf-font: -apple-system, "Segoe UI", sans-serif;
+}
+
+.woocommerce-checkout .woocommerce {
+	font-family: var(--cf-font);
+}
+
+/* Flat intro — no faux card; aligns with page/checkout flow like common commerce UIs */
+.checkflow-shell-intro {
+	margin: 0 0 12px;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	max-width: 100%;
+}
+
+.checkflow-shell-intro h2 {
+	margin: 0 0 2px;
+	font-size: clamp(1.125rem, 2.5vw, 1.25rem);
+	font-weight: 600;
+	line-height: 1.35;
+	letter-spacing: -0.01em;
+	color: #111827;
+}
+
+.checkflow-shell-intro p {
+	margin: 0;
+	color: #6b7280;
+	font-size: 0.8125rem;
+	line-height: 1.45;
+}
+
+.woocommerce-checkout .col2-set {
+	display: grid;
+	grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+	gap: 18px;
+}
+
+.woocommerce-checkout #order_review_heading,
+.woocommerce-checkout #order_review {
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: var(--cf-radius);
+	padding: 14px;
+	box-shadow: var(--cf-shadow);
+}
+
+.woocommerce-checkout #order_review {
+	position: sticky;
+	top: 24px;
+}
+
+.checkflow-qty-input {
+	width: 72px;
+	height: 34px;
+	border: 1px solid #d1d5db;
+	border-radius: 6px;
+	padding: 0 8px;
+	font-size: 14px;
+}
+
+.checkflow-trust-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.checkflow-trust-badges .badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 5px 10px;
+	background: #f3f4f6;
+	border: 1px solid #e5e7eb;
+	border-radius: 999px;
+	font-size: 12px;
+	color: #111827;
+}
+
+.checkflow-coupon-notice-wrap {
+	margin-bottom: 10px;
+}
+
+.checkflow-coupon-notice {
+	padding: 10px 12px;
+	border-radius: 6px;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.checkflow-coupon-notice.is-success {
+	background: #ecfdf5;
+	border: 1px solid #a7f3d0;
+	color: #065f46;
+}
+
+.checkflow-coupon-notice.is-error {
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	color: #991b1b;
+}
+
+form.checkout_coupon input[name="coupon_code"].is-error {
+	border-color: var(--cf-error) !important;
+	box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2);
+}
+
+form.checkout_coupon button.is-loading,
+a.woocommerce-remove-coupon.is-loading {
+	position: relative;
+	opacity: 0.85;
+}
+
+form.checkout_coupon button.is-loading::after,
+a.woocommerce-remove-coupon.is-loading::after {
+	content: "";
+	display: inline-block;
+	width: 12px;
+	height: 12px;
+	margin-left: 8px;
+	border: 2px solid currentColor;
+	border-right-color: transparent;
+	border-radius: 50%;
+	animation: checkflow-spin 0.7s linear infinite;
+	vertical-align: -2px;
+}
+
+@keyframes checkflow-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.checkflow-opt-coupon-row th,
+.checkflow-opt-coupon-row td {
+	opacity: 0.75;
+	font-style: italic;
+}
+
+/* Coupon remove: optimistic undo (fade + strike + slide) */
+tr.checkflow-coupon-removing th,
+tr.checkflow-coupon-removing td {
+	transition: opacity 0.45s ease, transform 0.45s ease, color 0.45s ease;
+}
+
+tr.checkflow-coupon-removing td {
+	opacity: 0.22;
+	color: #9ca3af;
+	transform: translateX(10px) scale(0.98);
+	text-decoration: line-through;
+	text-decoration-thickness: 2px;
+	text-underline-offset: 2px;
+}
+
+tr.checkflow-coupon-removing th {
+	opacity: 0.4;
+}
+
+tr.checkflow-coupon-removing td .amount,
+tr.checkflow-coupon-removing td .woocommerce-Price-amount {
+	animation: checkflow-discount-undo 0.5s ease forwards;
+}
+
+@keyframes checkflow-discount-undo {
+	0% {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	35% {
+		opacity: 0.85;
+		transform: translateX(-4px);
+	}
+	100% {
+		opacity: 0.25;
+		transform: translateX(8px);
+	}
+}
+
+@media (max-width: 768px) {
+	.woocommerce-checkout .col2-set {
+		grid-template-columns: 1fr;
+	}
+	.woocommerce-checkout #order_review {
+		position: static;
+	}
+}
