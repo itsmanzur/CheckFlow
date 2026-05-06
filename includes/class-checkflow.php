@@ -52,6 +52,8 @@ final class CheckFlow {
 		$this->loader->add_action( 'admin_menu', $admin, 'register_menu' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_assets' );
 		$this->loader->add_filter( 'admin_body_class', $admin, 'body_class' );
+		$this->loader->add_action( 'wp_ajax_checkflow_toggle_setting', $admin, 'ajax_toggle_setting' );
+		$this->loader->add_action( 'wp_ajax_checkflow_get_stats', $admin, 'ajax_get_stats' );
 
 		$this->loader->add_action( 'admin_init', $this, 'maybe_show_wc_notice' );
 		$this->loader->add_action( 'admin_notices', $this, 'render_wc_notice' );

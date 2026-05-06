@@ -47,6 +47,70 @@
 			sp.textContent = info.sub || "";
 			ttl.appendChild(sp);
 		}
+		if (window.history && window.location.hash !== "#" + id) {
+			window.history.replaceState(null, "", window.location.pathname + window.location.search + "#" + id);
+		}
+	}
+
+	function toggleSetting(el) {
+		if (!window.checkflowAdmin || !checkflowAdmin.ajaxUrl) return;
+		var setting = el.getAttribute("data-setting");
+		if (!setting) {
+			var localNext = !el.classList.contains("on");
+			el.classList.toggle("on", localNext);
+			el.setAttribute("aria-checked", localNext ? "true" : "false");
+			return;
+		}
+		if (el.classList.contains("is-saving")) return;
+
+		var next = !el.classList.contains("on");
+		el.classList.toggle("on", next);
+		el.classList.add("is-saving");
+		el.setAttribute("aria-checked", next ? "true" : "false");
+
+		$.ajax({
+			url: checkflowAdmin.ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_toggle_setting",
+				nonce: checkflowAdmin.nonce,
+				setting: setting,
+				enabled: next ? 1 : 0,
+			},
+		})
+			.done(function (res) {
+				if (!res || !res.success) {
+					el.classList.toggle("on", !next);
+					el.setAttribute("aria-checked", !next ? "true" : "false");
+				}
+			})
+			.fail(function () {
+				el.classList.toggle("on", !next);
+				el.setAttribute("aria-checked", !next ? "true" : "false");
+			})
+			.always(function () {
+				el.classList.remove("is-saving");
+			});
+	}
+
+	function refreshStats(period) {
+		if (!window.checkflowAdmin || !checkflowAdmin.ajaxUrl) return;
+		$.ajax({
+			url: checkflowAdmin.ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_get_stats",
+				nonce: checkflowAdmin.nonce,
+				period: period || "7d",
+			},
+		}).done(function (res) {
+			if (res && res.success && res.data && res.data.dailyOrders) {
+				checkflowAdmin.chartVals = res.data.dailyOrders;
+				renderMiniChart();
+			}
+		});
 	}
 
 	function persistLocale(locale) {
@@ -105,15 +169,24 @@
 	}
 
 	$(function () {
+		document.documentElement.classList.add("checkflow-admin-html");
 		renderMiniChart();
 
 		$(document).on("click", ".tab", function () {
 			$(this).siblings(".tab").removeClass("on");
 			$(this).addClass("on");
+			refreshStats($(this).attr("data-period") || $(this).text().trim());
 		});
 
 		$(document).on("click", ".tgl", function () {
-			$(this).toggleClass("on");
+			toggleSetting(this);
+		});
+
+		$(document).on("keydown", ".tgl", function (e) {
+			if (e.key === "Enter" || e.key === " ") {
+				e.preventDefault();
+				toggleSetting(this);
+			}
 		});
 
 		$(document).on("click", ".ni[data-screen]", function () {

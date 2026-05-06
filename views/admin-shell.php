@@ -45,7 +45,44 @@ $st_map = array(
 	'fail' => 'orders.st.fail',
 );
 
-$str_keys = $i18n->get_flat_keys_sorted();
+$str_keys       = $i18n->get_flat_keys_sorted();
+$quick_settings = CheckFlow_Admin::instance()->get_quick_settings();
+$page_to_pane   = array(
+	'checkflow-dashboard'    => 'dashboard',
+	'checkflow-orders'       => 'orders',
+	'checkflow-pixel'        => 'pixel',
+	'checkflow-courier'      => 'courier',
+	'checkflow-field-editor' => 'field_editor',
+	'checkflow-templates'    => 'templates',
+	'checkflow-order-bump'   => 'order_bump',
+	'checkflow-upsell'       => 'upsell',
+	'checkflow-bkash-nagad'  => 'bkash_nagad',
+	'checkflow-settings'     => 'settings',
+);
+$current_page   = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : 'checkflow-dashboard'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+$active_pane    = isset( $page_to_pane[ $current_page ] ) ? $page_to_pane[ $current_page ] : 'dashboard';
+$pane_class     = static function ( $pane ) use ( $active_pane ) {
+	return $pane === $active_pane ? ' on' : '';
+};
+$screen_class   = static function ( $pane ) use ( $active_pane ) {
+	return $pane === $active_pane ? ' is-active' : '';
+};
+$toggle_class   = static function ( $key ) use ( $quick_settings ) {
+	return ! empty( $quick_settings[ $key ] ) ? ' on' : '';
+};
+$screen_titles  = array(
+	'dashboard'    => array( 'nav.dashboard', 'screen.dashboard.sub' ),
+	'orders'       => array( 'nav.orders', 'screen.orders.sub' ),
+	'pixel'        => array( 'nav.pixel', 'screen.pixel.sub' ),
+	'courier'      => array( 'nav.courier', 'screen.courier.sub' ),
+	'field_editor' => array( 'nav.field_editor', 'screen.field_editor.sub' ),
+	'templates'    => array( 'nav.templates', 'screen.templates.sub' ),
+	'order_bump'   => array( 'nav.order_bump', 'screen.order_bump.sub' ),
+	'upsell'       => array( 'nav.upsell', 'screen.upsell.sub' ),
+	'bkash_nagad'  => array( 'nav.bkash_nagad', 'screen.bkash_nagad.sub' ),
+	'settings'     => array( 'nav.settings', 'screen.settings.sub' ),
+);
+$title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $active_pane ] : $screen_titles['dashboard'];
 ?>
 <div id="checkflow-admin" class="checkflow-root">
 	<aside class="sb">
@@ -61,20 +98,20 @@ $str_keys = $i18n->get_flat_keys_sorted();
 
 		<nav class="nav">
 			<div class="nav-sec"><?php echo esc_html( checkflow_str( 'nav.sec_main' ) ); ?></div>
-			<div class="ni on" data-screen="dashboard" role="button" tabindex="0"><span class="ni-ico">📊</span> <?php echo esc_html( checkflow_str( 'nav.dashboard' ) ); ?></div>
-			<div class="ni" data-screen="orders" role="button" tabindex="0"><span class="ni-ico">🛒</span> <?php echo esc_html( checkflow_str( 'nav.orders' ) ); ?> <span class="badge g"><?php echo esc_html( checkflow_str( 'nav.badge_orders' ) ); ?></span></div>
-			<div class="ni" data-screen="pixel" role="button" tabindex="0"><span class="ni-ico">📡</span> <?php echo esc_html( checkflow_str( 'nav.pixel' ) ); ?></div>
-			<div class="ni" data-screen="courier" role="button" tabindex="0"><span class="ni-ico">📦</span> <?php echo esc_html( checkflow_str( 'nav.courier' ) ); ?></div>
+			<div class="ni<?php echo esc_attr( $pane_class( 'dashboard' ) ); ?>" data-screen="dashboard" role="button" tabindex="0"><span class="ni-ico">📊</span> <?php echo esc_html( checkflow_str( 'nav.dashboard' ) ); ?></div>
+			<div class="ni<?php echo esc_attr( $pane_class( 'orders' ) ); ?>" data-screen="orders" role="button" tabindex="0"><span class="ni-ico">🛒</span> <?php echo esc_html( checkflow_str( 'nav.orders' ) ); ?> <span class="badge g"><?php echo esc_html( checkflow_str( 'nav.badge_orders' ) ); ?></span></div>
+			<div class="ni<?php echo esc_attr( $pane_class( 'pixel' ) ); ?>" data-screen="pixel" role="button" tabindex="0"><span class="ni-ico">📡</span> <?php echo esc_html( checkflow_str( 'nav.pixel' ) ); ?></div>
+			<div class="ni<?php echo esc_attr( $pane_class( 'courier' ) ); ?>" data-screen="courier" role="button" tabindex="0"><span class="ni-ico">📦</span> <?php echo esc_html( checkflow_str( 'nav.courier' ) ); ?></div>
 
 			<div class="nav-sec"><?php echo esc_html( checkflow_str( 'nav.sec_checkout' ) ); ?></div>
-			<div class="ni" data-screen="field_editor" role="button" tabindex="0"><span class="ni-ico">🧩</span> <?php echo esc_html( checkflow_str( 'nav.field_editor' ) ); ?></div>
-			<div class="ni" data-screen="templates" role="button" tabindex="0"><span class="ni-ico">🎨</span> <?php echo esc_html( checkflow_str( 'nav.templates' ) ); ?></div>
-			<div class="ni" data-screen="order_bump" role="button" tabindex="0"><span class="ni-ico">🎁</span> <?php echo esc_html( checkflow_str( 'nav.order_bump' ) ); ?> <span class="badge">!</span></div>
-			<div class="ni" data-screen="upsell" role="button" tabindex="0"><span class="ni-ico">🚀</span> <?php echo esc_html( checkflow_str( 'nav.upsell' ) ); ?></div>
+			<div class="ni<?php echo esc_attr( $pane_class( 'field_editor' ) ); ?>" data-screen="field_editor" role="button" tabindex="0"><span class="ni-ico">🧩</span> <?php echo esc_html( checkflow_str( 'nav.field_editor' ) ); ?></div>
+			<div class="ni<?php echo esc_attr( $pane_class( 'templates' ) ); ?>" data-screen="templates" role="button" tabindex="0"><span class="ni-ico">🎨</span> <?php echo esc_html( checkflow_str( 'nav.templates' ) ); ?></div>
+			<div class="ni<?php echo esc_attr( $pane_class( 'order_bump' ) ); ?>" data-screen="order_bump" role="button" tabindex="0"><span class="ni-ico">🎁</span> <?php echo esc_html( checkflow_str( 'nav.order_bump' ) ); ?> <span class="badge">!</span></div>
+			<div class="ni<?php echo esc_attr( $pane_class( 'upsell' ) ); ?>" data-screen="upsell" role="button" tabindex="0"><span class="ni-ico">🚀</span> <?php echo esc_html( checkflow_str( 'nav.upsell' ) ); ?></div>
 
 			<div class="nav-sec"><?php echo esc_html( checkflow_str( 'nav.sec_payment' ) ); ?></div>
-			<div class="ni" data-screen="bkash_nagad" role="button" tabindex="0"><span class="ni-ico">💳</span> <?php echo esc_html( checkflow_str( 'nav.bkash_nagad' ) ); ?></div>
-			<div class="ni" data-screen="settings" role="button" tabindex="0"><span class="ni-ico">⚙️</span> <?php echo esc_html( checkflow_str( 'nav.settings' ) ); ?></div>
+			<div class="ni<?php echo esc_attr( $pane_class( 'bkash_nagad' ) ); ?>" data-screen="bkash_nagad" role="button" tabindex="0"><span class="ni-ico">💳</span> <?php echo esc_html( checkflow_str( 'nav.bkash_nagad' ) ); ?></div>
+			<div class="ni<?php echo esc_attr( $pane_class( 'settings' ) ); ?>" data-screen="settings" role="button" tabindex="0"><span class="ni-ico">⚙️</span> <?php echo esc_html( checkflow_str( 'nav.settings' ) ); ?></div>
 		</nav>
 
 		<div class="sb-foot">
@@ -87,7 +124,7 @@ $str_keys = $i18n->get_flat_keys_sorted();
 
 	<div class="main">
 		<div class="topbar">
-			<div class="tb-title" id="cf-ttl"><?php echo esc_html( checkflow_str( 'nav.dashboard' ) ); ?> <span><?php echo esc_html( checkflow_str( 'screen.dashboard.sub' ) ); ?></span></div>
+			<div class="tb-title" id="cf-ttl"><?php echo esc_html( checkflow_str( $title_keys[0] ) ); ?> <span><?php echo esc_html( checkflow_str( $title_keys[1] ) ); ?></span></div>
 			<div class="tb-acts">
 				<div class="cf-locale-select">
 					<label for="cf-ui-locale"><?php echo esc_html( checkflow_str( 'lang.ui_label' ) ); ?></label>
@@ -98,9 +135,9 @@ $str_keys = $i18n->get_flat_keys_sorted();
 					</select>
 				</div>
 				<div class="tabs-row">
-					<div class="tab on"><?php echo esc_html( checkflow_str( 'tab.7d' ) ); ?></div>
-					<div class="tab"><?php echo esc_html( checkflow_str( 'tab.30d' ) ); ?></div>
-					<div class="tab"><?php echo esc_html( checkflow_str( 'tab.all' ) ); ?></div>
+					<div class="tab on" data-period="7d"><?php echo esc_html( checkflow_str( 'tab.7d' ) ); ?></div>
+					<div class="tab" data-period="30d"><?php echo esc_html( checkflow_str( 'tab.30d' ) ); ?></div>
+					<div class="tab" data-period="all"><?php echo esc_html( checkflow_str( 'tab.all' ) ); ?></div>
 				</div>
 				<div class="date-btn"><?php echo esc_html( checkflow_str( 'topbar.date_range' ) ); ?></div>
 				<button type="button" class="btn-p"><?php echo esc_html( checkflow_str( 'topbar.new_bump' ) ); ?></button>
@@ -109,7 +146,7 @@ $str_keys = $i18n->get_flat_keys_sorted();
 		</div>
 
 		<div class="cnt">
-			<div class="cf-pane is-active" data-pane="dashboard">
+			<div class="cf-pane<?php echo esc_attr( $screen_class( 'dashboard' ) ); ?>" data-pane="dashboard">
 				<div class="sg">
 					<div class="sc bl">
 						<div class="slbl"><?php echo esc_html( checkflow_str( 'stats.total_revenue' ) ); ?></div>
@@ -297,23 +334,23 @@ $str_keys = $i18n->get_flat_keys_sorted();
 								<div class="slist">
 									<div class="srow">
 										<div class="sinf"><div class="sn"><?php echo esc_html( checkflow_str( 'qs.popup_title' ) ); ?></div><div class="sd"><?php echo esc_html( checkflow_str( 'qs.popup_desc' ) ); ?></div></div>
-										<div class="tgl on"></div>
+										<div class="tgl<?php echo esc_attr( $toggle_class( 'popup_checkout' ) ); ?>" data-setting="popup_checkout" role="switch" aria-checked="<?php echo ! empty( $quick_settings['popup_checkout'] ) ? 'true' : 'false'; ?>" tabindex="0"></div>
 									</div>
 									<div class="srow">
 										<div class="sinf"><div class="sn"><?php echo esc_html( checkflow_str( 'qs.bump_title' ) ); ?></div><div class="sd"><?php echo esc_html( checkflow_str( 'qs.bump_desc' ) ); ?></div></div>
-										<div class="tgl on"></div>
+										<div class="tgl<?php echo esc_attr( $toggle_class( 'order_bump' ) ); ?>" data-setting="order_bump" role="switch" aria-checked="<?php echo ! empty( $quick_settings['order_bump'] ) ? 'true' : 'false'; ?>" tabindex="0"></div>
 									</div>
 									<div class="srow">
 										<div class="sinf"><div class="sn"><?php echo esc_html( checkflow_str( 'qs.timer_title' ) ); ?></div><div class="sd"><?php echo esc_html( checkflow_str( 'qs.timer_desc' ) ); ?></div></div>
-										<div class="tgl"></div>
+										<div class="tgl<?php echo esc_attr( $toggle_class( 'urgency_timer' ) ); ?>" data-setting="urgency_timer" role="switch" aria-checked="<?php echo ! empty( $quick_settings['urgency_timer'] ) ? 'true' : 'false'; ?>" tabindex="0"></div>
 									</div>
 									<div class="srow">
 										<div class="sinf"><div class="sn"><?php echo esc_html( checkflow_str( 'qs.recaptcha_title' ) ); ?></div><div class="sd"><?php echo esc_html( checkflow_str( 'qs.recaptcha_desc' ) ); ?></div></div>
-										<div class="tgl on"></div>
+										<div class="tgl<?php echo esc_attr( $toggle_class( 'recaptcha' ) ); ?>" data-setting="recaptcha" role="switch" aria-checked="<?php echo ! empty( $quick_settings['recaptcha'] ) ? 'true' : 'false'; ?>" tabindex="0"></div>
 									</div>
 									<div class="srow">
 										<div class="sinf"><div class="sn"><?php echo esc_html( checkflow_str( 'qs.guest_title' ) ); ?></div><div class="sd"><?php echo esc_html( checkflow_str( 'qs.guest_desc' ) ); ?></div></div>
-										<div class="tgl on"></div>
+										<div class="tgl<?php echo esc_attr( $toggle_class( 'guest_checkout' ) ); ?>" data-setting="guest_checkout" role="switch" aria-checked="<?php echo ! empty( $quick_settings['guest_checkout'] ) ? 'true' : 'false'; ?>" tabindex="0"></div>
 									</div>
 								</div>
 							</div>
@@ -322,26 +359,104 @@ $str_keys = $i18n->get_flat_keys_sorted();
 				</div>
 			</div><!-- dashboard -->
 
-			<?php
-			$stub_screens = array( 'orders', 'pixel', 'courier', 'field_editor', 'templates', 'order_bump', 'upsell', 'bkash_nagad' );
-			foreach ( $stub_screens as $sid ) :
-				?>
-				<div class="cf-pane" data-pane="<?php echo esc_attr( $sid ); ?>">
+			<div class="cf-pane<?php echo esc_attr( $screen_class( 'orders' ) ); ?>" data-pane="orders">
+				<div class="g2">
 					<div class="panel">
+						<div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'nav.orders' ) ); ?></div><div class="pa">WooCommerce sync</div></div>
+						<div class="pb" style="padding:0">
+							<table class="ot">
+								<thead>
+									<tr>
+										<th style="padding:12px 10px 10px"><?php echo esc_html( checkflow_str( 'orders.th_id' ) ); ?></th>
+										<th><?php echo esc_html( checkflow_str( 'orders.th_customer' ) ); ?></th>
+										<th><?php echo esc_html( checkflow_str( 'orders.th_payment' ) ); ?></th>
+										<th><?php echo esc_html( checkflow_str( 'orders.th_courier' ) ); ?></th>
+										<th><?php echo esc_html( checkflow_str( 'orders.th_amount' ) ); ?></th>
+										<th><?php echo esc_html( checkflow_str( 'orders.th_status' ) ); ?></th>
+									</tr>
+								</thead>
+								<tbody>
+									<?php foreach ( $order_rows as $i => $r ) : ?>
+										<tr>
+											<td><span class="oid"><?php echo esc_html( $r[0] ); ?></span></td>
+											<td><span class="ocust"><?php echo esc_html( $r[1] ); ?></span></td>
+											<td><span class="gtag <?php echo esc_attr( $r[2] ); ?>"><?php echo esc_html( checkflow_str( $gw_map[ $r[2] ] ) ); ?></span></td>
+											<td style="color:var(--tx3);font-size:12px"><?php echo esc_html( $r[3] ); ?></td>
+											<td><span class="oamt"><?php echo isset( $amts[ $i ] ) ? esc_html( $amts[ $i ] ) : ''; ?></span></td>
+											<td><span class="stag <?php echo esc_attr( 'paid' === $r[4] ? 'paid' : ( 'pend' === $r[4] ? 'pend' : 'fail' ) ); ?>"><?php echo esc_html( checkflow_str( $st_map[ $r[4] ] ) ); ?></span></td>
+										</tr>
+									<?php endforeach; ?>
+								</tbody>
+							</table>
+						</div>
+					</div>
+					<div class="gcol">
+						<div class="panel"><div class="ph"><div class="pt">Order actions</div></div><div class="pb"><div class="cf-action-row"><span>Bulk courier booking</span><button type="button" class="btn-p">Prepare</button></div><div class="cf-action-row"><span>Failed payment follow-up</span><button type="button" class="btn-p">Review</button></div><div class="cf-action-row"><span>CSV export</span><button type="button" class="btn-p">Export</button></div></div></div>
+						<div class="panel"><div class="ph"><div class="pt">Status mix</div></div><div class="pb"><div class="cf-mini-grid"><div class="cf-mini-card"><strong>5</strong><span>Paid</span></div><div class="cf-mini-card"><strong>1</strong><span>Pending</span></div><div class="cf-mini-card"><strong>1</strong><span>Failed</span></div></div></div></div>
+					</div>
+				</div>
+			</div>
+
+			<div class="cf-pane<?php echo esc_attr( $screen_class( 'pixel' ) ); ?>" data-pane="pixel">
+				<div class="g2">
+					<div class="panel">
+						<div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'nav.pixel' ) ); ?></div><div class="pa">Test Event</div></div>
 						<div class="pb">
-							<div class="cf-stub">
-								<h2><?php echo esc_html( checkflow_str( 'stub.title' ) ); ?></h2>
-								<p><?php echo esc_html( checkflow_str( 'stub.body' ) ); ?></p>
-								<button type="button" class="btn-p cf-stub-dash"><?php echo esc_html( checkflow_str( 'stub.back_dashboard' ) ); ?></button>
+							<div class="pxl">
+								<div class="pxi"><span style="font-size:18px">📘</span><div><div class="pxn">Meta CAPI</div><div class="pxe">Purchase, InitiateCheckout, AddPaymentInfo</div></div><div class="pxs ok"><div class="pulse"></div><?php echo esc_html( checkflow_str( 'pixel.active' ) ); ?></div></div>
+								<div class="pxi"><span style="font-size:18px">🎯</span><div><div class="pxn">Google Enhanced</div><div class="pxe">Conversion ID + Label pending real settings</div></div><div class="pxs ok"><div class="pulse"></div><?php echo esc_html( checkflow_str( 'pixel.active' ) ); ?></div></div>
+								<div class="pxi"><span style="font-size:18px">🎵</span><div><div class="pxn">TikTok Events API</div><div class="pxe"><?php echo esc_html( checkflow_str( 'pixel.tiktok_no_key' ) ); ?></div></div><div class="pxs warn"><div class="pulse"></div><?php echo esc_html( checkflow_str( 'pixel.set_up' ) ); ?></div></div>
 							</div>
 						</div>
 					</div>
+					<div class="panel"><div class="ph"><div class="pt">Event queue</div><div class="pa">Retry failed</div></div><div class="pb"><div class="cf-module-list"><div><strong>Purchase</strong><span>checkflow_1047 · sent</span></div><div><strong>InitiateCheckout</strong><span>session_a82 · sent</span></div><div><strong>AddPaymentInfo</strong><span>session_a82 · pending</span></div><div><strong>Purchase</strong><span>checkflow_1042 · failed</span></div></div></div></div>
 				</div>
-				<?php
-			endforeach;
-			?>
+			</div>
 
-			<div class="cf-pane" data-pane="settings">
+			<div class="cf-pane<?php echo esc_attr( $screen_class( 'courier' ) ); ?>" data-pane="courier">
+				<div class="g2">
+					<div class="panel"><div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'courier.summary_title' ) ); ?></div><div class="pa">Configure</div></div><div class="pb"><div class="cg"><div class="cc"><div class="ccn">Pathao</div><div class="cco"><?php echo esc_html( checkflow_str( 'courier.pathao' ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div><div class="cc"><div class="ccn">RedX</div><div class="cco"><?php echo esc_html( checkflow_str( 'courier.redx' ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div><div class="cc"><div class="ccn">SteadFast</div><div class="cco"><?php echo esc_html( checkflow_str( 'courier.steadfast' ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div></div></div></div>
+					<div class="panel"><div class="ph"><div class="pt">Booking workflow</div></div><div class="pb"><div class="cf-action-row"><span>Auto book after processing</span><div class="tgl on" role="switch" aria-checked="true" tabindex="0"></div></div><div class="cf-action-row"><span>COD reconciliation</span><div class="tgl" role="switch" aria-checked="false" tabindex="0"></div></div><div class="cf-action-row"><span>Fallback courier suggestion</span><div class="tgl on" role="switch" aria-checked="true" tabindex="0"></div></div></div></div>
+				</div>
+			</div>
+
+			<div class="cf-pane<?php echo esc_attr( $screen_class( 'field_editor' ) ); ?>" data-pane="field_editor">
+				<div class="g2">
+					<div class="panel"><div class="ph"><div class="pt">Available fields</div><div class="pa">20+ types</div></div><div class="pb"><div class="cf-module-grid"><div class="cf-builder-row">Text</div><div class="cf-builder-row">Email</div><div class="cf-builder-row">Phone</div><div class="cf-builder-row">Select</div><div class="cf-builder-row">Checkbox</div><div class="cf-builder-row">Delivery note</div></div></div></div>
+					<div class="panel"><div class="ph"><div class="pt">Checkout preview</div><div class="pa">Bangladesh Standard</div></div><div class="pb"><div class="cf-module-list"><div><strong>Contact info</strong><span>Email, name, phone</span></div><div><strong>Shipping address</strong><span>District, zone, area</span></div><div><strong>Payment method</strong><span>bKash, Nagad, COD</span></div><div><strong>Courier choice</strong><span>Pathao, RedX, SteadFast</span></div></div></div></div>
+				</div>
+			</div>
+
+			<div class="cf-pane<?php echo esc_attr( $screen_class( 'templates' ) ); ?>" data-pane="templates">
+				<div class="cf-template-grid">
+					<?php foreach ( array( 'Default One Page', 'Bangladesh COD', 'Mobile Banking', 'Minimal Digital', 'Premium Split' ) as $i => $tpl ) : ?>
+						<div class="panel"><div class="pb"><div class="cf-template-thumb"><span><?php echo esc_html( (string) ( $i + 1 ) ); ?></span></div><div class="cf-template-name"><?php echo esc_html( $tpl ); ?></div><div class="cf-template-meta"><?php echo 0 === $i ? 'Active' : 'Pro template'; ?></div></div></div>
+					<?php endforeach; ?>
+				</div>
+			</div>
+
+			<div class="cf-pane<?php echo esc_attr( $screen_class( 'order_bump' ) ); ?>" data-pane="order_bump">
+				<div class="g2">
+					<div class="panel"><div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'bump_perf.title' ) ); ?></div><div class="pa">New bump</div></div><div class="pb"><div class="blist"><div class="brow"><div class="bimg">👕</div><div class="binf"><div class="bn"><?php echo esc_html( checkflow_str( 'bump.b1_name' ) ); ?></div><div class="bm"><?php echo esc_html( checkflow_str( 'bump.b1_meta' ) ); ?></div></div><div class="brt"><div class="bpct">38%</div><div class="brlbl"><?php echo esc_html( checkflow_str( 'bump.rate_lbl' ) ); ?></div></div></div><div class="brow"><div class="bimg">🎁</div><div class="binf"><div class="bn"><?php echo esc_html( checkflow_str( 'bump.b2_name' ) ); ?></div><div class="bm"><?php echo esc_html( checkflow_str( 'bump.b2_meta' ) ); ?></div></div><div class="brt"><div class="bpct">29%</div><div class="brlbl"><?php echo esc_html( checkflow_str( 'bump.rate_lbl' ) ); ?></div></div></div></div></div></div>
+					<div class="panel"><div class="ph"><div class="pt">Rules</div></div><div class="pb"><div class="cf-module-list"><div><strong>Cart total</strong><span>Show when total is over $50</span></div><div><strong>Product match</strong><span>Show for apparel category</span></div><div><strong>Customer type</strong><span>First-time buyer only</span></div></div></div></div>
+				</div>
+			</div>
+
+			<div class="cf-pane<?php echo esc_attr( $screen_class( 'upsell' ) ); ?>" data-pane="upsell">
+				<div class="g2">
+					<div class="panel"><div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'nav.upsell' ) ); ?></div><div class="pa">Create funnel</div></div><div class="pb"><div class="cf-module-list"><div><strong>Step 1</strong><span>Post-payment premium add-on</span></div><div><strong>Step 2</strong><span>Downsell if customer skips</span></div><div><strong>Thank-you</strong><span>Return to WooCommerce order received</span></div></div></div></div>
+					<div class="panel"><div class="ph"><div class="pt">Performance</div></div><div class="pb"><div class="cf-mini-grid"><div class="cf-mini-card"><strong>124</strong><span>Shown</span></div><div class="cf-mini-card"><strong>31</strong><span>Accepted</span></div><div class="cf-mini-card"><strong>25%</strong><span>Take rate</span></div></div></div></div>
+				</div>
+			</div>
+
+			<div class="cf-pane<?php echo esc_attr( $screen_class( 'bkash_nagad' ) ); ?>" data-pane="bkash_nagad">
+				<div class="g2">
+					<div class="panel"><div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'nav.bkash_nagad' ) ); ?></div><div class="pa">Sandbox</div></div><div class="pb"><div class="cf-module-list"><div><strong>bKash</strong><span>App key, secret, merchant number</span></div><div><strong>Nagad</strong><span>Merchant ID, RSA keys, callback URL</span></div><div><strong>Rocket</strong><span>Merchant settings via gateway module</span></div><div><strong>SSLCOMMERZ</strong><span>Store ID, password, IPN</span></div></div></div></div>
+					<div class="panel"><div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'payment.title' ) ); ?></div></div><div class="pb"><div class="plist"><div class="pi"><div class="pdot" style="background:#ff4081"></div><div class="pname"><?php echo esc_html( checkflow_str( 'payment.bkash' ) ); ?></div><div class="pbw"><div class="pbar" style="width:48%;background:#ff4081"></div></div><div class="ppct"><?php echo esc_html( checkflow_str( 'payment.pct48' ) ); ?></div></div><div class="pi"><div class="pdot" style="background:var(--or)"></div><div class="pname"><?php echo esc_html( checkflow_str( 'payment.nagad' ) ); ?></div><div class="pbw"><div class="pbar" style="width:22%;background:var(--or)"></div></div><div class="ppct"><?php echo esc_html( checkflow_str( 'payment.pct22' ) ); ?></div></div><div class="pi"><div class="pdot" style="background:var(--pr)"></div><div class="pname"><?php echo esc_html( checkflow_str( 'payment.card' ) ); ?></div><div class="pbw"><div class="pbar" style="width:12%;background:var(--pr)"></div></div><div class="ppct"><?php echo esc_html( checkflow_str( 'payment.pct12' ) ); ?></div></div></div></div></div>
+				</div>
+			</div>
+
+			<div class="cf-pane<?php echo esc_attr( $screen_class( 'settings' ) ); ?>" data-pane="settings">
 				<div class="panel">
 					<div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'nav.settings' ) ); ?></div></div>
 					<div class="pb">

@@ -1,134 +1,229 @@
-# CheckFlow Updated Execution Plan (Doc-Driven)
+# CheckFlow Updated Execution Plan
 
-Last update: 2026-05-06
-Scope source: `CheckFlow_Plugin_Roadmap.pdf`
+Last update: 2026-05-06  
+Primary scope source: `CheckFlow_Plugin_Roadmap Upadet.pdf`  
+Previous source: `CheckFlow_Plugin_Roadmap-old.pdf`  
+Approved admin UI reference: `CheckFlow_Admin_Panel.html`
 
-## Current Status Snapshot
+## 1. Product Direction From Updated Roadmap
 
-### Already done
-- Basic plugin bootstrap in `checkflow.php`
-- Admin panel shell + scoped CSS/JS (mock-aligned UI)
-- JSON i18n (`en_US` / `bn_BD`), per-user locale switch, custom string overrides
+CheckFlow is a WooCommerce one-page checkout plugin for Bangladesh-first ecommerce, then South Asia/global markets.
 
-### Not done yet (critical)
-- Prompt-1 target scaffolding (`composer.json`, `uninstall.php`, loader/activator/deactivator classes, Frontend/Admin split)
-- WooCommerce checkout hooks + dynamic front checkout
-- AJAX checkout engine
-- DB tables for analytics/tracking/payment logs
-- Gateways, couriers, server-side pixel tracking
-- Drag-drop field editor, bump/upsell, full analytics engine
+Core promise:
+- One-page, mobile-first, fast checkout.
+- bKash, Nagad, Rocket, SSLCOMMERZ native/pro gateway support.
+- Pathao, RedX, SteadFast courier booking support.
+- Server-side ad tracking that does not break when checkout/thank-you URLs change.
+- Admin dashboard exactly matching the approved dark CheckFlow design.
 
----
+Pricing/edition direction:
+- Free: AJAX checkout, mobile-first design, popup/slide checkout, direct checkout, trust badges, one basic template.
+- Pro: field editor, order bump, upsell, premium templates, BD payments/couriers, analytics, multilingual, tracking, express pay, urgency/coupon features.
+- Agency: A/B testing, white label, team access/roles, priority support.
 
-## Phase 0 — Refactor & Foundation
+## 2. Updated Roadmap Phases
 
-Goal: move from mock-first structure to production plugin architecture.
+### Phase 1 - Build & Foundation, Months 1-3
 
-1. Create core structure
-   - `includes/class-checkflow.php` (main orchestrator)
-   - `includes/class-loader.php`
-   - `includes/class-activator.php`
-   - `includes/class-deactivator.php`
-2. Add project infra
-   - `composer.json` (PSR-4 autoload)
-   - `uninstall.php`
-   - initial `readme.txt`
-3. Split code by domain
-   - move admin logic under `includes/Admin/`
-   - create `includes/Frontend/` and `includes/Helpers/`
-4. Add WooCommerce dependency guard
-   - admin notice if WooCommerce inactive
-   - disable checkout features safely
+Month 1:
+- Production plugin scaffold: OOP structure, loader, activator/deactivator, Composer PSR-4, WP/Woo/PHP version requirements.
+- WooCommerce checkout hooks, nonce-protected AJAX handlers, input sanitization.
+- Frontend checkout UI using Alpine.js, mobile-first CSS, custom properties.
+- Core free checkout features: popup checkout, direct checkout, AJAX totals, trust badges.
 
-Exit criteria:
-- plugin boots through orchestrator + loader
-- activator/deactivator hooks wired
-- no regression in current admin UI
+Month 2:
+- WordPress admin settings panel using the approved CheckFlow Admin Panel design.
+- React-based drag-and-drop field editor with 20+ field types and conditional logic.
+- Template system with 5 premium templates, switcher, custom CSS support.
+- PHPUnit/browser QA and PHP 7.4-8.3 compatibility.
 
----
+Month 3:
+- Conditional asset loading, minify/lazy loading, target checkout load under 1 second.
+- Security audit: CSRF, XSS, SQL injection, rate limiting, reCAPTCHA v3.
+- WordPress.org readme, screenshots, SVN submission readiness.
+- Bangladesh community launch content.
 
-## Phase 1 (Free) — Minimum Scope = ALL
+### Phase 2 - Pro Launch & Bangladesh Features, Months 4-6
 
-User decision: include all free-minimum options: `(a) + (b) + (c)`.
+- bKash Payment API v1.2.0 with native checkout button and refund support.
+- Nagad Merchant API, Rocket support, strong error handling.
+- SSLCOMMERZ with card/mobile wallet support, 3D Secure, multi-currency.
+- Pathao, RedX, SteadFast courier integrations with zone/area lookup, pricing, booking, tracking, COD support.
+- Order bump, one-click upsell, analytics dashboard.
+- Server-side Meta CAPI, Google Enhanced Conversions, TikTok Events API.
+- Freemius/licensing, auto-update, AppSumo LTD, Bengali/English docs.
 
-### 1A. Checkout core
-- One-page checkout shell
-- AJAX totals update without reload
-- trust badge rendering
+### Phase 3 - Global Growth, Months 7-12
 
-### 1B. Checkout behavior
-- popup checkout toggle
-- direct checkout (skip cart) toggle
+- Product Hunt launch, SEO content around broken WooCommerce pixel tracking.
+- Affiliate program.
+- Agency plan.
+- A/B testing.
+- Year-1 targets: 500+ users, $5k MRR, 4.8+ WordPress.org rating.
 
-### 1C. Analytics baseline
-- create `checkflow_analytics_events` table
-- record basic events (`checkout_view`, `checkout_started`, `order_placed`)
-- admin funnel placeholder backed by real stored events
+### Phase 4 - Scale, Year 2
 
-Exit criteria:
-- Free version has one-page + popup/direct modes + AJAX totals + basic event tracking
+- India: Razorpay, Paytm, UPI, Hindi docs.
+- Pakistan: JazzCash, EasyPaisa, Urdu UI.
+- SaaS analytics/team collaboration.
+- Enterprise tier with custom integrations and SLA.
 
----
+## 3. Cursor Prompt Implementation Order
 
-## Phase 2 — Bangladesh Pro Features
+We will implement the updated roadmap by prompt/module, but keep the approved admin design as a strict visual target.
 
-1. Payment gateways
-   - bKash, Nagad, SSLCOMMERZ
-   - `checkflow_payment_logs` table
-2. Courier integration
-   - Pathao, RedX, SteadFast
-   - courier selection at checkout + order meta booking IDs
+1. Prompt 1 - Plugin Scaffold & Architecture
+2. Prompt 11 - Admin Panel UI Design System, matching `CheckFlow_Admin_Panel.html` 100%
+3. Prompt 2 - AJAX Checkout Engine
+4. Prompt 9 - Frontend Checkout UI with Alpine.js
+5. Prompt 8 - Analytics data collection/dashboard foundation
+6. Prompt 6 - Drag-and-drop field editor
+7. Prompt 3 - bKash, Nagad, Rocket, SSLCOMMERZ gateways
+8. Prompt 4 - Pathao, RedX, SteadFast courier APIs
+9. Prompt 5 - Server-side tracking
+10. Prompt 7 - Order bump and upsell system
+11. Prompt 10 - Tests, security audit, WordPress.org package
 
-Exit criteria:
-- paid + courier booking flows work end-to-end in sandbox
+Reason for putting Prompt 11 early: the approved admin panel must be implemented exactly, and later analytics/settings modules should plug into that UI instead of redesigning it.
 
----
+## 4. Current Plugin Audit
 
-## Phase 3 — Server-Side Tracking (USP)
+### Already Done
 
-- Meta CAPI, Google Enhanced Conversions, TikTok Events API
-- trigger from `woocommerce_payment_complete`
-- dedupe with stable `event_id`
-- failed-event retry queue + logs (`checkflow_tracking_events`)
+- `checkflow.php` exists with plugin constants, activation/deactivation hooks, and bootstrap.
+- Core class files exist:
+  - `includes/class-checkflow.php`
+  - `includes/class-loader.php`
+  - `includes/class-activator.php`
+  - `includes/class-deactivator.php`
+  - `includes/class-checkflow-i18n.php`
+  - `includes/class-checkflow-admin.php`
+- Frontend placeholder/domain files exist:
+  - `includes/Frontend/class-assets.php`
+  - `includes/Frontend/class-ajax.php`
+  - `includes/Frontend/class-checkout.php`
+  - `public/css/checkflow.css`
+  - `public/js/checkflow-ajax.js`
+- Admin shell exists in `views/admin-shell.php`.
+- Admin CSS/JS exists in `assets/admin.css` and `assets/admin.js`.
+- JSON i18n exists in `i18n/en_US.json` and `i18n/bn_BD.json`.
+- Per-user admin locale switch and string override editor exist.
+- WooCommerce inactive admin notice exists.
+- Frontend checkout has early quantity update, apply coupon, remove coupon AJAX.
+- Trust badges and checkout shell intro are partially implemented.
 
-Exit criteria:
-- reliable server-side purchase events, retriable failures, admin visibility
+### What Is Wrong / Incomplete
 
----
+- Roadmap Prompt 1 asks for namespaced PSR-4 classes, but the plugin currently uses global class names and manual `require_once`.
+- `composer.json` declares PSR-4 autoload, but no Composer autoload is actually loaded.
+- Prompt 1 folder structure asks for `admin/css`, `admin/js`, `admin/partials`, and `languages`; current code uses `assets`, `views`, and `i18n`.
+- Admin page slug is `checkflow`; updated Prompt 11 expects pages like `checkflow-dashboard`, `checkflow-orders`, `checkflow-field-editor`, etc.
+- Admin design is close to the HTML mockup, but not guaranteed 100%:
+  - WordPress admin menu is not hidden for CheckFlow pages.
+  - `#wpcontent` margin is not fully reset.
+  - CSS variables use `--bg`, `--s1`, etc.; Prompt 11 expects scoped `--cf-bg`, `--cf-s1`, etc.
+  - CSS files are not in the Prompt 11 requested paths.
+  - Several sections are dashboard stubs instead of real screens/submenus.
+- Admin stats, funnel, payments, couriers, pixels, recent orders are still mock/static data.
+- Quick setting toggles change only visually; they do not save via `wp_ajax_checkflow_toggle_setting`.
+- `checkflow_get_stats` AJAX does not exist.
+- Activator only stores plugin version; it does not create required DB tables:
+  - `checkflow_analytics_events`
+  - `checkflow_payment_logs`
+  - `checkflow_tracking_events`
+  - `checkflow_sales_performance`
+- AJAX checkout engine is partial:
+  - Missing `checkflow_validate_field`.
+  - Missing `checkflow_get_shipping_methods`.
+  - Missing `checkflow_place_order`.
+  - Missing rate limiting and suspicious activity logging.
+  - Response shape is normal WP JSON but not the roadmap's consistent `{success,data,message,errors}` contract.
+- Frontend checkout is not the full Alpine.js app from Prompt 9.
+- Popup modal checkout and slide-in panel checkout are not implemented.
+- Direct checkout/skip cart is not implemented.
+- Field editor is not implemented.
+- Template system is not implemented.
+- bKash/Nagad/Rocket/SSLCOMMERZ gateways are not implemented.
+- Pathao/RedX/SteadFast courier integrations are not implemented.
+- Server-side Meta/Google/TikTok tracking is not implemented.
+- Order bump/upsell/rules engine is not implemented.
+- Analytics storage/query/dashboard is not implemented.
+- Tests, security audit docs, checklist docs, screenshots, `.pot`/`.po` files are not implemented.
+- `checkflow.php` metadata still has placeholder Plugin URI and a mojibake dash in the description.
+- `Domain Path` says `/languages`, but translations are currently JSON in `/i18n`.
+- `includes/Admin/class-settings.php`, helper logger/security files are empty placeholders.
+- Git working tree currently shows deleted old roadmap files and untracked new/old PDFs; do not clean this up unless intentionally requested.
 
-## Phase 4 — Conversion Features
+## 5. Immediate Build Checklist
 
-- Drag-and-drop field editor (React)
-- Order bump + one-click upsell + rules engine
-- sales performance storage/reporting
+### Milestone A - Admin Design 100% Parity
 
----
+- [ ] Move/align admin assets to Prompt 11 structure or document why existing `assets/`/`views/` structure will be kept.
+- [ ] Rename/scaffold admin module as `includes/Admin/class-admin.php` or map current `class-checkflow-admin.php` cleanly.
+- [x] Add real CheckFlow admin page slugs/submenus: dashboard, orders, pixel, courier, field editor, templates, order bump, upsell, payment, settings.
+- [x] Hide WordPress left admin menu only on CheckFlow pages.
+- [x] Reset `#wpcontent`, `#wpbody-content`, and page margins only on CheckFlow pages.
+- [x] Convert admin CSS variables to Prompt 11 `--cf-*` names or add a compatibility layer.
+- [x] Compare `CheckFlow_Admin_Panel.html` against `views/admin-shell.php` and `assets/admin.css` line by line.
+- [x] Replace all stub panes with first-pass real screens matching the mockup layout.
+- [x] Make toggles save to `wp_options` via nonce-protected AJAX.
+- [x] Add `checkflow_get_stats` AJAX with mock fallback first, then DB-backed stats later.
+- [x] Browser-test the admin page at desktop and mobile widths and fix spacing/overflow differences.
 
-## Phase 5 — Full Analytics Dashboard
+### Milestone B - Architecture Cleanup
 
-- funnel, revenue trends, payment breakdown, abandonment insights
-- date ranges, CSV export, periodic refresh
+- [ ] Decide whether to keep global classes for now or migrate to PSR-4 namespaces.
+- [ ] If using PSR-4, run Composer autoload and update bootstrap.
+- [ ] Fix plugin metadata, Plugin URI, Requires WP/Woo details, and text domain paths.
+- [ ] Add real helper methods to `class-security.php` and `class-logger.php`.
+- [ ] Add DB table creation to activator using `dbDelta`.
+- [ ] Add uninstall cleanup policy/options.
 
----
+### Milestone C - Free Checkout Core
 
-## Phase 6 — Hardening & Release
+- [ ] Complete AJAX handlers: update totals, coupon apply/remove, validate field, get shipping methods, place order.
+- [ ] Add rate limiting: max 10 checkout AJAX requests per minute per IP/session.
+- [ ] Standardize all AJAX responses with `success`, `data`, `message`, `errors`.
+- [ ] Build `public/js/checkflow.js` Alpine app.
+- [ ] Build standard one-page layout with sticky order summary.
+- [ ] Add popup modal checkout.
+- [ ] Add slide-in checkout.
+- [ ] Add direct checkout/skip-cart behavior.
+- [ ] Persist settings for popup/direct/trust badge behavior.
 
-- security audit checklist
-- PHPUnit/integration tests
-- WP.org submission readiness
+### Milestone D - Analytics Foundation
 
----
+- [ ] Create `checkflow_analytics_events`.
+- [ ] Track checkout view, started, payment selected, coupon applied, order placed, abandoned.
+- [ ] Keep PII out of analytics metadata.
+- [ ] Connect admin dashboard cards/funnel/payment breakdown to stored data.
+- [ ] Add CSV export and date range filters after base data is reliable.
 
-## Step-by-Step Build Order (Strict)
+### Milestone E - Pro Feature Modules
 
-1. Phase 0
-2. Phase 1A
-3. Phase 1B
-4. Phase 1C
-5. Phase 2
-6. Phase 3
-7. Phase 4
-8. Phase 5
-9. Phase 6
+- [ ] Field editor with React + drag/drop + WooCommerce field filters.
+- [ ] Template system.
+- [ ] BD payment gateways and `checkflow_payment_logs`.
+- [ ] Courier integrations and order meta tracking IDs.
+- [ ] Server-side tracking and retry queue.
+- [ ] Order bump, upsell, rules engine, sales performance table.
 
-No phase skip.
+### Milestone F - Hardening & Release
+
+- [ ] PHPUnit/unit/integration tests.
+- [ ] Security audit document.
+- [ ] WordPress.org `readme.txt`.
+- [ ] Pre-launch checklist.
+- [ ] Screenshots and plugin icons.
+- [ ] PHP 7.4-8.3 and WooCommerce 7-9 compatibility tests.
+
+## 6. Next Action Recommendation
+
+Start with Milestone A. The next coding task should be:
+
+1. Make the WordPress admin page visually match `CheckFlow_Admin_Panel.html` exactly.
+2. Preserve the current i18n/string override work while doing it.
+3. Add real admin submenus and scope/hide WordPress admin chrome only on CheckFlow pages.
+4. Add persistent AJAX settings toggles.
+
+After Milestone A passes visual/browser review, continue with Milestone C checkout engine because it is the Free version's core value.
