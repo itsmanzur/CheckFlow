@@ -227,6 +227,89 @@
 			});
 	}
 
+	function collectCheckoutFields() {
+		var rows = [];
+		document.querySelectorAll(".cf-field-row").forEach(function (row) {
+			var key = row.getAttribute("data-field-key");
+			if (!key) return;
+			var locked = row.getAttribute("data-protected") === "1";
+			var enabled = row.querySelector(".cf-field-enabled");
+			var required = row.querySelector(".cf-field-required");
+			var label = row.querySelector(".cf-field-label");
+			var priority = row.querySelector(".cf-field-priority");
+			rows.push({
+				key: key,
+				label: label ? label.value : "",
+				priority: priority ? priority.value : "10",
+				enabled: locked || (enabled && enabled.checked) ? 1 : 0,
+				required: required && required.checked ? 1 : 0,
+			});
+		});
+		return rows;
+	}
+
+	function saveCheckoutFields(btnEl) {
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl) return;
+		var $btn = $(btnEl);
+		$btn.prop("disabled", true);
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_save_checkout_fields",
+				nonce: checkflowAdmin.nonce,
+				fields: JSON.stringify(collectCheckoutFields()),
+			},
+		})
+			.done(function (res) {
+				if (res && res.success) {
+					showToast("Checkout fields saved");
+					return;
+				}
+				showToast("Could not save checkout fields", "error");
+			})
+			.fail(function () {
+				showToast("Could not save checkout fields", "error");
+			})
+			.always(function () {
+				$btn.prop("disabled", false);
+			});
+	}
+
+	function resetCheckoutFields(btnEl) {
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl) return;
+		var $btn = $(btnEl);
+		$btn.prop("disabled", true);
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_reset_checkout_fields",
+				nonce: checkflowAdmin.nonce,
+			},
+		})
+			.done(function (res) {
+				if (res && res.success) {
+					showToast("Checkout fields reset");
+					window.setTimeout(function () {
+						window.location.reload();
+					}, 500);
+					return;
+				}
+				showToast("Could not reset checkout fields", "error");
+			})
+			.fail(function () {
+				showToast("Could not reset checkout fields", "error");
+			})
+			.always(function () {
+				$btn.prop("disabled", false);
+			});
+	}
+
 	$(function () {
 		document.documentElement.classList.add("checkflow-admin-html");
 		renderMiniChart();
@@ -279,6 +362,14 @@
 		$(document).on("click", "#cf-save-overrides", function () {
 			var lng = $("#cf-edit-locale").val() || "";
 			saveOverrides(lng, this);
+		});
+
+		$(document).on("click", ".cf-save-fields", function () {
+			saveCheckoutFields(this);
+		});
+
+		$(document).on("click", ".cf-reset-fields", function () {
+			resetCheckoutFields(this);
 		});
 
 		var rawHash = window.location.hash ? window.location.hash.replace(/^#\s*/, "").replace(/^cf-/, "") : "";

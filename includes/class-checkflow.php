@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once CHECKFLOW_PATH . 'includes/Frontend/class-assets.php';
 require_once CHECKFLOW_PATH . 'includes/Frontend/class-ajax.php';
 require_once CHECKFLOW_PATH . 'includes/Frontend/class-checkout.php';
+require_once CHECKFLOW_PATH . 'includes/Frontend/class-field-editor.php';
 
 final class CheckFlow {
 
@@ -44,6 +45,7 @@ final class CheckFlow {
 		$assets = CheckFlow_Frontend_Assets::instance();
 		$ajax   = CheckFlow_Frontend_Ajax::instance();
 		$checkout = CheckFlow_Frontend_Checkout::instance();
+		$field_editor = CheckFlow_Field_Editor::instance();
 
 		$this->loader->add_action( 'init', $i18n, 'load_textdomain' );
 		$this->loader->add_action( 'wp_ajax_checkflow_set_admin_locale', $i18n, 'ajax_set_admin_locale' );
@@ -54,6 +56,8 @@ final class CheckFlow {
 		$this->loader->add_filter( 'admin_body_class', $admin, 'body_class' );
 		$this->loader->add_action( 'wp_ajax_checkflow_toggle_setting', $admin, 'ajax_toggle_setting' );
 		$this->loader->add_action( 'wp_ajax_checkflow_get_stats', $admin, 'ajax_get_stats' );
+		$this->loader->add_action( 'wp_ajax_checkflow_save_checkout_fields', $field_editor, 'ajax_save_fields' );
+		$this->loader->add_action( 'wp_ajax_checkflow_reset_checkout_fields', $field_editor, 'ajax_reset_fields' );
 
 		$this->loader->add_action( 'admin_init', $this, 'maybe_show_wc_notice' );
 		$this->loader->add_action( 'admin_notices', $this, 'render_wc_notice' );
@@ -76,6 +80,7 @@ final class CheckFlow {
 		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_place_order', $ajax, 'place_order' );
 
 		$this->loader->add_filter( 'woocommerce_checkout_cart_item_quantity', $checkout, 'render_checkout_quantity', 10, 3 );
+		$this->loader->add_filter( 'woocommerce_checkout_fields', $field_editor, 'apply_checkout_fields', 20 );
 		$this->loader->add_filter( 'woocommerce_add_to_cart_redirect', $checkout, 'maybe_direct_checkout_redirect', 20 );
 		$this->loader->add_filter( 'option_woocommerce_enable_guest_checkout', $checkout, 'filter_guest_checkout_option', 20 );
 		$this->loader->add_filter( 'woocommerce_checkout_registration_required', $checkout, 'filter_checkout_registration_required', 20 );

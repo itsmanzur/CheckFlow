@@ -169,6 +169,7 @@ final class CheckFlow_Admin {
 				),
 				'chartVals'     => array( 38, 55, 42, 71, 63, 88, 47 ),
 				'adminPageBase' => admin_url( 'admin.php?page=' . self::PAGE_SLUG ),
+				'fieldEditor'   => class_exists( 'CheckFlow_Field_Editor' ) ? CheckFlow_Field_Editor::instance()->get_admin_rows() : array(),
 			)
 		);
 		wp_enqueue_script( 'checkflow-admin' );

@@ -47,6 +47,7 @@ $st_map = array(
 
 $str_keys       = $i18n->get_flat_keys_sorted();
 $quick_settings = CheckFlow_Admin::instance()->get_quick_settings();
+$field_rows     = class_exists( 'CheckFlow_Field_Editor' ) ? CheckFlow_Field_Editor::instance()->get_admin_rows() : array();
 $page_to_pane   = array(
 	'checkflow-dashboard'    => 'dashboard',
 	'checkflow-orders'       => 'orders',
@@ -429,9 +430,52 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 			</div>
 
 			<div class="cf-pane<?php echo esc_attr( $screen_class( 'field_editor' ) ); ?>" data-pane="field_editor">
-				<div class="g2">
-					<div class="panel"><div class="ph"><div class="pt">Available fields</div><div class="pa">20+ types</div></div><div class="pb"><div class="cf-module-grid"><div class="cf-builder-row">Text</div><div class="cf-builder-row">Email</div><div class="cf-builder-row">Phone</div><div class="cf-builder-row">Select</div><div class="cf-builder-row">Checkbox</div><div class="cf-builder-row">Delivery note</div></div></div></div>
-					<div class="panel"><div class="ph"><div class="pt">Checkout preview</div><div class="pa">Bangladesh Standard</div></div><div class="pb"><div class="cf-module-list"><div><strong>Contact info</strong><span>Email, name, phone</span></div><div><strong>Shipping address</strong><span>District, zone, area</span></div><div><strong>Payment method</strong><span>bKash, Nagad, COD</span></div><div><strong>Courier choice</strong><span>Pathao, RedX, SteadFast</span></div></div></div></div>
+				<div class="panel">
+					<div class="ph"><div class="pt">Checkout field editor</div><div class="pa">WooCommerce safe</div></div>
+					<div class="pb">
+						<div class="cf-field-toolbar">
+							<p>Control labels, required state, visibility, and order for WooCommerce checkout core fields.</p>
+							<div class="cf-field-actions">
+								<button type="button" class="btn-p cf-save-fields">Save fields</button>
+								<button type="button" class="cf-btn-ghost cf-reset-fields">Reset</button>
+							</div>
+						</div>
+						<div class="cf-field-table-wrap">
+							<table class="cf-field-table">
+								<thead>
+									<tr>
+										<th>Field</th>
+										<th>Label</th>
+										<th>Group</th>
+										<th>Sort</th>
+										<th>Show</th>
+										<th>Required</th>
+									</tr>
+								</thead>
+								<tbody>
+									<?php foreach ( $field_rows as $field ) : ?>
+										<?php
+										$key       = isset( $field['key'] ) ? (string) $field['key'] : '';
+										$locked    = ! empty( $field['protected'] );
+										$enabled   = ! empty( $field['enabled'] ) || $locked;
+										$required  = ! empty( $field['required'] );
+										$group     = isset( $field['group'] ) ? (string) $field['group'] : '';
+										$label     = isset( $field['label'] ) ? (string) $field['label'] : $key;
+										$priority  = isset( $field['priority'] ) ? absint( $field['priority'] ) : 10;
+										?>
+										<tr class="cf-field-row" data-field-key="<?php echo esc_attr( $key ); ?>" data-protected="<?php echo $locked ? '1' : '0'; ?>">
+											<td><strong><?php echo esc_html( $key ); ?></strong><?php echo $locked ? '<span>Locked</span>' : ''; ?></td>
+											<td><input type="text" class="cf-field-label" value="<?php echo esc_attr( $label ); ?>" /></td>
+											<td><em><?php echo esc_html( ucfirst( $group ) ); ?></em></td>
+											<td><input type="number" class="cf-field-priority" min="1" max="999" value="<?php echo esc_attr( (string) $priority ); ?>" /></td>
+											<td><input type="checkbox" class="cf-field-enabled" <?php checked( $enabled ); ?> <?php disabled( $locked ); ?> /></td>
+											<td><input type="checkbox" class="cf-field-required" <?php checked( $required ); ?> /></td>
+										</tr>
+									<?php endforeach; ?>
+								</tbody>
+							</table>
+						</div>
+					</div>
 				</div>
 			</div>
 
