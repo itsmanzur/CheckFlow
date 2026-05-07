@@ -296,6 +296,7 @@ final class CheckFlow_Admin {
 		return array(
 			'direct_checkout' => true,
 			'popup_checkout'  => true,
+			'slide_checkout'  => false,
 			'order_bump'      => true,
 			'urgency_timer'   => false,
 			'recaptcha'       => true,

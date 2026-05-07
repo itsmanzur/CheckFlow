@@ -146,8 +146,9 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
   - `urgency_timer`: implemented as a checkout countdown module controlled by the setting.
   - `order_bump`: implemented as a configured-product engine; it only renders when `checkflow_order_bump_product_id` option/filter supplies a purchasable product.
   - `popup_checkout`: implemented as a storefront add-to-cart modal with checkout/cart/continue actions; it does not hijack final payment submission.
+  - `slide_checkout`: implemented as a storefront side drawer. Conflict rule: Popup Checkout has priority; Slide-in Checkout runs only when Popup Checkout is off.
   - `recaptcha`: implemented for classic checkout when site/secret keys are configured via options or filters; with no keys it is a safe no-op and does not block orders.
-- Popup modal checkout and slide-in panel checkout are not implemented.
+- Popup modal checkout and slide-in panel checkout are implemented as add-to-cart conversion modules, not final payment submission replacements.
 - Direct checkout/skip cart is implemented and browser-verified by manual QA.
 - Field editor is not implemented.
 - Template system is not implemented.
@@ -206,8 +207,8 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [x] Map Quick Settings to first-pass feature behavior: Direct Checkout, Guest Checkout, Urgency Timer.
 - [x] Wire Order Bump quick setting to a configured-product AJAX add-to-cart engine.
 - [x] Add popup modal checkout.
+- [x] Add slide-in checkout.
 - [x] Add reCAPTCHA v3 module contract with safe no-op when keys are missing.
-- [ ] Add slide-in checkout.
 - [ ] Persist settings for popup/trust badge behavior.
 
 ### Milestone D - Analytics Foundation

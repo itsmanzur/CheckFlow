@@ -379,6 +379,57 @@ html.checkflow-popup-open {
 	line-height: 1.45;
 }
 
+.checkflow-popup-checkout__summary {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 0 0 16px;
+	padding: 12px;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	background: #f9fafb;
+}
+
+.checkflow-popup-checkout__status {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	flex: 0 0 auto;
+	border-radius: 50%;
+	background: #ecfdf5;
+}
+
+.checkflow-popup-checkout__status::before {
+	content: "";
+	width: 12px;
+	height: 7px;
+	border-left: 2px solid #059669;
+	border-bottom: 2px solid #059669;
+	transform: rotate(-45deg) translate(1px, -1px);
+}
+
+.checkflow-popup-checkout__summary b,
+.checkflow-popup-checkout__summary small {
+	display: block;
+	letter-spacing: 0;
+}
+
+.checkflow-popup-checkout__summary b {
+	color: #111827;
+	font-size: 13px;
+	line-height: 1.35;
+}
+
+.checkflow-popup-checkout__summary small {
+	margin-top: 2px;
+	color: #6b7280;
+	font-size: 12px;
+	line-height: 1.35;
+}
+
 .checkflow-popup-checkout__actions {
 	display: grid;
 	gap: 8px;
@@ -430,6 +481,46 @@ html.checkflow-popup-open {
 	color: #4b5563;
 }
 
+.checkflow-popup-checkout--slide .checkflow-popup-checkout__backdrop {
+	background: rgba(15, 23, 42, 0.32);
+}
+
+.checkflow-popup-checkout--slide .checkflow-popup-checkout__panel {
+	display: flex;
+	flex-direction: column;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: min(420px, 100vw);
+	height: 100vh;
+	height: 100dvh;
+	max-height: 100vh;
+	max-height: 100dvh;
+	padding: 26px 22px max(22px, env(safe-area-inset-bottom));
+	border-width: 0 0 0 1px;
+	border-radius: 0;
+	box-shadow: -24px 0 70px rgba(15, 23, 42, 0.22);
+	transform: translateX(100%);
+	opacity: 1;
+	box-sizing: border-box;
+	overflow-y: auto;
+	overflow-x: hidden;
+	overscroll-behavior: contain;
+}
+
+.checkflow-popup-checkout--slide.is-open .checkflow-popup-checkout__panel {
+	transform: translateX(0);
+	opacity: 1;
+}
+
+.checkflow-popup-checkout--slide .checkflow-popup-checkout__actions {
+	position: sticky;
+	bottom: 0;
+	margin-top: auto;
+	padding-top: 18px;
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 18px);
+}
+
 @media (max-width: 600px) {
 	.checkflow-popup-checkout__panel {
 		right: 12px;
@@ -437,6 +528,29 @@ html.checkflow-popup-open {
 		left: 12px;
 		width: auto;
 		padding: 20px;
+	}
+
+	.checkflow-popup-checkout--slide .checkflow-popup-checkout__panel {
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: auto;
+		width: min(360px, 94vw);
+		padding: 22px 18px max(18px, env(safe-area-inset-bottom));
+	}
+
+	.checkflow-popup-checkout--slide .checkflow-popup-checkout__panel strong {
+		font-size: 20px;
+	}
+
+	.checkflow-popup-checkout--slide .checkflow-popup-checkout__panel p {
+		margin-bottom: 14px;
+	}
+
+	.checkflow-popup-checkout--slide .checkflow-popup-checkout__primary,
+	.checkflow-popup-checkout--slide .checkflow-popup-checkout__secondary,
+	.checkflow-popup-checkout--slide .checkflow-popup-checkout__link {
+		min-height: 50px;
 	}
 }
 

@@ -14,12 +14,19 @@
 		return (checkflowStorefront.strings && checkflowStorefront.strings[key]) || fallback;
 	}
 
+	function mode() {
+		return checkflowStorefront.mode === "slide" ? "slide" : "popup";
+	}
+
 	function ensureDrawer() {
 		if (drawer) {
 			return drawer;
 		}
+		var displayMode = mode();
+		var title = displayMode === "slide" ? strings("slideTitle", "Cart updated") : strings("title", "Added to cart");
+		var description = displayMode === "slide" ? strings("slideDesc", "Your item was added successfully.") : strings("description", "Your item is ready. Choose your next step.");
 		drawer = document.createElement("div");
-		drawer.className = "checkflow-popup-checkout";
+		drawer.className = "checkflow-popup-checkout checkflow-popup-checkout--" + displayMode;
 		drawer.setAttribute("role", "dialog");
 		drawer.setAttribute("aria-modal", "true");
 		drawer.setAttribute("aria-hidden", "true");
@@ -29,8 +36,12 @@
 			'<div class="checkflow-popup-checkout__backdrop" data-checkflow-popup-close></div>' +
 			'<div class="checkflow-popup-checkout__panel">' +
 			'<button type="button" class="checkflow-popup-checkout__close" data-checkflow-popup-close aria-label="Close"><span aria-hidden="true"></span></button>' +
-			'<strong id="checkflow-popup-title">' + strings("title", "Added to cart") + '</strong>' +
-			'<p id="checkflow-popup-desc">' + strings("description", "Your item is ready. Choose your next step.") + '</p>' +
+			'<strong id="checkflow-popup-title">' + title + '</strong>' +
+			'<p id="checkflow-popup-desc">' + description + '</p>' +
+			'<div class="checkflow-popup-checkout__summary" aria-hidden="true">' +
+			'<span class="checkflow-popup-checkout__status"></span>' +
+			'<span><b>' + strings("summaryTitle", "Ready for checkout") + '</b><small>' + strings("summaryDesc", "Review your cart or continue shopping.") + '</small></span>' +
+			"</div>" +
 			'<div class="checkflow-popup-checkout__actions">' +
 			'<a class="checkflow-popup-checkout__primary" href="' + checkflowStorefront.checkoutUrl + '">' + strings("checkout", "Checkout now") + '</a>' +
 			'<a class="checkflow-popup-checkout__secondary" href="' + checkflowStorefront.cartUrl + '">' + strings("cart", "View cart") + '</a>' +

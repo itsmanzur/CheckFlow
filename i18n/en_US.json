@@ -127,6 +127,8 @@
   "qs.direct_desc": "Skip cart after add to cart",
   "qs.popup_title": "Popup Checkout",
   "qs.popup_desc": "Buy without leaving the page",
+  "qs.slide_title": "Slide-in Checkout",
+  "qs.slide_desc": "Open a side cart after add to cart",
   "qs.bump_title": "Order Bump",
   "qs.bump_desc": "Show extra offers",
   "qs.timer_title": "Urgency Timer",

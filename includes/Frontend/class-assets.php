@@ -34,9 +34,17 @@ final class CheckFlow_Frontend_Assets {
 		$is_checkout_page  = function_exists( 'is_checkout' ) && is_checkout();
 		$is_order_received = function_exists( 'is_order_received_page' ) && is_order_received_page();
 		$is_checkout       = $is_checkout_page && ! $is_order_received;
-		$needs_popup       = ! empty( $settings['popup_checkout'] ) && ! $is_checkout_page;
+		$storefront_mode   = '';
 
-		if ( ! $is_checkout && ! $needs_popup ) {
+		if ( ! $is_checkout_page ) {
+			if ( ! empty( $settings['popup_checkout'] ) ) {
+				$storefront_mode = 'popup';
+			} elseif ( ! empty( $settings['slide_checkout'] ) ) {
+				$storefront_mode = 'slide';
+			}
+		}
+
+		if ( ! $is_checkout && '' === $storefront_mode ) {
 			return;
 		}
 
@@ -52,7 +60,7 @@ final class CheckFlow_Frontend_Assets {
 			$checkout_css_version
 		);
 
-		if ( $needs_popup ) {
+		if ( '' !== $storefront_mode ) {
 			wp_enqueue_script(
 				'checkflow-storefront',
 				CHECKFLOW_URL . 'public/js/checkflow-storefront.js',
@@ -66,9 +74,14 @@ final class CheckFlow_Frontend_Assets {
 				array(
 					'cartUrl'     => function_exists( 'wc_get_cart_url' ) ? wc_get_cart_url() : home_url( '/cart/' ),
 					'checkoutUrl' => function_exists( 'wc_get_checkout_url' ) ? wc_get_checkout_url() : home_url( '/checkout/' ),
+					'mode'        => $storefront_mode,
 					'strings'     => array(
 						'title'       => __( 'Added to cart', 'checkflow' ),
 						'description' => __( 'Your item is ready. Choose your next step.', 'checkflow' ),
+						'slideTitle'  => __( 'Cart updated', 'checkflow' ),
+						'slideDesc'   => __( 'Your item was added successfully.', 'checkflow' ),
+						'summaryTitle' => __( 'Ready for checkout', 'checkflow' ),
+						'summaryDesc' => __( 'Review your cart or continue shopping.', 'checkflow' ),
 						'checkout'    => __( 'Checkout now', 'checkflow' ),
 						'cart'        => __( 'View cart', 'checkflow' ),
 						'continue'    => __( 'Continue shopping', 'checkflow' ),

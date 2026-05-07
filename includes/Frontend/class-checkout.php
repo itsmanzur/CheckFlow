@@ -230,7 +230,7 @@ final class CheckFlow_Frontend_Checkout {
 		}
 
 		$settings = CheckFlow_Admin::instance()->get_quick_settings();
-		if ( empty( $settings['direct_checkout'] ) || ! empty( $settings['popup_checkout'] ) ) {
+		if ( empty( $settings['direct_checkout'] ) || ! empty( $settings['popup_checkout'] ) || ! empty( $settings['slide_checkout'] ) ) {
 			return;
 		}
 

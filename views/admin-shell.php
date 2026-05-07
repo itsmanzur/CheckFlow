@@ -341,6 +341,10 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 										<div class="tgl<?php echo esc_attr( $toggle_class( 'popup_checkout' ) ); ?>" data-setting="popup_checkout" role="switch" aria-checked="<?php echo ! empty( $quick_settings['popup_checkout'] ) ? 'true' : 'false'; ?>" tabindex="0"></div>
 									</div>
 									<div class="srow">
+										<div class="sinf"><div class="sn"><?php echo esc_html( checkflow_str( 'qs.slide_title' ) ); ?></div><div class="sd"><?php echo esc_html( checkflow_str( 'qs.slide_desc' ) ); ?></div></div>
+										<div class="tgl<?php echo esc_attr( $toggle_class( 'slide_checkout' ) ); ?>" data-setting="slide_checkout" role="switch" aria-checked="<?php echo ! empty( $quick_settings['slide_checkout'] ) ? 'true' : 'false'; ?>" tabindex="0"></div>
+									</div>
+									<div class="srow">
 										<div class="sinf"><div class="sn"><?php echo esc_html( checkflow_str( 'qs.bump_title' ) ); ?></div><div class="sd"><?php echo esc_html( checkflow_str( 'qs.bump_desc' ) ); ?></div></div>
 										<div class="tgl<?php echo esc_attr( $toggle_class( 'order_bump' ) ); ?>" data-setting="order_bump" role="switch" aria-checked="<?php echo ! empty( $quick_settings['order_bump'] ) ? 'true' : 'false'; ?>" tabindex="0"></div>
 									</div>
