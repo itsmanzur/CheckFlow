@@ -1,7 +1,6 @@
 /* CheckFlow admin — scoped to match CheckFlow_Admin_Panel.html */
-html.checkflow-admin-html,
-html.wp-toolbar:has(body.checkflow-admin-screen) {
-	padding-top: 0;
+html.checkflow-admin-html {
+	background: #0c0e14;
 }
 
 body.checkflow-admin-screen {
@@ -9,10 +8,6 @@ body.checkflow-admin-screen {
 	overflow: hidden;
 }
 
-body.checkflow-admin-screen #adminmenumain,
-body.checkflow-admin-screen #adminmenuwrap,
-body.checkflow-admin-screen #adminmenuback,
-body.checkflow-admin-screen #wpadminbar,
 body.checkflow-admin-screen #wpfooter,
 body.checkflow-admin-screen .notice,
 body.checkflow-admin-screen .update-nag,
@@ -21,17 +16,11 @@ body.checkflow-admin-screen .error {
 	display: none !important;
 }
 
-body.checkflow-admin-screen #wpwrap,
 body.checkflow-admin-screen #wpcontent,
 body.checkflow-admin-screen #wpbody,
 body.checkflow-admin-screen #wpbody-content {
-	margin: 0 !important;
 	padding: 0 !important;
 	background: #0c0e14;
-}
-
-body.checkflow-admin-screen #wpcontent {
-	margin-left: 0 !important;
 }
 
 body.checkflow-admin-screen #wpbody-content {
@@ -98,7 +87,8 @@ body.checkflow-admin-screen #wpbody-content {
 	font-family: var(--font);
 	background: var(--bg);
 	color: var(--tx);
-	min-height: 100vh;
+	height: calc(100vh - 32px);
+	min-height: 0;
 	overflow: hidden;
 	display: flex;
 	font-size: 14px;
@@ -107,12 +97,15 @@ body.checkflow-admin-screen #wpbody-content {
 
 #checkflow-admin.checkflow-root .sb {
 	width: 220px;
-	min-height: 100vh;
+	height: calc(100vh - 32px);
+	min-height: 0;
 	background: var(--s1);
 	border-right: 1px solid var(--bd);
 	display: flex;
 	flex-direction: column;
 	flex-shrink: 0;
+	position: sticky;
+	top: 0;
 }
 
 #checkflow-admin.checkflow-root .logo {
@@ -259,7 +252,9 @@ body.checkflow-admin-screen #wpbody-content {
 
 #checkflow-admin.checkflow-root .main {
 	flex: 1;
-	overflow-y: auto;
+	min-width: 0;
+	min-height: 0;
+	overflow: hidden;
 	display: flex;
 	flex-direction: column;
 }
@@ -406,8 +401,12 @@ body.checkflow-admin-screen #wpbody-content {
 }
 
 #checkflow-admin.checkflow-root .cnt {
-	padding: 22px 24px;
+	padding: 22px 24px 32px;
 	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	scrollbar-gutter: stable;
 }
 
 #checkflow-admin.checkflow-root .sg {
@@ -867,31 +866,87 @@ body.checkflow-admin-screen #wpbody-content {
 	color: var(--tx3);
 }
 #checkflow-admin.checkflow-root .tgl {
-	width: 32px;
-	height: 18px;
-	border-radius: 9px;
-	background: var(--s3);
+	width: 54px;
+	height: 26px;
+	border: 1px solid var(--bd2);
+	border-radius: 999px;
+	background: #1f2432;
 	position: relative;
 	cursor: pointer;
-	transition: background 0.2s;
+	transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, opacity 0.2s;
 	flex-shrink: 0;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 #checkflow-admin.checkflow-root .tgl.on {
-	background: var(--pr);
+	background: linear-gradient(135deg, var(--pr), var(--pr2));
+	border-color: rgba(79, 139, 255, 0.7);
+	box-shadow: 0 0 0 3px rgba(79, 139, 255, 0.12);
+}
+#checkflow-admin.checkflow-root .tgl.is-saving {
+	opacity: 0.62;
+	pointer-events: none;
+}
+#checkflow-admin.checkflow-root .tgl::before {
+	content: "OFF";
+	position: absolute;
+	top: 50%;
+	right: 7px;
+	transform: translateY(-50%);
+	z-index: 1;
+	color: var(--tx3);
+	font-size: 9px;
+	font-weight: 800;
+	line-height: 1;
+	letter-spacing: 0;
+}
+#checkflow-admin.checkflow-root .tgl.on::before {
+	content: "ON";
+	left: 8px;
+	right: auto;
+	color: #fff;
 }
 #checkflow-admin.checkflow-root .tgl::after {
 	content: "";
 	position: absolute;
-	top: 2px;
-	left: 2px;
-	width: 14px;
-	height: 14px;
+	top: 3px;
+	left: 3px;
+	z-index: 2;
+	width: 18px;
+	height: 18px;
 	border-radius: 50%;
 	background: #fff;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.28);
 	transition: transform 0.2s;
 }
 #checkflow-admin.checkflow-root .tgl.on::after {
-	transform: translateX(14px);
+	transform: translateX(28px);
+}
+
+#checkflow-admin.checkflow-root .cf-toast {
+	position: fixed;
+	right: 24px;
+	bottom: 24px;
+	z-index: 100002;
+	max-width: min(320px, calc(100vw - 32px));
+	padding: 11px 14px;
+	border: 1px solid rgba(47, 205, 133, 0.35);
+	border-radius: 10px;
+	background: rgba(16, 24, 31, 0.96);
+	box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+	color: var(--tx);
+	font-size: 12px;
+	font-weight: 700;
+	opacity: 0;
+	transform: translateY(8px);
+	transition: opacity 0.18s ease, transform 0.18s ease;
+}
+#checkflow-admin.checkflow-root .cf-toast.is-visible {
+	opacity: 1;
+	transform: translateY(0);
+}
+#checkflow-admin.checkflow-root .cf-toast.is-error {
+	border-color: rgba(255, 89, 89, 0.42);
+	color: #ffdede;
 }
 
 #checkflow-admin.checkflow-root .blist {
@@ -1181,10 +1236,18 @@ body.checkflow-admin-screen #wpbody-content {
 	#checkflow-admin.checkflow-root {
 		display: block;
 		overflow: auto;
+		height: auto;
+		min-height: 100vh;
 	}
 	#checkflow-admin.checkflow-root .sb {
 		width: 100%;
+		height: auto;
 		min-height: auto;
+		position: static;
+	}
+	#checkflow-admin.checkflow-root .main {
+		min-height: auto;
+		overflow: visible;
 	}
 	#checkflow-admin.checkflow-root .nav {
 		display: grid;
@@ -1204,6 +1267,7 @@ body.checkflow-admin-screen #wpbody-content {
 	}
 	#checkflow-admin.checkflow-root .cnt {
 		padding: 16px;
+		overflow: visible;
 	}
 	#checkflow-admin.checkflow-root .sg,
 	#checkflow-admin.checkflow-root .cf-template-grid,

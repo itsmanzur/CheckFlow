@@ -333,6 +333,10 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 							<div class="pb">
 								<div class="slist">
 									<div class="srow">
+										<div class="sinf"><div class="sn"><?php echo esc_html( checkflow_str( 'qs.direct_title' ) ); ?></div><div class="sd"><?php echo esc_html( checkflow_str( 'qs.direct_desc' ) ); ?></div></div>
+										<div class="tgl<?php echo esc_attr( $toggle_class( 'direct_checkout' ) ); ?>" data-setting="direct_checkout" role="switch" aria-checked="<?php echo ! empty( $quick_settings['direct_checkout'] ) ? 'true' : 'false'; ?>" tabindex="0"></div>
+									</div>
+									<div class="srow">
 										<div class="sinf"><div class="sn"><?php echo esc_html( checkflow_str( 'qs.popup_title' ) ); ?></div><div class="sd"><?php echo esc_html( checkflow_str( 'qs.popup_desc' ) ); ?></div></div>
 										<div class="tgl<?php echo esc_attr( $toggle_class( 'popup_checkout' ) ); ?>" data-setting="popup_checkout" role="switch" aria-checked="<?php echo ! empty( $quick_settings['popup_checkout'] ) ? 'true' : 'false'; ?>" tabindex="0"></div>
 									</div>

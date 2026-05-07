@@ -52,8 +52,57 @@
 		}
 	}
 
+	function showToast(message, type) {
+		var root = document.getElementById("checkflow-admin");
+		if (!root) return;
+		var toast = root.querySelector(".cf-toast");
+		if (!toast) {
+			toast = document.createElement("div");
+			toast.className = "cf-toast";
+			toast.setAttribute("role", "status");
+			toast.setAttribute("aria-live", "polite");
+			root.appendChild(toast);
+		}
+		toast.textContent = message;
+		toast.classList.toggle("is-error", type === "error");
+		toast.classList.remove("is-visible");
+		window.clearTimeout(toast._cfTimer);
+		window.setTimeout(function () {
+			toast.classList.add("is-visible");
+		}, 10);
+		toast._cfTimer = window.setTimeout(function () {
+			toast.classList.remove("is-visible");
+		}, 2200);
+	}
+
+	function settingLabel(setting) {
+		return (setting || "setting")
+			.replace(/_/g, " ")
+			.replace(/\b\w/g, function (m) {
+				return m.toUpperCase();
+			});
+	}
+
+	function getAdminAjaxUrl() {
+		if (!window.checkflowAdmin || !checkflowAdmin.ajaxUrl) {
+			return "";
+		}
+
+		try {
+			var url = new URL(checkflowAdmin.ajaxUrl, window.location.href);
+			if (url.origin !== window.location.origin && window.location.pathname.indexOf("/wp-admin/") === 0) {
+				url.protocol = window.location.protocol;
+				url.host = window.location.host;
+			}
+			return url.toString();
+		} catch (e) {
+			return checkflowAdmin.ajaxUrl;
+		}
+	}
+
 	function toggleSetting(el) {
-		if (!window.checkflowAdmin || !checkflowAdmin.ajaxUrl) return;
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl) return;
 		var setting = el.getAttribute("data-setting");
 		if (!setting) {
 			var localNext = !el.classList.contains("on");
@@ -69,7 +118,7 @@
 		el.setAttribute("aria-checked", next ? "true" : "false");
 
 		$.ajax({
-			url: checkflowAdmin.ajaxUrl,
+			url: ajaxUrl,
 			method: "POST",
 			dataType: "json",
 			data: {
@@ -83,11 +132,18 @@
 				if (!res || !res.success) {
 					el.classList.toggle("on", !next);
 					el.setAttribute("aria-checked", !next ? "true" : "false");
+					showToast("Could not save " + settingLabel(setting), "error");
+					return;
 				}
+				if (checkflowAdmin.settings) {
+					checkflowAdmin.settings[setting] = next;
+				}
+				showToast(settingLabel(setting) + (next ? " is ON" : " is OFF"));
 			})
 			.fail(function () {
 				el.classList.toggle("on", !next);
 				el.setAttribute("aria-checked", !next ? "true" : "false");
+				showToast("Could not save " + settingLabel(setting), "error");
 			})
 			.always(function () {
 				el.classList.remove("is-saving");
@@ -95,9 +151,10 @@
 	}
 
 	function refreshStats(period) {
-		if (!window.checkflowAdmin || !checkflowAdmin.ajaxUrl) return;
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl) return;
 		$.ajax({
-			url: checkflowAdmin.ajaxUrl,
+			url: ajaxUrl,
 			method: "POST",
 			dataType: "json",
 			data: {
@@ -114,11 +171,12 @@
 	}
 
 	function persistLocale(locale) {
-		if (!window.checkflowAdmin || !checkflowAdmin.ajaxUrl) {
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl) {
 			return;
 		}
 		$.ajax({
-			url: checkflowAdmin.ajaxUrl,
+			url: ajaxUrl,
 			method: "POST",
 			dataType: "json",
 			data: {
@@ -144,11 +202,12 @@
 	}
 
 	function saveOverrides(targetLocale, btnEl) {
-		if (!window.checkflowAdmin || !checkflowAdmin.ajaxUrl) return;
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl) return;
 		var $btn = $(btnEl);
 		$btn.prop("disabled", true);
 		$.ajax({
-			url: checkflowAdmin.ajaxUrl,
+			url: ajaxUrl,
 			method: "POST",
 			dataType: "json",
 			data: {

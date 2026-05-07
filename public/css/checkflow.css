@@ -8,13 +8,18 @@
 	--cf-font: -apple-system, "Segoe UI", sans-serif;
 }
 
+.woocommerce-checkout {
+	background: #fff;
+	color: #111827;
+}
+
 .woocommerce-checkout .woocommerce {
 	font-family: var(--cf-font);
 }
 
 /* Flat intro — no faux card; aligns with page/checkout flow like common commerce UIs */
 .checkflow-shell-intro {
-	margin: 0 0 12px;
+	margin: 0 0 32px;
 	padding: 0;
 	border: 0;
 	border-radius: 0;
@@ -25,10 +30,10 @@
 
 .checkflow-shell-intro h2 {
 	margin: 0 0 2px;
-	font-size: clamp(1.125rem, 2.5vw, 1.25rem);
+	font-size: 22px;
 	font-weight: 600;
 	line-height: 1.35;
-	letter-spacing: -0.01em;
+	letter-spacing: 0;
 	color: #111827;
 }
 
@@ -37,6 +42,91 @@
 	color: #6b7280;
 	font-size: 0.8125rem;
 	line-height: 1.45;
+}
+
+.checkflow-stepper {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0 0 14px;
+	padding: 8px;
+	border: 1px solid #e5e7eb;
+	border-radius: var(--cf-radius);
+	background: #fff;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.checkflow-step {
+	appearance: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 34px;
+	padding: 0 12px;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	background: #f3f4f6;
+	color: #374151;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.checkflow-step:hover,
+.checkflow-step:focus-visible {
+	border-color: #bfdbfe;
+	background: #eff6ff;
+	color: var(--cf-primary-dark);
+	outline: none;
+}
+
+.checkflow-step.is-active {
+	border-color: var(--cf-primary);
+	background: var(--cf-primary);
+	color: #fff;
+}
+
+.checkflow-checkout-error {
+	margin: 0 0 12px;
+	padding: 10px 12px;
+	border: 1px solid #fecaca;
+	border-radius: 6px;
+	background: #fef2f2;
+	color: #991b1b;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+.checkflow-is-busy #order_review {
+	opacity: 0.72;
+	pointer-events: none;
+}
+
+.checkflow-is-busy .wc-block-checkout__sidebar,
+.checkflow-is-busy .wc-block-components-sidebar,
+.checkflow-is-busy [data-checkflow-summary="1"] {
+	opacity: 0.72;
+	pointer-events: none;
+}
+
+.woocommerce-checkout .wp-block-woocommerce-checkout,
+.woocommerce-checkout .wc-block-checkout {
+	font-family: var(--cf-font);
+}
+
+.woocommerce-checkout .wc-block-components-sidebar,
+.woocommerce-checkout .wc-block-checkout__sidebar {
+	border-radius: var(--cf-radius);
+}
+
+.woocommerce-checkout .wc-block-components-title,
+.woocommerce-checkout .wc-block-components-checkout-step__title {
+	letter-spacing: 0;
+}
+
+.woocommerce-checkout .wc-block-components-button:not(.is-link) {
+	letter-spacing: 0;
 }
 
 .woocommerce-checkout .col2-set {
@@ -73,17 +163,323 @@
 	flex-wrap: wrap;
 	gap: 8px;
 	margin-top: 12px;
+	align-items: center;
 }
 
 .checkflow-trust-badges .badge {
 	display: inline-flex;
 	align-items: center;
+	gap: 6px;
 	padding: 5px 10px;
 	background: #f3f4f6;
 	border: 1px solid #e5e7eb;
 	border-radius: 999px;
 	font-size: 12px;
 	color: #111827;
+}
+
+.checkflow-trust-badges--sidebar {
+	justify-content: center;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.checkflow-trust-badges-slot {
+	display: block;
+	width: 100%;
+	margin-top: 8px;
+	padding: 0 16px;
+	box-sizing: border-box;
+}
+
+.checkflow-checkout-modules-slot {
+	display: grid;
+	gap: 10px;
+	width: 100%;
+	margin-top: 10px;
+	padding: 0 16px;
+	box-sizing: border-box;
+}
+
+.checkflow-checkout-modules {
+	display: grid;
+	gap: 10px;
+	width: 100%;
+}
+
+.checkflow-urgency-timer {
+	border: 1px solid #e5e7eb;
+	border-radius: var(--cf-radius);
+	background: #fff;
+	color: #111827;
+	box-sizing: border-box;
+}
+
+.checkflow-urgency-timer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px;
+	background: #fffbeb;
+	border-color: #fde68a;
+}
+
+.checkflow-urgency-timer span {
+	font-size: 12px;
+	font-weight: 600;
+	color: #92400e;
+}
+
+.checkflow-urgency-timer strong {
+	font-size: 16px;
+	font-weight: 800;
+	color: #111827;
+	letter-spacing: 0;
+}
+
+.checkflow-order-bump-module {
+	padding: 12px;
+	border: 1px solid #dbeafe;
+	border-radius: var(--cf-radius);
+	background: #eff6ff;
+	box-sizing: border-box;
+}
+
+.checkflow-order-bump-module label {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	margin: 0;
+	cursor: pointer;
+}
+
+.checkflow-order-bump-module input {
+	margin-top: 2px;
+}
+
+.checkflow-order-bump-module strong,
+.checkflow-order-bump-module em {
+	display: block;
+	font-style: normal;
+	letter-spacing: 0;
+}
+
+.checkflow-order-bump-module strong {
+	font-size: 13px;
+	color: #111827;
+}
+
+.checkflow-order-bump-module em {
+	margin-top: 2px;
+	font-size: 12px;
+	line-height: 1.35;
+	color: #1d4ed8;
+}
+
+.checkflow-popup-checkout {
+	position: fixed;
+	inset: 0;
+	z-index: 99999;
+	display: none;
+	pointer-events: none;
+	font-family: var(--cf-font);
+}
+
+.checkflow-popup-checkout.is-open {
+	display: block;
+	pointer-events: auto;
+}
+
+html.checkflow-popup-open {
+	overflow: hidden;
+}
+
+.checkflow-popup-checkout__backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(15, 23, 42, 0.46);
+	backdrop-filter: blur(1px);
+}
+
+.checkflow-popup-checkout__panel {
+	position: absolute;
+	right: 20px;
+	bottom: 20px;
+	width: min(420px, calc(100vw - 40px));
+	padding: 22px;
+	border: 1px solid #e5e7eb;
+	border-radius: 12px;
+	background: #fff;
+	box-shadow: 0 22px 70px rgba(15, 23, 42, 0.24);
+	color: #111827;
+	transform: translateY(10px) scale(0.98);
+	opacity: 0;
+	transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.checkflow-popup-checkout.is-open .checkflow-popup-checkout__panel {
+	transform: translateY(0) scale(1);
+	opacity: 1;
+}
+
+.checkflow-popup-checkout__close {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	width: 32px;
+	height: 32px;
+	border: 0;
+	border-radius: 50%;
+	background: #f3f4f6;
+	color: #111827;
+	cursor: pointer;
+}
+
+.checkflow-popup-checkout__close:hover,
+.checkflow-popup-checkout__close:focus-visible {
+	background: #e5e7eb;
+	outline: none;
+}
+
+.checkflow-popup-checkout__close span::before,
+.checkflow-popup-checkout__close span::after {
+	content: "";
+	position: absolute;
+	top: 15px;
+	left: 9px;
+	width: 14px;
+	height: 2px;
+	border-radius: 999px;
+	background: #111827;
+}
+
+.checkflow-popup-checkout__close span::before {
+	transform: rotate(45deg);
+}
+
+.checkflow-popup-checkout__close span::after {
+	transform: rotate(-45deg);
+}
+
+.checkflow-popup-checkout__panel strong {
+	display: block;
+	padding-right: 34px;
+	font-size: 21px;
+	line-height: 1.25;
+	letter-spacing: 0;
+}
+
+.checkflow-popup-checkout__panel p {
+	margin: 8px 0 18px;
+	color: #6b7280;
+	font-size: 14px;
+	line-height: 1.45;
+}
+
+.checkflow-popup-checkout__actions {
+	display: grid;
+	gap: 8px;
+}
+
+.checkflow-popup-checkout__primary,
+.checkflow-popup-checkout__secondary,
+.checkflow-popup-checkout__link {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 52px;
+	border-radius: 8px;
+	font-size: 14px;
+	font-weight: 800;
+	text-decoration: none;
+	cursor: pointer;
+	transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+.checkflow-popup-checkout__primary:hover,
+.checkflow-popup-checkout__secondary:hover,
+.checkflow-popup-checkout__link:hover,
+.checkflow-popup-checkout__primary:focus-visible,
+.checkflow-popup-checkout__secondary:focus-visible,
+.checkflow-popup-checkout__link:focus-visible {
+	outline: none;
+	transform: translateY(-1px);
+}
+
+.checkflow-popup-checkout__primary {
+	background: #111827;
+	color: #fff;
+}
+
+.checkflow-popup-checkout__secondary {
+	border: 1px solid #d1d5db;
+	background: #fff;
+	color: #111827;
+}
+
+.checkflow-popup-checkout__secondary:hover {
+	border-color: #111827;
+}
+
+.checkflow-popup-checkout__link {
+	border: 0;
+	background: transparent;
+	color: #4b5563;
+}
+
+@media (max-width: 600px) {
+	.checkflow-popup-checkout__panel {
+		right: 12px;
+		bottom: 12px;
+		left: 12px;
+		width: auto;
+		padding: 20px;
+	}
+}
+
+.checkflow-badge-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: var(--cf-primary);
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1;
+	flex: 0 0 auto;
+}
+
+.checkflow-badge-icon::before {
+	content: "S";
+}
+
+.checkflow-badge-icon.is-lock::before {
+	content: "L";
+	font-size: 10px;
+}
+
+.checkflow-badge-icon.is-card {
+	background: #7c3aed;
+}
+
+.checkflow-badge-icon.is-card::before {
+	content: "P";
+	font-size: 13px;
+}
+
+.checkflow-badge-icon.is-truck {
+	background: #0f766e;
+}
+
+.checkflow-badge-icon.is-truck::before {
+	content: "D";
+	font-size: 12px;
 }
 
 .checkflow-coupon-notice-wrap {
@@ -112,6 +508,22 @@
 form.checkout_coupon input[name="coupon_code"].is-error {
 	border-color: var(--cf-error) !important;
 	box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2);
+}
+
+.woocommerce-checkout .checkflow-field-invalid,
+.woocommerce-checkout .checkflow-field-has-error input,
+.woocommerce-checkout .checkflow-field-has-error select,
+.woocommerce-checkout .checkflow-field-has-error textarea {
+	border-color: var(--cf-error) !important;
+	box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.18);
+}
+
+.checkflow-field-error {
+	display: block;
+	margin-top: 5px;
+	font-size: 12px;
+	line-height: 1.35;
+	color: var(--cf-error);
 }
 
 form.checkout_coupon button.is-loading,
@@ -186,10 +598,28 @@ tr.checkflow-coupon-removing td .woocommerce-Price-amount {
 }
 
 @media (max-width: 768px) {
+	.checkflow-stepper {
+		position: sticky;
+		top: 0;
+		z-index: 10;
+		margin-left: -4px;
+		margin-right: -4px;
+		overflow-x: auto;
+		flex-wrap: nowrap;
+	}
+
+	.checkflow-step {
+		flex: 0 0 auto;
+	}
+
 	.woocommerce-checkout .col2-set {
 		grid-template-columns: 1fr;
 	}
 	.woocommerce-checkout #order_review {
 		position: static;
+	}
+
+	.woocommerce-checkout .wc-block-components-button:not(.is-link) {
+		width: 100%;
 	}
 }

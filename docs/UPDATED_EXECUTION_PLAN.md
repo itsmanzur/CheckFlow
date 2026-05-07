@@ -109,7 +109,11 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - JSON i18n exists in `i18n/en_US.json` and `i18n/bn_BD.json`.
 - Per-user admin locale switch and string override editor exist.
 - WooCommerce inactive admin notice exists.
-- Frontend checkout has early quantity update, apply coupon, remove coupon AJAX.
+- Frontend checkout has quantity update, coupon apply/remove, field validation, shipping-method refresh, and guarded place-order AJAX handlers.
+- Frontend checkout now loads `public/js/checkflow.js` as a WooCommerce-compatible app layer with Alpine-compatible registration, vanilla fallback, and block-checkout detection.
+- Current checkout direction is to polish the existing WooCommerce checkout/block layout instead of replacing it with a custom template.
+- Checkout AJAX responses now use a consistent `success`, `data`, `message`, `errors` shape for CheckFlow-owned endpoints.
+- Checkout AJAX requests now have nonce validation, per-IP/session rate limiting, and WP_DEBUG security logging for invalid nonce/rate-limit events.
 - Trust badges and checkout shell intro are partially implemented.
 
 ### What Is Wrong / Incomplete
@@ -125,22 +129,26 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
   - CSS files are not in the Prompt 11 requested paths.
   - Several sections are dashboard stubs instead of real screens/submenus.
 - Admin stats, funnel, payments, couriers, pixels, recent orders are still mock/static data.
-- Quick setting toggles change only visually; they do not save via `wp_ajax_checkflow_toggle_setting`.
-- `checkflow_get_stats` AJAX does not exist.
+- Quick setting toggles now save via `wp_ajax_checkflow_toggle_setting`, but each setting still needs explicit feature wiring before it can be treated as production-complete.
+- `checkflow_get_stats` AJAX exists with mock fallback data.
 - Activator only stores plugin version; it does not create required DB tables:
   - `checkflow_analytics_events`
   - `checkflow_payment_logs`
   - `checkflow_tracking_events`
   - `checkflow_sales_performance`
-- AJAX checkout engine is partial:
-  - Missing `checkflow_validate_field`.
-  - Missing `checkflow_get_shipping_methods`.
-  - Missing `checkflow_place_order`.
-  - Missing rate limiting and suspicious activity logging.
-  - Response shape is normal WP JSON but not the roadmap's consistent `{success,data,message,errors}` contract.
-- Frontend checkout is not the full Alpine.js app from Prompt 9.
+- AJAX checkout engine first pass is implemented, but still needs full browser QA with real product/cart/payment scenarios.
+- `checkflow_place_order` delegates to WooCommerce checkout processing; final payment/order behavior must be tested with real gateways before release.
+- Frontend checkout app first pass exists and is now block-aware, but still needs real browser QA for the current WooCommerce Blocks checkout page.
+- Direct Checkout first pass is implemented with an admin quick setting, non-AJAX add-to-cart redirect, and AJAX add-to-cart redirect after WooCommerce confirms the cart add.
+- Quick Settings functional mapping status:
+  - `direct_checkout`: implemented; controls skip-cart redirect for non-AJAX and AJAX add-to-cart flows.
+  - `guest_checkout`: implemented; maps to WooCommerce native guest checkout/registration-required behavior.
+  - `urgency_timer`: implemented as a checkout countdown module controlled by the setting.
+  - `order_bump`: implemented as a configured-product engine; it only renders when `checkflow_order_bump_product_id` option/filter supplies a purchasable product.
+  - `popup_checkout`: implemented as a storefront add-to-cart modal with checkout/cart/continue actions; it does not hijack final payment submission.
+  - `recaptcha`: implemented for classic checkout when site/secret keys are configured via options or filters; with no keys it is a safe no-op and does not block orders.
 - Popup modal checkout and slide-in panel checkout are not implemented.
-- Direct checkout/skip cart is not implemented.
+- Direct checkout/skip cart is implemented and browser-verified by manual QA.
 - Field editor is not implemented.
 - Template system is not implemented.
 - bKash/Nagad/Rocket/SSLCOMMERZ gateways are not implemented.
@@ -167,6 +175,7 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [x] Compare `CheckFlow_Admin_Panel.html` against `views/admin-shell.php` and `assets/admin.css` line by line.
 - [x] Replace all stub panes with first-pass real screens matching the mockup layout.
 - [x] Make toggles save to `wp_options` via nonce-protected AJAX.
+- [x] Fix LocalWP admin AJAX same-origin handling for `gsttest.local:10040`.
 - [x] Add `checkflow_get_stats` AJAX with mock fallback first, then DB-backed stats later.
 - [x] Browser-test the admin page at desktop and mobile widths and fix spacing/overflow differences.
 
@@ -181,15 +190,25 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 
 ### Milestone C - Free Checkout Core
 
-- [ ] Complete AJAX handlers: update totals, coupon apply/remove, validate field, get shipping methods, place order.
-- [ ] Add rate limiting: max 10 checkout AJAX requests per minute per IP/session.
-- [ ] Standardize all AJAX responses with `success`, `data`, `message`, `errors`.
-- [ ] Build `public/js/checkflow.js` Alpine app.
-- [ ] Build standard one-page layout with sticky order summary.
-- [ ] Add popup modal checkout.
+- [x] Complete AJAX handlers: update totals, coupon apply/remove, validate field, get shipping methods, place order.
+- [x] Add rate limiting: max 10 checkout AJAX requests per minute per IP/session.
+- [x] Standardize CheckFlow-owned AJAX responses with `success`, `data`, `message`, `errors`.
+- [x] Add frontend inline validation feedback for checkout fields.
+- [x] Add frontend shipping-method refresh hook when address fields change.
+- [x] Build `public/js/checkflow.js` WooCommerce-compatible checkout app with block detection, Alpine-compatible registration, and vanilla fallback.
+- [x] Build first-pass standard one-page layout controls with sticky order summary support.
+- [x] Preserve WooCommerce Blocks/native payment flow; do not hijack final place-order submission.
+- [x] Add current checkout layout polish for page spacing, form fields, order summary, buttons, and mobile stacking.
+- [ ] Browser-test checkout with a real product in cart: quantity update, coupon apply/remove, field errors, shipping recalculation, and place order.
+- [x] Add direct checkout/skip-cart behavior.
+- [x] Persist settings for direct checkout and existing quick settings toggles.
+- [x] Browser-test direct checkout from single product and shop/archive AJAX add-to-cart.
+- [x] Map Quick Settings to first-pass feature behavior: Direct Checkout, Guest Checkout, Urgency Timer.
+- [x] Wire Order Bump quick setting to a configured-product AJAX add-to-cart engine.
+- [x] Add popup modal checkout.
+- [x] Add reCAPTCHA v3 module contract with safe no-op when keys are missing.
 - [ ] Add slide-in checkout.
-- [ ] Add direct checkout/skip-cart behavior.
-- [ ] Persist settings for popup/direct/trust badge behavior.
+- [ ] Persist settings for popup/trust badge behavior.
 
 ### Milestone D - Analytics Foundation
 
@@ -219,11 +238,11 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 
 ## 6. Next Action Recommendation
 
-Start with Milestone A. The next coding task should be:
+Milestone A is complete and Milestone C server-side AJAX plus current checkout layout polish are implemented. The next coding task should be checkout browser QA:
 
-1. Make the WordPress admin page visually match `CheckFlow_Admin_Panel.html` exactly.
-2. Preserve the current i18n/string override work while doing it.
-3. Add real admin submenus and scope/hide WordPress admin chrome only on CheckFlow pages.
-4. Add persistent AJAX settings toggles.
+1. Create/use a real WooCommerce product and cart for checkout testing.
+2. Browser-test the current WooCommerce Blocks checkout layout: coupon apply/remove, shipping selection, payment method selection, totals, and place order.
+3. Test mobile/desktop screenshots for overflow or overlap.
+4. Fix any checkout JS/PHP/CSS edge cases found during browser QA.
 
-After Milestone A passes visual/browser review, continue with Milestone C checkout engine because it is the Free version's core value.
+After checkout QA passes, continue with popup checkout, slide-in checkout, and direct checkout because those are the Free version's visible conversion features.

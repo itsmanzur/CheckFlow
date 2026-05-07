@@ -66,12 +66,27 @@ final class CheckFlow {
 		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_apply_coupon', $ajax, 'apply_coupon' );
 		$this->loader->add_action( 'wp_ajax_checkflow_remove_coupon', $ajax, 'remove_coupon' );
 		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_remove_coupon', $ajax, 'remove_coupon' );
+		$this->loader->add_action( 'wp_ajax_checkflow_validate_field', $ajax, 'validate_field' );
+		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_validate_field', $ajax, 'validate_field' );
+		$this->loader->add_action( 'wp_ajax_checkflow_get_shipping_methods', $ajax, 'get_shipping_methods' );
+		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_get_shipping_methods', $ajax, 'get_shipping_methods' );
+		$this->loader->add_action( 'wp_ajax_checkflow_add_order_bump', $ajax, 'add_order_bump' );
+		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_add_order_bump', $ajax, 'add_order_bump' );
+		$this->loader->add_action( 'wp_ajax_checkflow_place_order', $ajax, 'place_order' );
+		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_place_order', $ajax, 'place_order' );
 
 		$this->loader->add_filter( 'woocommerce_checkout_cart_item_quantity', $checkout, 'render_checkout_quantity', 10, 3 );
+		$this->loader->add_filter( 'woocommerce_add_to_cart_redirect', $checkout, 'maybe_direct_checkout_redirect', 20 );
+		$this->loader->add_filter( 'option_woocommerce_enable_guest_checkout', $checkout, 'filter_guest_checkout_option', 20 );
+		$this->loader->add_filter( 'woocommerce_checkout_registration_required', $checkout, 'filter_checkout_registration_required', 20 );
+		$this->loader->add_action( 'woocommerce_after_checkout_validation', $checkout, 'validate_recaptcha', 20, 2 );
 		$this->loader->add_action( 'woocommerce_before_checkout_form', $checkout, 'render_checkout_shell_intro', 5 );
 		// Block checkout skips classic template hooks; prepend intro after blocks/shortcodes render.
 		$this->loader->add_filter( 'the_content', $checkout, 'prepend_shell_intro_block_checkout', 12 );
-		$this->loader->add_action( 'woocommerce_review_order_after_submit', $checkout, 'render_trust_badges' );
+		$this->loader->add_action( 'wp_footer', $checkout, 'render_direct_checkout_script' );
+		$this->loader->add_action( 'wp_footer', $checkout, 'render_quick_setting_modules' );
+		$this->loader->add_action( 'wp_footer', $checkout, 'render_recaptcha_script' );
+		$this->loader->add_action( 'wp_footer', $checkout, 'render_trust_badges' );
 
 		$this->loader->run();
 	}

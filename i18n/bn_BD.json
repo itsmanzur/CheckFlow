@@ -123,6 +123,8 @@
   "pixel.active": "সক্রিয়",
   "pixel.set_up": "সেট করুন",
   "quick_settings.title": "⚙️ দ্রুত সেটিংস",
+  "qs.direct_title": "Direct Checkout",
+  "qs.direct_desc": "Cart skip kore checkout e nin",
   "qs.popup_title": "Popup Checkout",
   "qs.popup_desc": "পেজ না ছেড়েই কেনা",
   "qs.bump_title": "Order Bump",

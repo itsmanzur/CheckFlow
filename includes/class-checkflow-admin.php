@@ -81,6 +81,10 @@ final class CheckFlow_Admin {
 		if ( ! $this->is_checkflow_hook( $hook ) ) {
 			return;
 		}
+
+		$admin_css_version = CHECKFLOW_VERSION . '.' . filemtime( CHECKFLOW_PATH . 'assets/admin.css' );
+		$admin_js_version  = CHECKFLOW_VERSION . '.' . filemtime( CHECKFLOW_PATH . 'assets/admin.js' );
+
 		wp_enqueue_style(
 			'checkflow-admin-google-font',
 			'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap',
@@ -91,14 +95,14 @@ final class CheckFlow_Admin {
 			'checkflow-admin',
 			CHECKFLOW_URL . 'assets/admin.css',
 			array(),
-			CHECKFLOW_VERSION
+			$admin_css_version
 		);
 
 		wp_register_script(
 			'checkflow-admin',
 			CHECKFLOW_URL . 'assets/admin.js',
 			array( 'jquery' ),
-			CHECKFLOW_VERSION,
+			$admin_js_version,
 			true
 		);
 
@@ -290,6 +294,7 @@ final class CheckFlow_Admin {
 	 */
 	private function get_quick_setting_defaults() {
 		return array(
+			'direct_checkout' => true,
 			'popup_checkout'  => true,
 			'order_bump'      => true,
 			'urgency_timer'   => false,

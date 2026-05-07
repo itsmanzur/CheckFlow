@@ -7,9 +7,11 @@
 
 	var timer = null;
 	var qtyAbortController = null;
+	var shippingAbortController = null;
 	var couponReqInFlight = false;
 	var removeReqInFlight = false;
 	var noticeTimer = null;
+	var validationTimers = {};
 
 	function getCouponForm() {
 		return document.querySelector("form.checkout_coupon");
@@ -191,10 +193,16 @@
 		var body = new URLSearchParams();
 		body.append("action", action);
 		body.append("nonce", checkflowCheckout.nonce);
-		Object.keys(data || {}).forEach(function (k) {
-			body.append(k, data[k]);
-		});
-		return fetch(checkflowCheckout.ajaxUrl, {
+		if (window.FormData && data instanceof FormData) {
+			data.forEach(function (value, key) {
+				body.append(key, value);
+			});
+		} else {
+			Object.keys(data || {}).forEach(function (k) {
+				body.append(k, data[k]);
+			});
+		}
+		return fetch(getAjaxUrl(), {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -203,8 +211,36 @@
 			credentials: "same-origin",
 			signal: o.signal,
 		}).then(function (r) {
-			return r.json();
+			return r.text().then(function (text) {
+				var payload = null;
+				try {
+					payload = text ? JSON.parse(text) : null;
+				} catch (err) {
+					payload = {
+						success: false,
+						data: { message: "Unexpected server response. Please retry." },
+					};
+				}
+				if (!r.ok && payload && payload.success !== false) {
+					payload.success = false;
+				}
+				return payload;
+			});
 		});
+	}
+
+	function normalizeMessage(res, fallback) {
+		if (!res) return fallback;
+		if (res.message) return res.message;
+		if (res.data && res.data.message) return res.data.message;
+		return fallback;
+	}
+
+	function normalizeFieldMessage(res, fieldName, fallback) {
+		if (res && res.errors && res.errors[fieldName] && res.errors[fieldName][0]) {
+			return res.errors[fieldName][0];
+		}
+		return normalizeMessage(res, fallback);
 	}
 
 	function sendQtyUpdate() {
@@ -253,6 +289,146 @@
 		return postAction("checkflow_remove_coupon", { coupon_code: code });
 	}
 
+	function addOrderBump(productId) {
+		return postAction("checkflow_add_order_bump", { product_id: productId });
+	}
+
+	function getAjaxUrl() {
+		if (!window.checkflowCheckout || !checkflowCheckout.ajaxUrl) {
+			return "";
+		}
+
+		try {
+			var url = new URL(checkflowCheckout.ajaxUrl, window.location.href);
+			if (url.origin !== window.location.origin) {
+				url.protocol = window.location.protocol;
+				url.host = window.location.host;
+			}
+			return url.toString();
+		} catch (e) {
+			return checkflowCheckout.ajaxUrl;
+		}
+	}
+
+	function checkoutForm() {
+		return document.querySelector("form.checkout");
+	}
+
+	function checkoutFieldName(field) {
+		if (!field || !field.name) return "";
+		return field.name.replace(/\[\]$/, "");
+	}
+
+	function checkoutFieldType(field) {
+		if (!field) return "text";
+		if (field.type === "email") return "email";
+		if (field.type === "tel") return "tel";
+		if (field.name && field.name.indexOf("postcode") !== -1) return "postcode";
+		return field.type || "text";
+	}
+
+	function isCheckoutFieldRequired(field) {
+		if (!field) return false;
+		if (field.required) return true;
+		var wrapper = field.closest(".form-row, p");
+		return !!(wrapper && wrapper.classList.contains("validate-required"));
+	}
+
+	function getFieldErrorNode(field) {
+		var wrapper = field.closest(".form-row, p") || field.parentNode;
+		if (!wrapper) return null;
+		var node = wrapper.querySelector(".checkflow-field-error");
+		if (node) return node;
+		node = document.createElement("span");
+		node.className = "checkflow-field-error";
+		node.setAttribute("role", "alert");
+		wrapper.appendChild(node);
+		return node;
+	}
+
+	function setFieldValidationState(field, valid, message) {
+		var wrapper = field.closest(".form-row, p") || field.parentNode;
+		var errorNode = getFieldErrorNode(field);
+		field.classList.toggle("checkflow-field-invalid", !valid);
+		if (wrapper) wrapper.classList.toggle("checkflow-field-has-error", !valid);
+		if (valid) {
+			field.removeAttribute("aria-invalid");
+			if (errorNode) errorNode.textContent = "";
+			return;
+		}
+		field.setAttribute("aria-invalid", "true");
+		if (errorNode) errorNode.textContent = message || "Please check this field.";
+	}
+
+	function shouldValidateField(field) {
+		if (!field || !field.matches) return false;
+		if (!checkoutForm() || !field.closest("form.checkout")) return false;
+		if (!field.name || field.disabled) return false;
+		if (field.type === "hidden" || field.type === "password" || field.type === "submit") return false;
+		return !field.matches('input[name="coupon_code"], .checkflow-qty-input');
+	}
+
+	function validateCheckoutField(field) {
+		if (!shouldValidateField(field)) return;
+		var name = checkoutFieldName(field);
+		window.clearTimeout(validationTimers[name]);
+		validationTimers[name] = window.setTimeout(function () {
+			postAction("checkflow_validate_field", {
+				field: name,
+				value: field.value || "",
+				type: checkoutFieldType(field),
+				required: isCheckoutFieldRequired(field) ? "1" : "0",
+			})
+				.then(function (res) {
+					if (!res) return;
+					setFieldValidationState(field, !!res.success, normalizeFieldMessage(res, name, "Please check this field."));
+				})
+				.catch(function () {});
+		}, 280);
+	}
+
+	function addressPayload(form) {
+		var fields = [
+			"billing_country",
+			"billing_state",
+			"billing_postcode",
+			"billing_city",
+			"billing_address_1",
+			"shipping_country",
+			"shipping_state",
+			"shipping_postcode",
+			"shipping_city",
+			"shipping_address_1",
+		];
+		var payload = {};
+		fields.forEach(function (name) {
+			var input = form.querySelector('[name="' + name + '"]');
+			if (input) payload[name] = input.value || "";
+		});
+		return payload;
+	}
+
+	function maybeRefreshShipping(field) {
+		var form = checkoutForm();
+		if (!form || !field || !field.name) return;
+		if (!/(country|state|postcode|city|address_1)$/.test(field.name)) return;
+		if (shippingAbortController) shippingAbortController.abort();
+		shippingAbortController = new AbortController();
+		postAction("checkflow_get_shipping_methods", addressPayload(form), { signal: shippingAbortController.signal })
+			.then(function (res) {
+				if (res && res.success) refreshCheckoutSoon();
+			})
+			.catch(function () {})
+			.finally(function () {
+				shippingAbortController = null;
+			});
+	}
+
+	function placeOrder(form) {
+		if (!form) return Promise.resolve({ success: false });
+		return postAction("checkflow_place_order", new FormData(form));
+	}
+
 	document.addEventListener("input", function (e) {
 		if (!e.target.classList.contains("checkflow-qty-input")) {
 			return;
@@ -288,13 +464,13 @@
 						code,
 						(res.data && res.data.coupon_discount_html) || "Applied"
 					);
-					showNotice("success", (res.data && res.data.message) || "Coupon applied.");
+					showNotice("success", normalizeMessage(res, "Coupon applied."));
 					refreshCheckoutSoon();
 					return;
 				}
 				setCouponInputState(form, true);
 				optimisticCouponRow("remove", code);
-				showNotice("error", (res && res.data && res.data.message) || "Failed to apply coupon.");
+				showNotice("error", normalizeMessage(res, "Failed to apply coupon."));
 			})
 			.catch(function () {
 				setCouponInputState(form, true);
@@ -332,12 +508,12 @@
 				window.setTimeout(function () {
 					if (res && res.success) {
 						removeCouponDomRows(rows);
-						showNotice("success", (res.data && res.data.message) || "Coupon removed.");
+						showNotice("success", normalizeMessage(res, "Coupon removed."));
 						refreshCheckoutSoon();
 						return;
 					}
 					rollbackCouponRemoveAnimation(rows);
-					showNotice("error", (res && res.data && res.data.message) || "Failed to remove coupon.");
+					showNotice("error", normalizeMessage(res, "Failed to remove coupon."));
 					refreshCheckoutSoon();
 				}, wait);
 			})
@@ -355,5 +531,48 @@
 				setRemoveLinkState(link, false);
 			});
 	});
+
+	document.addEventListener("input", function (e) {
+		validateCheckoutField(e.target);
+	});
+
+	document.addEventListener("change", function (e) {
+		if (e.target && e.target.classList.contains("checkflow-order-bump-checkbox")) {
+			var module = e.target.closest("[data-checkflow-bump-product]");
+			var productId = module ? module.getAttribute("data-checkflow-bump-product") : "";
+			if (!e.target.checked || !productId) {
+				return;
+			}
+			e.target.disabled = true;
+			addOrderBump(productId)
+				.then(function (res) {
+					if (res && res.success) {
+						refreshCheckoutSoon();
+						return;
+					}
+					e.target.checked = false;
+					e.target.disabled = false;
+					showNotice("error", normalizeMessage(res, "Could not add order bump."));
+				})
+				.catch(function () {
+					e.target.checked = false;
+					e.target.disabled = false;
+					showNotice("error", "Network error. Please retry.");
+				});
+			return;
+		}
+		validateCheckoutField(e.target);
+		maybeRefreshShipping(e.target);
+	});
+
+	window.checkflowCheckoutEngine = window.checkflowCheckoutEngine || {};
+	window.checkflowCheckoutEngine.postAction = postAction;
+	window.checkflowCheckoutEngine.validateField = validateCheckoutField;
+	window.checkflowCheckoutEngine.refreshShipping = function () {
+		var form = checkoutForm();
+		if (!form) return;
+		maybeRefreshShipping(form.querySelector('[name="billing_country"], [name="shipping_country"]'));
+	};
+	window.checkflowCheckoutEngine.placeOrder = placeOrder;
 
 })();

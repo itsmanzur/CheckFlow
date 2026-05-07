@@ -1,6 +1,6 @@
 <?php
 /**
- * Frontend AJAX placeholder (Phase 1 target).
+ * Frontend AJAX checkout engine.
  *
  * @package CheckFlow
  */
@@ -10,6 +10,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class CheckFlow_Frontend_Ajax {
+
+	const NONCE_ACTION = 'checkflow-checkout';
+	const RATE_LIMIT   = 10;
+	const RATE_WINDOW  = MINUTE_IN_SECONDS;
 
 	/** @var self|null */
 	private static $instance = null;
@@ -30,15 +34,10 @@ final class CheckFlow_Frontend_Ajax {
 	 * Update checkout cart quantities and totals.
 	 */
 	public function update_order_review() {
-		check_ajax_referer( 'checkflow-checkout', 'nonce' );
+		$this->guard_request( 'update_order_review' );
 
-		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
-			wp_send_json_error(
-				array(
-					'message' => __( 'Cart unavailable.', 'checkflow' ),
-				),
-				400
-			);
+		if ( ! $this->cart_available() ) {
+			$this->send_error( __( 'Cart unavailable.', 'checkflow' ), array(), 400 );
 		}
 
 		$quantities = isset( $_POST['quantities'] ) ? wp_unslash( $_POST['quantities'] ) : array();
@@ -57,63 +56,45 @@ final class CheckFlow_Frontend_Ajax {
 
 		WC()->cart->calculate_totals();
 
-		wp_send_json_success( $this->build_checkout_payload() );
+		$this->send_success(
+			$this->build_checkout_payload(),
+			__( 'Checkout totals updated.', 'checkflow' )
+		);
 	}
 
 	/**
 	 * Apply coupon code via AJAX.
 	 */
 	public function apply_coupon() {
-		check_ajax_referer( 'checkflow-checkout', 'nonce' );
+		$this->guard_request( 'apply_coupon' );
 
-		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
-			wp_send_json_error(
-				array(
-					'message' => __( 'Cart unavailable.', 'checkflow' ),
-				),
-				400
-			);
+		if ( ! $this->cart_available() ) {
+			$this->send_error( __( 'Cart unavailable.', 'checkflow' ), array(), 400 );
 		}
 
 		$coupon = isset( $_POST['coupon_code'] ) ? wc_format_coupon_code( wp_unslash( $_POST['coupon_code'] ) ) : '';
 		$coupon = sanitize_text_field( $coupon );
 		if ( '' === $coupon ) {
-			wp_send_json_error(
-				array(
-					'message' => __( 'Coupon code is required.', 'checkflow' ),
-				),
-				400
-			);
+			$this->send_error( __( 'Coupon code is required.', 'checkflow' ), array( 'coupon_code' ), 400 );
 		}
 
 		$ok = WC()->cart->apply_coupon( $coupon );
 		WC()->cart->calculate_totals();
 
 		if ( ! $ok ) {
-			$msg = __( 'Failed to apply coupon.', 'checkflow' );
-			if ( function_exists( 'wc_get_notices' ) ) {
-				$notices = wc_get_notices( 'error' );
-				if ( ! empty( $notices ) && isset( $notices[0]['notice'] ) ) {
-					$msg = wp_strip_all_tags( $notices[0]['notice'] );
-				}
-			}
-			wp_send_json_error(
-				array(
-					'message' => $msg,
-				),
-				400
-			);
+			$msg = $this->pull_wc_error_notice( __( 'Failed to apply coupon.', 'checkflow' ) );
+			$this->send_error( $msg, array( 'coupon_code' ), 400 );
 		}
 
-		wp_send_json_success(
+		$this->send_success(
 			array_merge(
 				$this->build_checkout_payload(),
 				array(
-					'message'              => __( 'Coupon applied.', 'checkflow' ),
 					'coupon_code'          => $coupon,
 					'coupon_discount_html' => $this->get_coupon_discount_html( $coupon ),
 				)
-			)
+			),
+			__( 'Coupon applied.', 'checkflow' )
 		);
 	}
 
@@ -121,39 +102,327 @@ final class CheckFlow_Frontend_Ajax {
 	 * Remove coupon code via AJAX.
 	 */
 	public function remove_coupon() {
-		check_ajax_referer( 'checkflow-checkout', 'nonce' );
+		$this->guard_request( 'remove_coupon' );
 
-		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
-			wp_send_json_error(
-				array(
-					'message' => __( 'Cart unavailable.', 'checkflow' ),
-				),
-				400
-			);
+		if ( ! $this->cart_available() ) {
+			$this->send_error( __( 'Cart unavailable.', 'checkflow' ), array(), 400 );
 		}
 
 		$coupon = isset( $_POST['coupon_code'] ) ? wc_format_coupon_code( wp_unslash( $_POST['coupon_code'] ) ) : '';
 		$coupon = sanitize_text_field( $coupon );
 		if ( '' === $coupon ) {
-			wp_send_json_error(
-				array(
-					'message' => __( 'Coupon code is required.', 'checkflow' ),
-				),
-				400
-			);
+			$this->send_error( __( 'Coupon code is required.', 'checkflow' ), array( 'coupon_code' ), 400 );
 		}
 
 		WC()->cart->remove_coupon( $coupon );
 		WC()->cart->calculate_totals();
 
-		wp_send_json_success(
+		$this->send_success(
+			$this->build_checkout_payload(),
+			__( 'Coupon removed.', 'checkflow' )
+		);
+	}
+
+	/**
+	 * Validate a single checkout field.
+	 */
+	public function validate_field() {
+		$this->guard_request( 'validate_field' );
+
+		$field    = isset( $_POST['field'] ) ? sanitize_key( wp_unslash( $_POST['field'] ) ) : '';
+		$value    = isset( $_POST['value'] ) ? sanitize_text_field( wp_unslash( $_POST['value'] ) ) : '';
+		$type     = isset( $_POST['type'] ) ? sanitize_key( wp_unslash( $_POST['type'] ) ) : $this->guess_field_type( $field );
+		$required = isset( $_POST['required'] ) ? (bool) absint( $_POST['required'] ) : $this->is_required_field( $field );
+		$errors   = array();
+
+		if ( '' === $field ) {
+			$this->send_error( __( 'Field key is required.', 'checkflow' ), array( 'field' ), 400 );
+		}
+
+		if ( $required && '' === trim( $value ) ) {
+			$errors[] = __( 'This field is required.', 'checkflow' );
+		}
+
+		if ( '' !== $value ) {
+			if ( 'email' === $type && ! is_email( $value ) ) {
+				$errors[] = __( 'Please enter a valid email address.', 'checkflow' );
+			}
+			if ( 'tel' === $type && ! preg_match( '/^[0-9+\-\s().]{6,20}$/', $value ) ) {
+				$errors[] = __( 'Please enter a valid phone number.', 'checkflow' );
+			}
+			if ( 'postcode' === $type && strlen( $value ) > 20 ) {
+				$errors[] = __( 'Postcode is too long.', 'checkflow' );
+			}
+		}
+
+		if ( ! empty( $errors ) ) {
+			$this->send_error(
+				__( 'Field validation failed.', 'checkflow' ),
+				array(
+					$field => $errors,
+				),
+				422
+			);
+		}
+
+		$this->send_success(
+			array(
+				'field' => $field,
+				'valid' => true,
+			),
+			__( 'Field is valid.', 'checkflow' )
+		);
+	}
+
+	/**
+	 * Return available WooCommerce shipping methods for posted address data.
+	 */
+	public function get_shipping_methods() {
+		$this->guard_request( 'get_shipping_methods' );
+
+		if ( ! $this->cart_available() || ! WC()->customer ) {
+			$this->send_error( __( 'Shipping is unavailable.', 'checkflow' ), array(), 400 );
+		}
+
+		$address = array(
+			'country'   => $this->posted_address_value( 'country', WC()->customer->get_shipping_country() ),
+			'state'     => $this->posted_address_value( 'state', WC()->customer->get_shipping_state() ),
+			'postcode'  => $this->posted_address_value( 'postcode', WC()->customer->get_shipping_postcode() ),
+			'city'      => $this->posted_address_value( 'city', WC()->customer->get_shipping_city() ),
+			'address_1' => $this->posted_address_value( 'address_1', WC()->customer->get_shipping_address_1() ),
+			'address_2' => $this->posted_address_value( 'address_2', WC()->customer->get_shipping_address_2() ),
+		);
+
+		WC()->customer->set_shipping_country( $address['country'] );
+		WC()->customer->set_shipping_state( $address['state'] );
+		WC()->customer->set_shipping_postcode( $address['postcode'] );
+		WC()->customer->set_shipping_city( $address['city'] );
+		WC()->customer->set_shipping_address_1( $address['address_1'] );
+		WC()->customer->set_shipping_address_2( $address['address_2'] );
+		WC()->customer->save();
+
+		WC()->cart->calculate_shipping();
+		WC()->cart->calculate_totals();
+
+		$methods = array();
+		foreach ( WC()->shipping()->get_packages() as $package_index => $package ) {
+			if ( empty( $package['rates'] ) ) {
+				continue;
+			}
+			foreach ( $package['rates'] as $rate_id => $rate ) {
+				$methods[] = array(
+					'id'      => (string) $rate_id,
+					'label'   => wp_strip_all_tags( $rate->get_label() ),
+					'cost'    => (float) $rate->get_cost(),
+					'html'    => wp_kses_post( wc_price( (float) $rate->get_cost() ) ),
+					'package' => absint( $package_index ),
+				);
+			}
+		}
+
+		$this->send_success(
 			array_merge(
 				$this->build_checkout_payload(),
 				array(
-					'message' => __( 'Coupon removed.', 'checkflow' ),
+					'shipping_methods' => $methods,
 				)
-			)
+			),
+			__( 'Shipping methods loaded.', 'checkflow' )
 		);
+	}
+
+	/**
+	 * Add the configured order bump product to cart.
+	 */
+	public function add_order_bump() {
+		$this->guard_request( 'add_order_bump' );
+
+		if ( ! $this->cart_available() || ! function_exists( 'wc_get_product' ) ) {
+			$this->send_error( __( 'Cart unavailable.', 'checkflow' ), array(), 400 );
+		}
+
+		$product_id = absint( apply_filters( 'checkflow_order_bump_product_id', get_option( 'checkflow_order_bump_product_id', 0 ) ) );
+		$posted_id  = isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0;
+		if ( ! $product_id || $posted_id !== $product_id ) {
+			$this->send_error( __( 'Order bump is not configured.', 'checkflow' ), array( 'product_id' ), 400 );
+		}
+
+		$product = wc_get_product( $product_id );
+		if ( ! $product || ! $product->is_purchasable() || ! $product->is_in_stock() ) {
+			$this->send_error( __( 'Order bump product is unavailable.', 'checkflow' ), array( 'product_id' ), 400 );
+		}
+
+		foreach ( WC()->cart->get_cart() as $cart_item ) {
+			if ( absint( $cart_item['product_id'] ) === $product_id ) {
+				WC()->cart->calculate_totals();
+				$this->send_success(
+					$this->build_checkout_payload(),
+					__( 'Order bump already added.', 'checkflow' )
+				);
+			}
+		}
+
+		$added = WC()->cart->add_to_cart( $product_id, 1 );
+		if ( ! $added ) {
+			$this->send_error( __( 'Could not add order bump.', 'checkflow' ), array( 'product_id' ), 400 );
+		}
+
+		WC()->cart->calculate_totals();
+		$this->send_success(
+			$this->build_checkout_payload(),
+			__( 'Order bump added.', 'checkflow' )
+		);
+	}
+
+	/**
+	 * Securely submit WooCommerce checkout.
+	 *
+	 * WooCommerce owns the full payment/order processing flow here; CheckFlow
+	 * provides nonce/rate-limit guardrails before handing off.
+	 */
+	public function place_order() {
+		$this->guard_request( 'place_order' );
+
+		if ( ! function_exists( 'WC' ) || ! WC()->checkout() ) {
+			$this->send_error( __( 'Checkout unavailable.', 'checkflow' ), array(), 400 );
+		}
+
+		if ( empty( $_POST['woocommerce-process-checkout-nonce'] ) && ! empty( $_POST['woocommerce_checkout_nonce'] ) ) {
+			$_POST['woocommerce-process-checkout-nonce'] = sanitize_text_field( wp_unslash( $_POST['woocommerce_checkout_nonce'] ) );
+		}
+
+		WC()->checkout()->process_checkout();
+	}
+
+	/**
+	 * Verify nonce and rate limit.
+	 *
+	 * @param string $action Action name.
+	 */
+	private function guard_request( $action ) {
+		if ( false === check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			$this->log_security_event( 'invalid_nonce_' . $action );
+			$this->send_error(
+				__( 'Checkout security check failed. Please refresh and try again.', 'checkflow' ),
+				array( 'nonce' ),
+				403
+			);
+		}
+
+		if ( ! $this->check_rate_limit( $action ) ) {
+			$this->log_security_event( 'rate_limited_' . $action );
+			$this->send_error(
+				__( 'Too many checkout requests. Please wait a moment and try again.', 'checkflow' ),
+				array( 'rate_limit' ),
+				429
+			);
+		}
+	}
+
+	/**
+	 * @return bool
+	 */
+	private function cart_available() {
+		return function_exists( 'WC' ) && WC()->cart;
+	}
+
+	/**
+	 * @param string $action Action name.
+	 * @return bool
+	 */
+	private function check_rate_limit( $action ) {
+		$key   = 'checkflow_rate_' . md5( $this->client_fingerprint() . '|' . sanitize_key( $action ) );
+		$count = absint( get_transient( $key ) );
+
+		if ( $count >= self::RATE_LIMIT ) {
+			return false;
+		}
+
+		set_transient( $key, $count + 1, self::RATE_WINDOW );
+		return true;
+	}
+
+	/**
+	 * @return string
+	 */
+	private function client_fingerprint() {
+		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '0.0.0.0';
+		if ( function_exists( 'WC' ) && WC()->session ) {
+			$customer_id = WC()->session->get_customer_id();
+			if ( $customer_id ) {
+				return $ip . '|' . $customer_id;
+			}
+		}
+		return $ip;
+	}
+
+	/**
+	 * @param string $event Event name.
+	 */
+	private function log_security_event( $event ) {
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				sprintf(
+					'CheckFlow checkout security event: %s from %s',
+					sanitize_key( $event ),
+					$this->client_fingerprint()
+				)
+			);
+		}
+	}
+
+	/**
+	 * @param array<string,mixed> $data Payload.
+	 * @param string              $message Message.
+	 * @param int                 $status HTTP status.
+	 */
+	private function send_success( array $data, $message = '', $status = 200 ) {
+		if ( '' !== $message ) {
+			$data['message'] = $message;
+		}
+		wp_send_json(
+			array(
+				'success' => true,
+				'data'    => $data,
+				'message' => $message,
+				'errors'  => array(),
+			),
+			$status
+		);
+	}
+
+	/**
+	 * @param string              $message Message.
+	 * @param array<int|string,mixed> $errors Errors.
+	 * @param int                 $status HTTP status.
+	 */
+	private function send_error( $message, array $errors = array(), $status = 400 ) {
+		wp_send_json(
+			array(
+				'success' => false,
+				'data'    => array(
+					'message' => $message,
+				),
+				'message' => $message,
+				'errors'  => $errors,
+			),
+			$status
+		);
+	}
+
+	/**
+	 * @param string $fallback Fallback message.
+	 * @return string
+	 */
+	private function pull_wc_error_notice( $fallback ) {
+		if ( function_exists( 'wc_get_notices' ) ) {
+			$notices = wc_get_notices( 'error' );
+			if ( ! empty( $notices ) && isset( $notices[0]['notice'] ) ) {
+				wc_clear_notices();
+				return wp_strip_all_tags( $notices[0]['notice'] );
+			}
+		}
+		return $fallback;
 	}
 
 	/**
@@ -169,6 +438,9 @@ final class CheckFlow_Frontend_Ajax {
 
 		return array(
 			'total'         => wp_kses_post( WC()->cart->get_total() ),
+			'subtotal'      => wp_kses_post( WC()->cart->get_cart_subtotal() ),
+			'shipping'      => wp_kses_post( WC()->cart->get_cart_shipping_total() ),
+			'discount'      => wp_kses_post( wc_price( (float) WC()->cart->get_discount_total() ) ),
 			'cart_count'    => absint( WC()->cart->get_cart_contents_count() ),
 			'coupons'       => array_values( WC()->cart->get_applied_coupons() ),
 			'coupon_totals' => $coupon_totals,
@@ -190,5 +462,55 @@ final class CheckFlow_Frontend_Ajax {
 			return '-' . wp_strip_all_tags( wc_price( $amount ) );
 		}
 		return '-' . (string) $amount;
+	}
+
+	/**
+	 * Read either normalized or WooCommerce checkout address keys.
+	 *
+	 * @param string $key Address suffix.
+	 * @param string $fallback Fallback value.
+	 * @return string
+	 */
+	private function posted_address_value( $key, $fallback = '' ) {
+		$keys = array( $key, 'shipping_' . $key, 'billing_' . $key );
+		foreach ( $keys as $posted_key ) {
+			if ( isset( $_POST[ $posted_key ] ) ) {
+				return wc_clean( wp_unslash( $_POST[ $posted_key ] ) );
+			}
+		}
+		return wc_clean( $fallback );
+	}
+
+	/**
+	 * @param string $field Field key.
+	 * @return string
+	 */
+	private function guess_field_type( $field ) {
+		if ( false !== strpos( $field, 'email' ) ) {
+			return 'email';
+		}
+		if ( false !== strpos( $field, 'phone' ) || false !== strpos( $field, 'tel' ) ) {
+			return 'tel';
+		}
+		if ( false !== strpos( $field, 'postcode' ) || false !== strpos( $field, 'zip' ) ) {
+			return 'postcode';
+		}
+		return 'text';
+	}
+
+	/**
+	 * @param string $field Field key.
+	 * @return bool
+	 */
+	private function is_required_field( $field ) {
+		$required = array(
+			'billing_first_name',
+			'billing_last_name',
+			'billing_address_1',
+			'billing_city',
+			'billing_phone',
+			'billing_email',
+		);
+		return in_array( $field, $required, true );
 	}
 }
