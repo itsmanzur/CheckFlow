@@ -1857,41 +1857,114 @@ html.cf-field-dragging body {
 	font-size: 10.5px;
 }
 
+#checkflow-admin.checkflow-root .cf-panel-sub {
+	margin-top: 4px;
+	color: var(--tx3);
+	font-size: 11px;
+	font-weight: 600;
+}
+#checkflow-admin.checkflow-root .cf-template-current {
+	display: inline-flex;
+	align-items: center;
+	min-height: 30px;
+	padding: 0 11px;
+	border: 1px solid rgba(46, 213, 132, 0.36);
+	border-radius: 999px;
+	background: rgba(46, 213, 132, 0.1);
+	color: var(--gn);
+	font-size: 11px;
+	font-weight: 900;
+}
 #checkflow-admin.checkflow-root .cf-template-grid {
 	display: grid;
 	grid-template-columns: repeat(5, minmax(0, 1fr));
 	gap: 14px;
 }
+#checkflow-admin.checkflow-root .cf-template-card {
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+	min-height: 280px;
+	padding: 12px;
+	border: 1px solid var(--bd);
+	border-radius: 14px;
+	background: linear-gradient(145deg, #141925, #0f121b);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+	transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+#checkflow-admin.checkflow-root .cf-template-card:hover {
+	border-color: rgba(79, 142, 255, 0.45);
+	transform: translateY(-1px);
+	background: linear-gradient(145deg, #182032, #10141f);
+}
+#checkflow-admin.checkflow-root .cf-template-card.is-active {
+	border-color: rgba(46, 213, 132, 0.62);
+	box-shadow: 0 0 0 1px rgba(46, 213, 132, 0.12), 0 18px 38px rgba(0, 0, 0, 0.22);
+}
 #checkflow-admin.checkflow-root .cf-template-thumb {
 	aspect-ratio: 4 / 3;
+	position: relative;
+	overflow: hidden;
 	background: linear-gradient(135deg, var(--s2), var(--s3));
 	border: 1px solid var(--bd2);
-	border-radius: 8px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
+	border-radius: 10px;
+	display: grid;
+	grid-template-columns: 1.15fr 0.85fr;
+	grid-template-rows: 1fr 1fr;
+	gap: 7px;
+	padding: 12px;
 	margin-bottom: 12px;
 }
 #checkflow-admin.checkflow-root .cf-template-thumb span {
-	width: 34px;
-	height: 34px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	border-radius: 9px;
-	background: linear-gradient(135deg, var(--pr), #7b5ea7);
-	color: #fff;
-	font-weight: 800;
+	display: block;
+	border-radius: 7px;
+	background: rgba(255, 255, 255, 0.1);
+}
+#checkflow-admin.checkflow-root .cf-template-thumb span:first-child {
+	grid-row: 1 / 3;
+}
+#checkflow-admin.checkflow-root .cf-template-thumb--default_one_page span:first-child {
+	background: linear-gradient(135deg, #4f8eff, #7caeff);
+}
+#checkflow-admin.checkflow-root .cf-template-thumb--bangladesh_cod span:first-child {
+	background: linear-gradient(135deg, #2ed584, #0f8d66);
+}
+#checkflow-admin.checkflow-root .cf-template-thumb--minimal_digital span:first-child {
+	background: linear-gradient(135deg, #f6c86d, #ff9f43);
+}
+#checkflow-admin.checkflow-root .cf-template-thumb--trust_checkout span:first-child {
+	background: linear-gradient(135deg, #8b5cf6, #4f8eff);
+}
+#checkflow-admin.checkflow-root .cf-template-thumb--compact_mobile span:first-child {
+	background: linear-gradient(135deg, #fb5b76, #ff9f43);
 }
 #checkflow-admin.checkflow-root .cf-template-name {
 	color: var(--tx);
-	font-size: 12.5px;
-	font-weight: 700;
-	margin-bottom: 3px;
+	font-size: 14px;
+	font-weight: 900;
+	margin-bottom: 6px;
 }
-#checkflow-admin.checkflow-root .cf-template-meta {
+#checkflow-admin.checkflow-root .cf-template-desc {
 	color: var(--tx3);
-	font-size: 10.5px;
+	font-size: 11px;
+	line-height: 1.45;
+}
+#checkflow-admin.checkflow-root .cf-template-foot {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin-top: 14px;
+}
+#checkflow-admin.checkflow-root .cf-template-foot span {
+	color: var(--tx2);
+	font-size: 10px;
+	font-weight: 900;
+	text-transform: uppercase;
+	letter-spacing: 0.45px;
+}
+#checkflow-admin.checkflow-root .cf-template-foot button {
+	min-height: 32px;
+	padding: 0 10px;
 }
 
 #checkflow-admin.checkflow-root .cf-string-editor {

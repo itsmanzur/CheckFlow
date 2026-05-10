@@ -66,6 +66,23 @@ final class CheckFlow_Frontend_Checkout {
 	}
 
 	/**
+	 * Add checkout template classes to the frontend checkout page.
+	 *
+	 * @param array<int,string> $classes Body classes.
+	 * @return array<int,string>
+	 */
+	public function body_class( $classes ) {
+		if ( is_admin() || ! function_exists( 'is_checkout' ) || ! is_checkout() || is_order_received_page() ) {
+			return $classes;
+		}
+
+		$template  = CheckFlow_Admin::instance()->get_checkout_template();
+		$classes[] = 'checkflow-checkout-template';
+		$classes[] = 'checkflow-template-' . sanitize_html_class( $template );
+		return array_values( array_unique( $classes ) );
+	}
+
+	/**
 	 * @return int
 	 */
 	private function get_order_bump_product_id() {

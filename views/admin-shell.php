@@ -47,6 +47,8 @@ $st_map = array(
 
 $str_keys       = $i18n->get_flat_keys_sorted();
 $quick_settings = CheckFlow_Admin::instance()->get_quick_settings();
+$checkout_templates = CheckFlow_Admin::instance()->get_checkout_templates();
+$active_checkout_template = CheckFlow_Admin::instance()->get_checkout_template();
 $field_rows     = class_exists( 'CheckFlow_Field_Editor' ) ? CheckFlow_Field_Editor::instance()->get_admin_rows() : array();
 $field_groups   = array(
 	'billing'  => array(),
@@ -721,10 +723,38 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 			</div>
 
 			<div class="cf-pane<?php echo esc_attr( $screen_class( 'templates' ) ); ?>" data-pane="templates">
-				<div class="cf-template-grid">
-					<?php foreach ( array( 'Default One Page', 'Bangladesh COD', 'Mobile Banking', 'Minimal Digital', 'Premium Split' ) as $i => $tpl ) : ?>
-						<div class="panel"><div class="pb"><div class="cf-template-thumb"><span><?php echo esc_html( (string) ( $i + 1 ) ); ?></span></div><div class="cf-template-name"><?php echo esc_html( $tpl ); ?></div><div class="cf-template-meta"><?php echo 0 === $i ? 'Active' : 'Pro template'; ?></div></div></div>
-					<?php endforeach; ?>
+				<div class="panel cf-template-panel">
+					<div class="ph">
+						<div>
+							<div class="pt">Checkout templates</div>
+							<div class="cf-panel-sub">Choose a live checkout look. WooCommerce payment and order flow stay native.</div>
+						</div>
+						<div class="cf-template-current" data-template-current>
+							<?php echo esc_html( isset( $checkout_templates[ $active_checkout_template ] ) ? $checkout_templates[ $active_checkout_template ]['name'] : 'Default One Page' ); ?>
+						</div>
+					</div>
+					<div class="pb">
+						<div class="cf-template-grid">
+							<?php foreach ( $checkout_templates as $key => $tpl ) : ?>
+								<?php $is_active_template = $key === $active_checkout_template; ?>
+								<div class="cf-template-card<?php echo $is_active_template ? ' is-active' : ''; ?>" data-checkout-template="<?php echo esc_attr( $key ); ?>">
+									<div class="cf-template-thumb cf-template-thumb--<?php echo esc_attr( $key ); ?>" aria-hidden="true">
+										<span></span><span></span><span></span>
+									</div>
+									<div class="cf-template-body">
+										<div class="cf-template-name"><?php echo esc_html( $tpl['name'] ); ?></div>
+										<div class="cf-template-desc"><?php echo esc_html( $tpl['description'] ); ?></div>
+									</div>
+									<div class="cf-template-foot">
+										<span><?php echo esc_html( $tpl['tag'] ); ?></span>
+										<button type="button" class="<?php echo $is_active_template ? 'cf-btn-ghost' : 'btn-p'; ?>" data-save-checkout-template="<?php echo esc_attr( $key ); ?>">
+											<?php echo $is_active_template ? esc_html__( 'Active', 'checkflow' ) : esc_html__( 'Use template', 'checkflow' ); ?>
+										</button>
+									</div>
+								</div>
+							<?php endforeach; ?>
+						</div>
+					</div>
 				</div>
 			</div>
 

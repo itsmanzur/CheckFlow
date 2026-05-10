@@ -194,6 +194,392 @@
 	top: 24px;
 }
 
+.checkflow-checkout-template .woocommerce-checkout-review-order,
+.checkflow-checkout-template .wc-block-checkout__sidebar,
+.checkflow-checkout-template .wc-block-components-sidebar {
+	transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.checkflow-checkout-template .form-row input.input-text,
+.checkflow-checkout-template .form-row textarea,
+.checkflow-checkout-template .form-row select,
+.checkflow-checkout-template .wc-block-components-text-input input,
+.checkflow-checkout-template .wc-block-components-combobox .components-combobox-control__input,
+.checkflow-checkout-template .wc-block-components-form .wc-block-components-text-input input,
+.checkflow-checkout-template .wc-block-components-address-card,
+.checkflow-checkout-template .wc-block-components-shipping-rates-control__package,
+.checkflow-checkout-template .wc-block-components-radio-control,
+.checkflow-checkout-template .woocommerce-shipping-methods,
+.checkflow-checkout-template #payment,
+.checkflow-checkout-template .woocommerce-checkout-payment {
+	transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.checkflow-template-bangladesh_cod {
+	--cf-primary: #059669;
+	--cf-primary-dark: #047857;
+	--cf-radius: 8px;
+	--cf-cod-soft: #f0fdf4;
+	--cf-cod-border: #bbf7d0;
+	--cf-cod-ring: rgba(5, 150, 105, 0.16);
+}
+
+.checkflow-template-bangladesh_cod .checkflow-shell-intro h2::after {
+	content: "COD ready";
+	display: inline-flex;
+	margin-left: 10px;
+	padding: 3px 8px;
+	border-radius: 999px;
+	background: #ecfdf5;
+	color: #047857;
+	font-size: 11px;
+	font-weight: 800;
+	vertical-align: middle;
+}
+
+.checkflow-template-bangladesh_cod .woocommerce-checkout-review-order,
+.checkflow-template-bangladesh_cod .wc-block-checkout__sidebar,
+.checkflow-template-bangladesh_cod .wc-block-components-sidebar {
+	border-color: #bbf7d0 !important;
+	box-shadow: 0 12px 32px rgba(5, 150, 105, 0.1);
+}
+
+.checkflow-template-bangladesh_cod .checkflow-trust-badges .badge {
+	background: #ecfdf5;
+	border-color: #bbf7d0;
+	color: #065f46;
+}
+
+.checkflow-template-bangladesh_cod .wc-block-components-checkout-step__title,
+.checkflow-template-bangladesh_cod .woocommerce-billing-fields > h3,
+.checkflow-template-bangladesh_cod .woocommerce-shipping-fields > h3,
+.checkflow-template-bangladesh_cod .woocommerce-additional-fields > h3 {
+	color: #064e3b;
+}
+
+.checkflow-template-bangladesh_cod .wc-block-components-address-card,
+.checkflow-template-bangladesh_cod .wc-block-components-shipping-rates-control__package,
+.checkflow-template-bangladesh_cod .wc-block-components-radio-control,
+.checkflow-template-bangladesh_cod .woocommerce-shipping-methods,
+.checkflow-template-bangladesh_cod #payment,
+.checkflow-template-bangladesh_cod .woocommerce-checkout-payment {
+	border-color: var(--cf-cod-border) !important;
+	border-radius: 10px !important;
+	background: linear-gradient(180deg, #ffffff, var(--cf-cod-soft));
+	box-shadow: 0 8px 22px rgba(5, 150, 105, 0.06);
+}
+
+.checkflow-template-bangladesh_cod .form-row input.input-text,
+.checkflow-template-bangladesh_cod .form-row textarea,
+.checkflow-template-bangladesh_cod .form-row select,
+.checkflow-template-bangladesh_cod .wc-block-components-text-input input,
+.checkflow-template-bangladesh_cod .wc-block-components-combobox .components-combobox-control__input {
+	border-color: #cdebd8 !important;
+}
+
+.checkflow-template-bangladesh_cod .form-row input.input-text:focus,
+.checkflow-template-bangladesh_cod .form-row textarea:focus,
+.checkflow-template-bangladesh_cod .form-row select:focus,
+.checkflow-template-bangladesh_cod .wc-block-components-text-input input:focus,
+.checkflow-template-bangladesh_cod .wc-block-components-combobox .components-combobox-control__input:focus {
+	border-color: #059669 !important;
+	box-shadow: 0 0 0 3px var(--cf-cod-ring) !important;
+	outline: none;
+}
+
+.checkflow-template-bangladesh_cod input[type="checkbox"],
+.checkflow-template-bangladesh_cod input[type="radio"] {
+	accent-color: #059669;
+}
+
+.checkflow-template-bangladesh_cod .wc-block-components-radio-control__option-checked,
+.checkflow-template-bangladesh_cod #payment .wc_payment_method:has(input:checked) {
+	background: #ecfdf5;
+	box-shadow: inset 3px 0 0 #059669;
+}
+
+.checkflow-template-minimal_digital {
+	--cf-radius: 6px;
+	--cf-shadow: none;
+	background: #fff;
+}
+
+.checkflow-template-minimal_digital .checkflow-shell-intro {
+	margin-bottom: 22px;
+}
+
+.checkflow-template-minimal_digital .checkflow-shell-intro p,
+.checkflow-template-minimal_digital .checkflow-urgency-timer {
+	display: none;
+}
+
+.checkflow-template-minimal_digital .woocommerce-checkout-review-order,
+.checkflow-template-minimal_digital .wc-block-checkout__sidebar,
+.checkflow-template-minimal_digital .wc-block-components-sidebar,
+.checkflow-template-minimal_digital #order_review,
+.checkflow-template-minimal_digital #order_review_heading {
+	box-shadow: none !important;
+}
+
+.checkflow-template-minimal_digital .wc-block-components-checkout-step__title,
+.checkflow-template-minimal_digital .woocommerce-billing-fields > h3,
+.checkflow-template-minimal_digital .woocommerce-shipping-fields > h3,
+.checkflow-template-minimal_digital .woocommerce-additional-fields > h3 {
+	font-size: 19px;
+	font-weight: 700;
+}
+
+.checkflow-template-minimal_digital .wc-block-components-address-card,
+.checkflow-template-minimal_digital .wc-block-components-shipping-rates-control__package,
+.checkflow-template-minimal_digital .wc-block-components-radio-control,
+.checkflow-template-minimal_digital .woocommerce-shipping-methods,
+.checkflow-template-minimal_digital #payment,
+.checkflow-template-minimal_digital .woocommerce-checkout-payment {
+	border-color: #e5e7eb !important;
+	border-radius: 6px !important;
+	background: #fff;
+	box-shadow: none !important;
+}
+
+.checkflow-template-minimal_digital .form-row input.input-text,
+.checkflow-template-minimal_digital .form-row textarea,
+.checkflow-template-minimal_digital .form-row select,
+.checkflow-template-minimal_digital .wc-block-components-text-input input,
+.checkflow-template-minimal_digital .wc-block-components-combobox .components-combobox-control__input {
+	border-color: #d1d5db !important;
+	border-radius: 5px !important;
+}
+
+.checkflow-template-minimal_digital .form-row input.input-text:focus,
+.checkflow-template-minimal_digital .form-row textarea:focus,
+.checkflow-template-minimal_digital .form-row select:focus,
+.checkflow-template-minimal_digital .wc-block-components-text-input input:focus,
+.checkflow-template-minimal_digital .wc-block-components-combobox .components-combobox-control__input:focus {
+	border-color: #111827 !important;
+	box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.1) !important;
+	outline: none;
+}
+
+.checkflow-template-minimal_digital .checkflow-trust-badges .badge {
+	background: #fff;
+	border-color: #e5e7eb;
+	color: #4b5563;
+}
+
+.checkflow-template-trust_checkout {
+	--cf-primary: #4f46e5;
+	--cf-primary-dark: #3730a3;
+	--cf-trust-soft: #f8faff;
+	--cf-trust-border: #c7d2fe;
+	--cf-trust-ring: rgba(79, 70, 229, 0.16);
+}
+
+.checkflow-template-trust_checkout .checkflow-shell-intro {
+	margin-bottom: 34px;
+	padding-bottom: 18px;
+	border-bottom: 1px solid #e0e7ff;
+}
+
+.checkflow-template-trust_checkout .checkflow-shell-intro h2::after {
+	content: "Protected checkout";
+	display: inline-flex;
+	margin-left: 10px;
+	padding: 3px 9px;
+	border-radius: 999px;
+	background: #eef2ff;
+	color: #3730a3;
+	font-size: 11px;
+	font-weight: 800;
+	vertical-align: middle;
+}
+
+.checkflow-template-trust_checkout .wc-block-components-checkout-step,
+.checkflow-template-trust_checkout .woocommerce-billing-fields,
+.checkflow-template-trust_checkout .woocommerce-shipping-fields,
+.checkflow-template-trust_checkout .woocommerce-additional-fields {
+	position: relative;
+}
+
+.checkflow-template-trust_checkout .wc-block-components-checkout-step__title,
+.checkflow-template-trust_checkout .woocommerce-billing-fields > h3,
+.checkflow-template-trust_checkout .woocommerce-shipping-fields > h3,
+.checkflow-template-trust_checkout .woocommerce-additional-fields > h3,
+.checkflow-template-trust_checkout #payment .wc_payment_methods::before {
+	color: #111827;
+	font-weight: 800;
+	letter-spacing: 0;
+}
+
+.checkflow-template-trust_checkout .wc-block-components-address-card,
+.checkflow-template-trust_checkout .wc-block-components-shipping-rates-control__package,
+.checkflow-template-trust_checkout .wc-block-components-radio-control,
+.checkflow-template-trust_checkout .woocommerce-shipping-methods,
+.checkflow-template-trust_checkout #payment,
+.checkflow-template-trust_checkout .woocommerce-checkout-payment,
+.checkflow-template-trust_checkout .form-row input.input-text,
+.checkflow-template-trust_checkout .form-row textarea,
+.checkflow-template-trust_checkout .form-row select,
+.checkflow-template-trust_checkout .wc-block-components-text-input input,
+.checkflow-template-trust_checkout .wc-block-components-combobox .components-combobox-control__input,
+.checkflow-template-trust_checkout .wc-block-components-form .wc-block-components-text-input input {
+	border-color: #d8def8 !important;
+}
+
+.checkflow-template-trust_checkout .wc-block-components-address-card,
+.checkflow-template-trust_checkout .wc-block-components-shipping-rates-control__package,
+.checkflow-template-trust_checkout .wc-block-components-radio-control,
+.checkflow-template-trust_checkout .woocommerce-shipping-methods,
+.checkflow-template-trust_checkout #payment,
+.checkflow-template-trust_checkout .woocommerce-checkout-payment {
+	border-radius: 10px !important;
+	background: linear-gradient(180deg, #ffffff, var(--cf-trust-soft));
+	box-shadow: 0 8px 24px rgba(49, 46, 129, 0.05);
+}
+
+.checkflow-template-trust_checkout .wc-block-components-address-card {
+	padding: 18px 20px !important;
+}
+
+.checkflow-template-trust_checkout .wc-block-components-address-card address,
+.checkflow-template-trust_checkout .wc-block-components-address-card__address-section {
+	color: #4b5563;
+	line-height: 1.55;
+}
+
+.checkflow-template-trust_checkout .wc-block-components-address-card__edit {
+	color: #3730a3 !important;
+	font-weight: 700;
+}
+
+.checkflow-template-trust_checkout .form-row input.input-text:focus,
+.checkflow-template-trust_checkout .form-row textarea:focus,
+.checkflow-template-trust_checkout .form-row select:focus,
+.checkflow-template-trust_checkout .wc-block-components-text-input input:focus,
+.checkflow-template-trust_checkout .wc-block-components-combobox .components-combobox-control__input:focus {
+	border-color: #6366f1 !important;
+	box-shadow: 0 0 0 3px var(--cf-trust-ring) !important;
+	outline: none;
+}
+
+.checkflow-template-trust_checkout .wc-block-components-checkbox .wc-block-components-checkbox__input,
+.checkflow-template-trust_checkout input[type="checkbox"],
+.checkflow-template-trust_checkout input[type="radio"] {
+	accent-color: #4f46e5;
+}
+
+.checkflow-template-trust_checkout .wc-block-components-radio-control__option,
+.checkflow-template-trust_checkout .woocommerce-shipping-methods li,
+.checkflow-template-trust_checkout #payment .wc_payment_method {
+	border-radius: 8px;
+}
+
+.checkflow-template-trust_checkout .wc-block-components-radio-control__option-checked,
+.checkflow-template-trust_checkout #payment .wc_payment_method:has(input:checked) {
+	background: #f5f7ff;
+	box-shadow: inset 3px 0 0 #4f46e5;
+}
+
+.checkflow-template-trust_checkout .wc-block-components-checkout-place-order-button,
+.checkflow-template-trust_checkout #place_order {
+	border-radius: 4px !important;
+	background: #111827 !important;
+	box-shadow: 0 14px 32px rgba(17, 24, 39, 0.16);
+}
+
+.checkflow-template-trust_checkout .wc-block-components-checkout-place-order-button:hover,
+.checkflow-template-trust_checkout #place_order:hover {
+	background: #1f2937 !important;
+}
+
+.checkflow-template-trust_checkout .woocommerce-checkout-review-order,
+.checkflow-template-trust_checkout .wc-block-checkout__sidebar,
+.checkflow-template-trust_checkout .wc-block-components-sidebar,
+.checkflow-template-trust_checkout #order_review {
+	border-color: #c7d2fe !important;
+	box-shadow: 0 18px 45px rgba(79, 70, 229, 0.12) !important;
+}
+
+.checkflow-template-trust_checkout .checkflow-trust-badges {
+	gap: 10px;
+}
+
+.checkflow-template-trust_checkout .checkflow-trust-badges .badge {
+	padding: 7px 11px;
+	background: #eef2ff;
+	border-color: #c7d2fe;
+	color: #312e81;
+	font-weight: 700;
+}
+
+.checkflow-template-compact_mobile {
+	--cf-radius: 6px;
+	--cf-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+}
+
+.checkflow-template-compact_mobile .checkflow-shell-intro {
+	margin-bottom: 18px;
+}
+
+.checkflow-template-compact_mobile .checkflow-shell-intro h2 {
+	font-size: 20px;
+}
+
+.checkflow-template-compact_mobile .woocommerce form .form-row,
+.checkflow-template-compact_mobile .wc-block-components-text-input,
+.checkflow-template-compact_mobile .wc-block-components-combobox,
+.checkflow-template-compact_mobile .wc-block-components-address-form__address_1 {
+	margin-bottom: 10px;
+}
+
+.checkflow-template-compact_mobile .checkflow-trust-badges-slot,
+.checkflow-template-compact_mobile .checkflow-checkout-modules-slot {
+	padding: 0 10px;
+}
+
+.checkflow-template-compact_mobile .wc-block-components-checkout-step__title,
+.checkflow-template-compact_mobile .woocommerce-billing-fields > h3,
+.checkflow-template-compact_mobile .woocommerce-shipping-fields > h3,
+.checkflow-template-compact_mobile .woocommerce-additional-fields > h3 {
+	font-size: 18px;
+	margin-bottom: 12px;
+}
+
+.checkflow-template-compact_mobile .wc-block-components-address-card,
+.checkflow-template-compact_mobile .wc-block-components-shipping-rates-control__package,
+.checkflow-template-compact_mobile .wc-block-components-radio-control,
+.checkflow-template-compact_mobile .woocommerce-shipping-methods,
+.checkflow-template-compact_mobile #payment,
+.checkflow-template-compact_mobile .woocommerce-checkout-payment {
+	border-radius: 7px !important;
+	border-color: #e2e8f0 !important;
+	background: #fff;
+}
+
+.checkflow-template-compact_mobile .wc-block-components-address-card {
+	padding: 14px !important;
+}
+
+.checkflow-template-compact_mobile .form-row input.input-text,
+.checkflow-template-compact_mobile .form-row textarea,
+.checkflow-template-compact_mobile .form-row select,
+.checkflow-template-compact_mobile .wc-block-components-text-input input,
+.checkflow-template-compact_mobile .wc-block-components-combobox .components-combobox-control__input {
+	min-height: 44px;
+	border-radius: 6px !important;
+}
+
+.checkflow-template-compact_mobile .wc-block-components-radio-control__option,
+.checkflow-template-compact_mobile #payment .wc_payment_method {
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+
+.checkflow-template-compact_mobile #place_order,
+.checkflow-template-compact_mobile .wc-block-components-checkout-place-order-button {
+	min-height: 56px;
+	border-radius: 6px !important;
+}
+
 .checkflow-qty-input {
 	width: 72px;
 	height: 34px;

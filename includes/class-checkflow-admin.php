@@ -18,6 +18,8 @@ final class CheckFlow_Admin {
 
 	const SETTINGS_OPTION = 'checkflow_quick_settings';
 
+	const TEMPLATE_OPTION = 'checkflow_checkout_template';
+
 	/** @var self|null */
 	private static $instance;
 
@@ -116,6 +118,8 @@ final class CheckFlow_Admin {
 				'nonce'   => wp_create_nonce( 'checkflow_admin' ),
 				'locale'  => $loc,
 				'settings' => $this->get_quick_settings(),
+				'checkoutTemplate' => $this->get_checkout_template(),
+				'checkoutTemplates' => $this->get_checkout_templates(),
 				'screens' => array(
 					'dashboard'    => array(
 						'title' => checkflow_str( 'nav.dashboard' ),
@@ -265,6 +269,43 @@ final class CheckFlow_Admin {
 	}
 
 	/**
+	 * Save active checkout template.
+	 */
+	public function ajax_save_checkout_template() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Permission denied.', 'checkflow' ),
+				),
+				403
+			);
+		}
+
+		$template  = isset( $_POST['template'] ) ? sanitize_key( wp_unslash( $_POST['template'] ) ) : '';
+		$templates = $this->get_checkout_templates();
+		if ( ! isset( $templates[ $template ] ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Unknown checkout template.', 'checkflow' ),
+				),
+				400
+			);
+		}
+
+		update_option( self::TEMPLATE_OPTION, $template, false );
+
+		wp_send_json_success(
+			array(
+				'message'  => __( 'Checkout template saved.', 'checkflow' ),
+				'template' => $template,
+				'label'    => $templates[ $template ]['name'],
+			)
+		);
+	}
+
+	/**
 	 * @param string $hook Current admin hook.
 	 * @return bool
 	 */
@@ -320,5 +361,47 @@ final class CheckFlow_Admin {
 		}
 
 		return $settings;
+	}
+
+	/**
+	 * @return array<string,array<string,string>>
+	 */
+	public function get_checkout_templates() {
+		return array(
+			'default_one_page' => array(
+				'name'        => __( 'Default One Page', 'checkflow' ),
+				'description' => __( 'Clean Shopify-like two-column checkout with balanced spacing.', 'checkflow' ),
+				'tag'         => __( 'Safe default', 'checkflow' ),
+			),
+			'bangladesh_cod'  => array(
+				'name'        => __( 'Bangladesh COD', 'checkflow' ),
+				'description' => __( 'Phone-first checkout for cash on delivery and local delivery trust.', 'checkflow' ),
+				'tag'         => __( 'COD focused', 'checkflow' ),
+			),
+			'minimal_digital' => array(
+				'name'        => __( 'Minimal Digital', 'checkflow' ),
+				'description' => __( 'Reduced visual weight for digital products, courses, and services.', 'checkflow' ),
+				'tag'         => __( 'Lean flow', 'checkflow' ),
+			),
+			'trust_checkout'  => array(
+				'name'        => __( 'Trust Checkout', 'checkflow' ),
+				'description' => __( 'Stronger reassurance, payment confidence, and summary emphasis.', 'checkflow' ),
+				'tag'         => __( 'Trust heavy', 'checkflow' ),
+			),
+			'compact_mobile'  => array(
+				'name'        => __( 'Compact Mobile', 'checkflow' ),
+				'description' => __( 'Tighter spacing for mobile-first stores and shorter checkout pages.', 'checkflow' ),
+				'tag'         => __( 'Mobile first', 'checkflow' ),
+			),
+		);
+	}
+
+	/**
+	 * @return string
+	 */
+	public function get_checkout_template() {
+		$template  = sanitize_key( (string) get_option( self::TEMPLATE_OPTION, 'default_one_page' ) );
+		$templates = $this->get_checkout_templates();
+		return isset( $templates[ $template ] ) ? $template : 'default_one_page';
 	}
 }

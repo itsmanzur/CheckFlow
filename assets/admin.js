@@ -178,6 +178,56 @@
 		});
 	}
 
+	function setTemplateUi(template, label) {
+		document.querySelectorAll("[data-checkout-template]").forEach(function (card) {
+			var key = card.getAttribute("data-checkout-template");
+			var active = key === template;
+			card.classList.toggle("is-active", active);
+			var button = card.querySelector("[data-save-checkout-template]");
+			if (button) {
+				button.textContent = active ? "Active" : "Use template";
+				button.classList.toggle("btn-p", !active);
+				button.classList.toggle("cf-btn-ghost", active);
+			}
+		});
+		var current = document.querySelector("[data-template-current]");
+		if (current) current.textContent = label || template;
+		if (window.checkflowAdmin) {
+			checkflowAdmin.checkoutTemplate = template;
+		}
+	}
+
+	function saveCheckoutTemplate(template, btnEl) {
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl || !template) return;
+		var $btn = $(btnEl);
+		$btn.prop("disabled", true);
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_save_checkout_template",
+				nonce: checkflowAdmin.nonce,
+				template: template,
+			},
+		})
+			.done(function (res) {
+				if (!res || !res.success || !res.data) {
+					showToast("Could not save checkout template", "error");
+					return;
+				}
+				setTemplateUi(res.data.template, res.data.label);
+				showToast(res.data.label + " template is active");
+			})
+			.fail(function () {
+				showToast("Could not save checkout template", "error");
+			})
+			.always(function () {
+				$btn.prop("disabled", false);
+			});
+	}
+
 	function persistLocale(locale) {
 		var ajaxUrl = getAdminAjaxUrl();
 		if (!ajaxUrl) {
@@ -1522,6 +1572,10 @@
 		$(document).on("click", ".ni[data-screen]", function () {
 			var id = $(this).attr("data-screen");
 			if (id) setPane(id);
+		});
+
+		$(document).on("click", "[data-save-checkout-template]", function () {
+			saveCheckoutTemplate(this.getAttribute("data-save-checkout-template"), this);
 		});
 
 		$(document).on("change", ".cf-locale-switch", function () {

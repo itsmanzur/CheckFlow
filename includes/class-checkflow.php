@@ -56,6 +56,7 @@ final class CheckFlow {
 		$this->loader->add_filter( 'admin_body_class', $admin, 'body_class' );
 		$this->loader->add_action( 'wp_ajax_checkflow_toggle_setting', $admin, 'ajax_toggle_setting' );
 		$this->loader->add_action( 'wp_ajax_checkflow_get_stats', $admin, 'ajax_get_stats' );
+		$this->loader->add_action( 'wp_ajax_checkflow_save_checkout_template', $admin, 'ajax_save_checkout_template' );
 		$this->loader->add_action( 'wp_ajax_checkflow_save_checkout_fields', $field_editor, 'ajax_save_fields' );
 		$this->loader->add_action( 'wp_ajax_checkflow_reset_checkout_fields', $field_editor, 'ajax_reset_fields' );
 		$this->loader->add_action( 'init', $field_editor, 'register_block_checkout_fields', 20 );
@@ -65,6 +66,7 @@ final class CheckFlow {
 		$this->loader->add_action( 'admin_notices', $this, 'render_wc_notice' );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $assets, 'enqueue' );
+		$this->loader->add_filter( 'body_class', $checkout, 'body_class' );
 
 		$this->loader->add_action( 'wp_ajax_checkflow_update_order_review', $ajax, 'update_order_review' );
 		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_update_order_review', $ajax, 'update_order_review' );
