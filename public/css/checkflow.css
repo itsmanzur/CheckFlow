@@ -129,6 +129,31 @@
 	letter-spacing: 0;
 }
 
+.woocommerce-checkout .checkflow-field-help {
+	display: block;
+	margin-top: 6px;
+	color: #6b7280;
+	font-size: 12px;
+	line-height: 1.35;
+}
+
+.woocommerce-checkout .form-row.checkflow-field-width-full,
+.woocommerce-checkout .checkflow-field-width-full {
+	width: 100%;
+	flex-basis: 100%;
+	grid-column: 1 / -1;
+}
+
+.woocommerce-checkout .form-row.checkflow-field-width-first,
+.woocommerce-checkout .form-row.checkflow-field-width-last {
+	width: calc(50% - 8px);
+}
+
+.woocommerce-checkout .checkflow-field-width-first,
+.woocommerce-checkout .checkflow-field-width-last {
+	min-width: 0;
+}
+
 .woocommerce-checkout .col2-set {
 	display: grid;
 	grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);

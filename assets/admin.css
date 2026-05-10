@@ -1149,6 +1149,88 @@ body.checkflow-admin-screen #wpbody-content {
 	gap: 8px;
 	flex-shrink: 0;
 }
+#checkflow-admin.checkflow-root .cf-field-search {
+	width: 180px;
+	min-height: 36px;
+	border: 1px solid var(--bd2);
+	border-radius: 8px;
+	background: #0f121b;
+	color: var(--tx);
+	font-family: var(--font);
+	font-size: 12px;
+	padding: 0 10px;
+}
+#checkflow-admin.checkflow-root .cf-field-search:focus {
+	border-color: var(--pr);
+	box-shadow: 0 0 0 2px var(--pr-d);
+	outline: none;
+}
+#checkflow-admin.checkflow-root .cf-field-save-state {
+	display: inline-flex;
+	align-items: center;
+	min-height: 26px;
+	padding: 0 9px;
+	border: 1px solid var(--bd);
+	border-radius: 999px;
+	background: var(--gn-d);
+	color: var(--gn);
+	font-size: 10px;
+	font-weight: 900;
+	letter-spacing: 0.3px;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+#checkflow-admin.checkflow-root .cf-field-save-state.is-dirty {
+	background: var(--or-d);
+	color: var(--or);
+	border-color: rgba(255, 159, 67, 0.28);
+}
+#checkflow-admin.checkflow-root .cf-save-fields.is-dirty {
+	box-shadow: 0 0 0 2px var(--or-d), 0 10px 26px var(--pr-g);
+}
+#checkflow-admin.checkflow-root .cf-field-create {
+	display: grid;
+	grid-template-columns: minmax(170px, 1fr) minmax(160px, 1fr) 130px 140px minmax(190px, 1fr) auto;
+	gap: 10px;
+	align-items: end;
+	margin-bottom: 14px;
+	padding: 12px;
+	border: 1px solid var(--bd);
+	border-radius: 12px;
+	background: #0f121b;
+}
+#checkflow-admin.checkflow-root .cf-field-create strong,
+#checkflow-admin.checkflow-root .cf-field-create span {
+	display: block;
+}
+#checkflow-admin.checkflow-root .cf-field-create strong {
+	color: var(--tx);
+	font-size: 12px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-field-create span {
+	margin-top: 3px;
+	color: var(--tx3);
+	font-size: 10.5px;
+}
+#checkflow-admin.checkflow-root .cf-field-create input,
+#checkflow-admin.checkflow-root .cf-field-create select {
+	width: 100%;
+	min-height: 36px;
+	border: 1px solid var(--bd2);
+	border-radius: 8px;
+	background: var(--s1);
+	color: var(--tx);
+	font-family: var(--font);
+	font-size: 12px;
+	padding: 0 10px;
+}
+#checkflow-admin.checkflow-root .cf-field-create input:focus,
+#checkflow-admin.checkflow-root .cf-field-create select:focus {
+	border-color: var(--pr);
+	box-shadow: 0 0 0 2px var(--pr-d);
+	outline: none;
+}
 #checkflow-admin.checkflow-root .cf-btn-ghost {
 	min-height: 36px;
 	padding: 0 14px;
@@ -1248,6 +1330,370 @@ body.checkflow-admin-screen #wpbody-content {
 	height: 18px;
 	border-radius: 5px;
 	accent-color: var(--pr);
+}
+
+#checkflow-admin.checkflow-root .cf-field-tabs {
+	display: inline-flex;
+	gap: 4px;
+	margin-bottom: 14px;
+	padding: 4px;
+	border: 1px solid var(--bd);
+	border-radius: 10px;
+	background: #0f121b;
+}
+#checkflow-admin.checkflow-root .cf-field-tabs button {
+	min-height: 34px;
+	padding: 0 14px;
+	border: 0;
+	border-radius: 7px;
+	background: transparent;
+	color: var(--tx2);
+	font-family: var(--font);
+	font-size: 12px;
+	font-weight: 800;
+	cursor: pointer;
+}
+#checkflow-admin.checkflow-root .cf-field-tabs button:hover,
+#checkflow-admin.checkflow-root .cf-field-tabs button:focus-visible {
+	color: var(--tx);
+	outline: none;
+}
+#checkflow-admin.checkflow-root .cf-field-tabs button.is-active {
+	background: var(--pr);
+	color: #fff;
+	box-shadow: 0 8px 24px var(--pr-g);
+}
+#checkflow-admin.checkflow-root .cf-field-panel {
+	display: none;
+}
+#checkflow-admin.checkflow-root .cf-field-panel.is-active {
+	display: block;
+}
+#checkflow-admin.checkflow-root .cf-field-panel-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 10px;
+}
+#checkflow-admin.checkflow-root .cf-field-panel-head strong,
+#checkflow-admin.checkflow-root .cf-field-panel-head span {
+	display: block;
+}
+#checkflow-admin.checkflow-root .cf-field-panel-head strong {
+	color: var(--tx);
+	font-size: 13px;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-field-panel-head span {
+	margin-top: 2px;
+	color: var(--tx3);
+	font-size: 11px;
+}
+#checkflow-admin.checkflow-root .cf-field-list {
+	display: grid;
+	gap: 10px;
+	position: relative;
+}
+#checkflow-admin.checkflow-root .cf-field-row {
+	display: grid;
+	grid-template-columns: 38px minmax(0, 1fr) minmax(270px, auto);
+	gap: 12px;
+	align-items: center;
+	padding: 12px;
+	border: 1px solid var(--bd);
+	border-radius: 12px;
+	background: var(--s2);
+	transition: border-color 0.16s ease, background 0.16s ease, transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.16s ease, opacity 0.16s ease;
+	will-change: transform;
+}
+#checkflow-admin.checkflow-root .cf-field-row.is-expanded {
+	border-color: rgba(79, 142, 255, 0.42);
+	background: #1b2030;
+}
+#checkflow-admin.checkflow-root .cf-field-row.is-filtered {
+	display: none;
+}
+#checkflow-admin.checkflow-root .cf-field-row:hover,
+#checkflow-admin.checkflow-root .cf-field-row.is-reordered {
+	border-color: var(--pr);
+	background: #1d2230;
+}
+#checkflow-admin.checkflow-root .cf-field-row.is-reordered {
+	transform: translateY(-1px);
+	box-shadow: 0 14px 34px rgba(79, 142, 255, 0.14);
+}
+#checkflow-admin.checkflow-root .cf-field-move {
+	display: grid;
+	gap: 5px;
+}
+#checkflow-admin.checkflow-root .cf-field-move button {
+	width: 30px;
+	height: 28px;
+	border: 1px solid var(--bd2);
+	border-radius: 7px;
+	background: #0f121b;
+	color: var(--tx2);
+	font-size: 13px;
+	font-weight: 900;
+	cursor: pointer;
+}
+#checkflow-admin.checkflow-root .cf-field-move .cf-field-drag {
+	background: var(--pr-d);
+	color: var(--pr);
+	cursor: grab;
+	touch-action: none;
+	user-select: none;
+	transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+#checkflow-admin.checkflow-root .cf-field-move .cf-field-drag:active {
+	cursor: grabbing;
+	transform: scale(0.96);
+}
+#checkflow-admin.checkflow-root .cf-field-move button:hover,
+#checkflow-admin.checkflow-root .cf-field-move button:focus-visible {
+	border-color: var(--pr);
+	color: var(--pr);
+	outline: none;
+}
+#checkflow-admin.checkflow-root .cf-field-row.is-dragging {
+	border-color: var(--pr);
+	background: #1d2230;
+	box-shadow: 0 12px 32px rgba(79, 142, 255, 0.12);
+	opacity: 0.34;
+}
+#checkflow-admin.checkflow-root .cf-field-row-placeholder {
+	min-height: 88px;
+	border: 1px dashed rgba(79, 142, 255, 0.82);
+	border-radius: 12px;
+	background: linear-gradient(135deg, rgba(79, 142, 255, 0.12), rgba(46, 231, 166, 0.07));
+	box-shadow: inset 0 0 0 1px rgba(79, 142, 255, 0.1);
+	transition: height 0.12s ease, transform 0.12s ease;
+}
+#checkflow-admin.checkflow-root .cf-field-drag-helper {
+	z-index: 99999;
+	border-color: var(--pr);
+	background: #202637;
+	box-shadow: 0 22px 60px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(79, 142, 255, 0.28);
+	opacity: 0.96;
+	pointer-events: none;
+	transform: rotate(-0.35deg);
+}
+#checkflow-admin.checkflow-root .cf-field-drag-helper::after {
+	content: attr(data-position-label);
+	position: absolute;
+	top: -12px;
+	right: 14px;
+	padding: 4px 8px;
+	border: 1px solid rgba(79, 142, 255, 0.42);
+	border-radius: 999px;
+	background: #0f121b;
+	color: var(--pr);
+	font-size: 10px;
+	font-weight: 900;
+	letter-spacing: 0.2px;
+}
+html.cf-field-dragging #checkflow-admin.checkflow-root .cf-field-list {
+	cursor: grabbing;
+}
+html.cf-field-dragging,
+html.cf-field-dragging body {
+	user-select: none;
+}
+#checkflow-admin.checkflow-root .cf-field-main {
+	display: grid;
+	grid-template-columns: minmax(180px, 0.7fr) minmax(220px, 1fr);
+	gap: 12px;
+	align-items: center;
+}
+#checkflow-admin.checkflow-root .cf-field-title strong,
+#checkflow-admin.checkflow-root .cf-field-title span,
+#checkflow-admin.checkflow-root .cf-field-title em,
+#checkflow-admin.checkflow-root .cf-field-main label > span,
+#checkflow-admin.checkflow-root .cf-field-mini > span {
+	display: block;
+}
+#checkflow-admin.checkflow-root .cf-field-title strong {
+	color: var(--tx);
+	font-size: 13px;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-field-title span {
+	margin-top: 3px;
+	color: var(--tx3);
+	font-family: var(--mono);
+	font-size: 10.5px;
+}
+#checkflow-admin.checkflow-root .cf-field-title em {
+	width: fit-content;
+	padding: 2px 6px;
+	border-radius: 999px;
+	background: var(--pr-d);
+	color: var(--pr);
+	font-size: 9px;
+	font-style: normal;
+	font-weight: 900;
+	text-transform: uppercase;
+}
+#checkflow-admin.checkflow-root .cf-field-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+	margin-top: 6px;
+}
+#checkflow-admin.checkflow-root .cf-field-main label > span,
+#checkflow-admin.checkflow-root .cf-field-mini > span {
+	margin-bottom: 5px;
+	color: var(--tx3);
+	font-size: 10px;
+	font-weight: 800;
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+}
+#checkflow-admin.checkflow-root .cf-field-main input[type="text"],
+#checkflow-admin.checkflow-root .cf-field-mini input[type="number"] {
+	width: 100%;
+	min-height: 36px;
+	border: 1px solid var(--bd2);
+	border-radius: 8px;
+	background: #0f121b;
+	color: var(--tx);
+	font-family: var(--font);
+	font-size: 12px;
+	padding: 0 10px;
+}
+#checkflow-admin.checkflow-root .cf-field-main input[type="text"]:focus,
+#checkflow-admin.checkflow-root .cf-field-mini input[type="number"]:focus {
+	border-color: var(--pr);
+	box-shadow: 0 0 0 2px var(--pr-d);
+	outline: none;
+}
+#checkflow-admin.checkflow-root .cf-field-controls {
+	display: grid;
+	grid-template-columns: 78px 86px 104px repeat(2, auto);
+	gap: 10px;
+	align-items: end;
+}
+#checkflow-admin.checkflow-root .cf-field-switch {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	min-height: 36px;
+	padding: 0 9px;
+	border: 1px solid var(--bd);
+	border-radius: 8px;
+	background: #0f121b;
+	color: var(--tx2);
+	font-size: 11px;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-field-switch input {
+	width: 17px;
+	height: 17px;
+	accent-color: var(--pr);
+}
+#checkflow-admin.checkflow-root .cf-field-delete {
+	min-height: 36px;
+	padding: 0 10px;
+	border: 1px solid rgba(255, 91, 91, 0.26);
+	border-radius: 8px;
+	background: rgba(255, 91, 91, 0.08);
+	color: #ff8a8a;
+	font-family: var(--font);
+	font-size: 11px;
+	font-weight: 900;
+	cursor: pointer;
+}
+#checkflow-admin.checkflow-root .cf-field-delete:hover,
+#checkflow-admin.checkflow-root .cf-field-delete:focus-visible {
+	border-color: rgba(255, 91, 91, 0.58);
+	background: rgba(255, 91, 91, 0.14);
+	outline: none;
+}
+#checkflow-admin.checkflow-root .cf-field-settings {
+	min-height: 36px;
+	padding: 0 10px;
+	border: 1px solid var(--bd2);
+	border-radius: 8px;
+	background: #0f121b;
+	color: var(--tx2);
+	font-family: var(--font);
+	font-size: 11px;
+	font-weight: 900;
+	cursor: pointer;
+}
+#checkflow-admin.checkflow-root .cf-field-settings:hover,
+#checkflow-admin.checkflow-root .cf-field-settings:focus-visible,
+#checkflow-admin.checkflow-root .cf-field-settings[aria-expanded="true"] {
+	border-color: var(--pr);
+	color: var(--pr);
+	outline: none;
+}
+#checkflow-admin.checkflow-root .cf-field-advanced {
+	grid-column: 2 / -1;
+	display: grid;
+	grid-template-columns: repeat(4, minmax(140px, 1fr)) minmax(160px, 0.8fr);
+	gap: 10px;
+	padding-top: 12px;
+	border-top: 1px solid var(--bd);
+}
+#checkflow-admin.checkflow-root .cf-field-advanced[hidden] {
+	display: none;
+}
+#checkflow-admin.checkflow-root .cf-field-advanced label > span,
+#checkflow-admin.checkflow-root .cf-field-preview > span {
+	display: block;
+	margin-bottom: 5px;
+	color: var(--tx3);
+	font-size: 10px;
+	font-weight: 800;
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+}
+#checkflow-admin.checkflow-root .cf-field-advanced input,
+#checkflow-admin.checkflow-root .cf-field-advanced select {
+	width: 100%;
+	min-height: 36px;
+	border: 1px solid var(--bd2);
+	border-radius: 8px;
+	background: #0f121b;
+	color: var(--tx);
+	font-family: var(--font);
+	font-size: 12px;
+	padding: 0 10px;
+}
+#checkflow-admin.checkflow-root .cf-field-advanced input:focus,
+#checkflow-admin.checkflow-root .cf-field-advanced select:focus {
+	border-color: var(--pr);
+	box-shadow: 0 0 0 2px var(--pr-d);
+	outline: none;
+}
+#checkflow-admin.checkflow-root .cf-field-preview {
+	min-height: 70px;
+	padding: 10px;
+	border: 1px solid var(--bd);
+	border-radius: 10px;
+	background: #0f121b;
+}
+#checkflow-admin.checkflow-root .cf-field-preview strong,
+#checkflow-admin.checkflow-root .cf-field-preview em,
+#checkflow-admin.checkflow-root .cf-field-preview small {
+	display: block;
+}
+#checkflow-admin.checkflow-root .cf-field-preview strong {
+	color: var(--tx);
+	font-size: 12px;
+}
+#checkflow-admin.checkflow-root .cf-field-preview em {
+	margin-top: 5px;
+	color: var(--tx2);
+	font-size: 12px;
+	font-style: normal;
+}
+#checkflow-admin.checkflow-root .cf-field-preview small {
+	margin-top: 4px;
+	color: var(--tx3);
+	font-size: 10.5px;
 }
 
 #checkflow-admin.checkflow-root .cf-template-grid {
@@ -1402,9 +1848,37 @@ body.checkflow-admin-screen #wpbody-content {
 	}
 	#checkflow-admin.checkflow-root .cf-field-actions {
 		width: 100%;
+		flex-wrap: wrap;
+	}
+	#checkflow-admin.checkflow-root .cf-field-search {
+		width: 100%;
+		flex-basis: 100%;
 	}
 	#checkflow-admin.checkflow-root .cf-field-actions .btn-p,
 	#checkflow-admin.checkflow-root .cf-field-actions .cf-btn-ghost {
+		flex: 1;
+	}
+	#checkflow-admin.checkflow-root .cf-field-tabs {
+		display: grid;
+		grid-template-columns: 1fr;
+		width: 100%;
+	}
+	#checkflow-admin.checkflow-root .cf-field-create {
+		grid-template-columns: 1fr;
+	}
+	#checkflow-admin.checkflow-root .cf-field-row,
+	#checkflow-admin.checkflow-root .cf-field-main,
+	#checkflow-admin.checkflow-root .cf-field-controls,
+	#checkflow-admin.checkflow-root .cf-field-advanced {
+		grid-template-columns: 1fr;
+	}
+	#checkflow-admin.checkflow-root .cf-field-advanced {
+		grid-column: 1 / -1;
+	}
+	#checkflow-admin.checkflow-root .cf-field-move {
+		display: flex;
+	}
+	#checkflow-admin.checkflow-root .cf-field-move button {
 		flex: 1;
 	}
 	#checkflow-admin.checkflow-root .fr,

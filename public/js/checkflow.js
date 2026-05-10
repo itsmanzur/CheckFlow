@@ -126,6 +126,105 @@
 		});
 	}
 
+	function cssEscape(value) {
+		if (window.CSS && window.CSS.escape) {
+			return window.CSS.escape(value);
+		}
+		return String(value).replace(/"/g, '\\"');
+	}
+
+	function fieldCandidates(key) {
+		var clean = String(key || "");
+		var dash = clean.replace(/_/g, "-");
+		var stripped = clean.replace(/^(billing|shipping)_/, "");
+		var strippedDash = stripped.replace(/_/g, "-");
+		var custom = clean.replace(/^checkflow_custom_/, "");
+		return [clean, dash, stripped, strippedDash, "checkflow/" + custom].filter(Boolean);
+	}
+
+	function findFieldControl(key) {
+		var candidates = fieldCandidates(key);
+		for (var i = 0; i < candidates.length; i += 1) {
+			var value = candidates[i];
+			var selector =
+				'input[name="' +
+				cssEscape(value) +
+				'"], select[name="' +
+				cssEscape(value) +
+				'"], textarea[name="' +
+				cssEscape(value) +
+				'"], input[id="' +
+				cssEscape(value) +
+				'"], select[id="' +
+				cssEscape(value) +
+				'"], textarea[id="' +
+				cssEscape(value) +
+				'"]';
+			var control = document.querySelector(selector);
+			if (control) {
+				return control;
+			}
+		}
+		return null;
+	}
+
+	function fieldWrapper(control) {
+		return (
+			control.closest(".form-row") ||
+			control.closest(".wc-block-components-text-input") ||
+			control.closest(".wc-block-components-select") ||
+			control.closest(".wc-block-components-checkbox") ||
+			control.closest(".wc-block-components-address-form__address_1") ||
+			control.parentElement
+		);
+	}
+
+	function applyFieldWidth(wrapper, width) {
+		if (!wrapper) return;
+		wrapper.classList.remove("checkflow-field-width-full", "checkflow-field-width-first", "checkflow-field-width-last");
+		if (width === "full") {
+			wrapper.classList.add("checkflow-field-width-full");
+		}
+		if (width === "first" || width === "half") {
+			wrapper.classList.add("checkflow-field-width-first");
+		}
+		if (width === "last") {
+			wrapper.classList.add("checkflow-field-width-last");
+		}
+	}
+
+	function applyFieldHelp(wrapper, key, help) {
+		if (!wrapper || !help) return;
+		var note = wrapper.querySelector('.checkflow-field-help[data-field-key="' + cssEscape(key) + '"]');
+		if (!note) {
+			note = document.createElement("small");
+			note.className = "checkflow-field-help";
+			note.setAttribute("data-field-key", key);
+			wrapper.appendChild(note);
+		}
+		note.textContent = help;
+	}
+
+	function applyAdvancedFieldSettings() {
+		var meta = window.checkflowCheckout && checkflowCheckout.fieldMeta ? checkflowCheckout.fieldMeta : {};
+		Object.keys(meta).forEach(function (key) {
+			var config = meta[key] || {};
+			var control = findFieldControl(key);
+			if (!control) return;
+			var wrapper = fieldWrapper(control);
+			if (config.placeholder && "placeholder" in control) {
+				control.setAttribute("placeholder", config.placeholder);
+			}
+			if (config.defaultValue && !control.value && control.type !== "checkbox") {
+				control.value = config.defaultValue;
+				control.dispatchEvent(new Event("input", { bubbles: true }));
+				control.dispatchEvent(new Event("change", { bubbles: true }));
+			}
+			applyFieldWidth(wrapper, config.width || "default");
+			applyFieldHelp(wrapper, key, config.help || "");
+		});
+	}
+
 	function createStepButton(step) {
 		var btn = document.createElement("button");
 		btn.type = "button";
@@ -257,6 +356,7 @@
 			.on("updated_checkout checkout_error", function () {
 				setBusy(false);
 				enhancePlaceOrder(checkoutForm() || document);
+				applyAdvancedFieldSettings();
 			})
 			.on("checkout_error", function () {
 				state.activeStep = "contact";
@@ -285,6 +385,7 @@
 		ensureTrustBadgesPlacement();
 		ensureQuickModulesPlacement();
 		initCountdowns();
+		applyAdvancedFieldSettings();
 	}
 
 	function initBlocks() {
@@ -302,6 +403,7 @@
 		ensureQuickModulesPlacement();
 		initCountdowns();
 		enhancePlaceOrder(root);
+		applyAdvancedFieldSettings();
 		observeCheckoutEvents();
 	}
 
@@ -326,11 +428,13 @@
 				ensureTrustBadgesPlacement();
 				ensureQuickModulesPlacement();
 				initCountdowns();
+				applyAdvancedFieldSettings();
 			}, 250);
 			window.setTimeout(function () {
 				ensureTrustBadgesPlacement();
 				ensureQuickModulesPlacement();
 				initCountdowns();
+				applyAdvancedFieldSettings();
 			}, 1000);
 			return;
 		}
@@ -339,6 +443,7 @@
 			ensureTrustBadgesPlacement();
 			ensureQuickModulesPlacement();
 			initCountdowns();
+			applyAdvancedFieldSettings();
 		}, 250);
 	}
 

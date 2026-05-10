@@ -140,7 +140,8 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - `checkflow_place_order` delegates to WooCommerce checkout processing; final payment/order behavior must be tested with real gateways before release.
 - Frontend checkout app first pass exists and is now block-aware, but still needs real browser QA for the current WooCommerce Blocks checkout page.
 - Direct Checkout first pass is implemented with an admin quick setting, non-AJAX add-to-cart redirect, and AJAX add-to-cart redirect after WooCommerce confirms the cart add.
-- Field Editor first pass is implemented for WooCommerce core checkout fields: admin can save label, required state, visibility, and priority; checkout applies the settings through `woocommerce_checkout_fields`.
+- Field Editor is now a card-based builder for WooCommerce core checkout fields: admin can save label, required state, visibility, manual priority, arrow ordering, and drag/drop ordering.
+- Field Editor custom-field first pass supports Text, Select, Checkbox, Date, and Textarea fields; custom field values are stored as order meta.
 - Quick Settings functional mapping status:
   - `direct_checkout`: implemented; controls skip-cart redirect for non-AJAX and AJAX add-to-cart flows.
   - `guest_checkout`: implemented; maps to WooCommerce native guest checkout/registration-required behavior.
@@ -151,7 +152,7 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
   - `recaptcha`: implemented for classic checkout when site/secret keys are configured via options or filters; with no keys it is a safe no-op and does not block orders.
 - Popup modal checkout and slide-in panel checkout are implemented as add-to-cart conversion modules, not final payment submission replacements.
 - Direct checkout/skip cart is implemented and browser-verified by manual QA.
-- Field editor custom fields, drag-and-drop ordering, conditional logic, and field type builder are not implemented yet.
+- Field editor conditional logic and advanced field-type settings are not implemented yet.
 - Template system is not implemented.
 - bKash/Nagad/Rocket/SSLCOMMERZ gateways are not implemented.
 - Pathao/RedX/SteadFast courier integrations are not implemented.
@@ -223,7 +224,8 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 ### Milestone E - Pro Feature Modules
 
 - [x] Field editor first pass with WooCommerce field filters for label, required, visibility, and priority.
-- [ ] Field editor with drag/drop ordering, custom fields, 20+ field types, and conditional logic.
+- [x] Field editor drag/drop ordering and custom field add for Text, Select, Checkbox, Date, Textarea.
+- [ ] Field editor with conditional logic, richer validation rules, and 20+ advanced field types.
 - [ ] Template system.
 - [ ] BD payment gateways and `checkflow_payment_logs`.
 - [ ] Courier integrations and order meta tracking IDs.

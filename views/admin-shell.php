@@ -48,6 +48,18 @@ $st_map = array(
 $str_keys       = $i18n->get_flat_keys_sorted();
 $quick_settings = CheckFlow_Admin::instance()->get_quick_settings();
 $field_rows     = class_exists( 'CheckFlow_Field_Editor' ) ? CheckFlow_Field_Editor::instance()->get_admin_rows() : array();
+$field_groups   = array(
+	'billing'  => array(),
+	'shipping' => array(),
+	'order'    => array(),
+);
+foreach ( $field_rows as $field ) {
+	$group = isset( $field['group'] ) ? (string) $field['group'] : 'billing';
+	if ( ! isset( $field_groups[ $group ] ) ) {
+		$field_groups[ $group ] = array();
+	}
+	$field_groups[ $group ][] = $field;
+}
 $page_to_pane   = array(
 	'checkflow-dashboard'    => 'dashboard',
 	'checkflow-orders'       => 'orders',
@@ -434,26 +446,52 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 					<div class="ph"><div class="pt">Checkout field editor</div><div class="pa">WooCommerce safe</div></div>
 					<div class="pb">
 						<div class="cf-field-toolbar">
-							<p>Control labels, required state, visibility, and order for WooCommerce checkout core fields.</p>
+							<p>Manage checkout fields with friendly controls. Drag the handle or use arrows to reorder, then save to apply changes on checkout.</p>
 							<div class="cf-field-actions">
+								<input type="search" class="cf-field-search" placeholder="Search fields" aria-label="Search checkout fields" />
+								<button type="button" class="cf-btn-ghost cf-reset-active-fields">Reset tab</button>
+								<span class="cf-field-save-state" aria-live="polite">Saved</span>
 								<button type="button" class="btn-p cf-save-fields">Save fields</button>
 								<button type="button" class="cf-btn-ghost cf-reset-fields">Reset</button>
 							</div>
 						</div>
-						<div class="cf-field-table-wrap">
-							<table class="cf-field-table">
-								<thead>
-									<tr>
-										<th>Field</th>
-										<th>Label</th>
-										<th>Group</th>
-										<th>Sort</th>
-										<th>Show</th>
-										<th>Required</th>
-									</tr>
-								</thead>
-								<tbody>
-									<?php foreach ( $field_rows as $field ) : ?>
+						<div class="cf-field-create">
+							<div>
+								<strong>Add custom field</strong>
+								<span>Text, select, checkbox, date, or textarea</span>
+							</div>
+							<input type="text" class="cf-new-field-label" placeholder="Field label" />
+							<select class="cf-new-field-type" aria-label="Field type">
+								<option value="text">Text</option>
+								<option value="textarea">Textarea</option>
+								<option value="select">Select</option>
+								<option value="checkbox">Checkbox</option>
+								<option value="date">Date</option>
+							</select>
+							<select class="cf-new-field-group" aria-label="Field group">
+								<option value="billing">Billing</option>
+								<option value="shipping">Shipping</option>
+								<option value="order">Order notes</option>
+							</select>
+							<input type="text" class="cf-new-field-options" placeholder="Select options, comma separated" />
+							<button type="button" class="cf-btn-ghost cf-add-custom-field">Add field</button>
+						</div>
+						<div class="cf-field-tabs" role="tablist" aria-label="Checkout field groups">
+							<button type="button" class="is-active" data-field-group-tab="billing">Billing</button>
+							<button type="button" data-field-group-tab="shipping">Shipping</button>
+							<button type="button" data-field-group-tab="order">Order notes</button>
+						</div>
+						<div class="cf-field-panels">
+							<?php foreach ( $field_groups as $group_name => $group_rows ) : ?>
+								<section class="cf-field-panel<?php echo 'billing' === $group_name ? ' is-active' : ''; ?>" data-field-group-panel="<?php echo esc_attr( $group_name ); ?>">
+									<div class="cf-field-panel-head">
+										<div>
+											<strong><?php echo esc_html( ucfirst( $group_name ) ); ?> fields</strong>
+											<span><?php echo esc_html( count( $group_rows ) . ' editable checkout fields' ); ?></span>
+										</div>
+									</div>
+									<div class="cf-field-list" data-field-list="<?php echo esc_attr( $group_name ); ?>">
+										<?php foreach ( $group_rows as $field ) : ?>
 										<?php
 										$key       = isset( $field['key'] ) ? (string) $field['key'] : '';
 										$locked    = ! empty( $field['protected'] );
@@ -461,19 +499,87 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 										$required  = ! empty( $field['required'] );
 										$group     = isset( $field['group'] ) ? (string) $field['group'] : '';
 										$label     = isset( $field['label'] ) ? (string) $field['label'] : $key;
+										$type      = isset( $field['type'] ) ? (string) $field['type'] : 'text';
 										$priority  = isset( $field['priority'] ) ? absint( $field['priority'] ) : 10;
+										$placeholder = isset( $field['placeholder'] ) ? (string) $field['placeholder'] : '';
+										$help      = isset( $field['help'] ) ? (string) $field['help'] : '';
+										$width     = isset( $field['width'] ) ? (string) $field['width'] : 'default';
+										$default_value = isset( $field['default_value'] ) ? (string) $field['default_value'] : '';
+										$default   = CheckFlow_Field_Editor::instance()->get_default_field_for_admin( $key );
 										?>
-										<tr class="cf-field-row" data-field-key="<?php echo esc_attr( $key ); ?>" data-protected="<?php echo $locked ? '1' : '0'; ?>">
-											<td><strong><?php echo esc_html( $key ); ?></strong><?php echo $locked ? '<span>Locked</span>' : ''; ?></td>
-											<td><input type="text" class="cf-field-label" value="<?php echo esc_attr( $label ); ?>" /></td>
-											<td><em><?php echo esc_html( ucfirst( $group ) ); ?></em></td>
-											<td><input type="number" class="cf-field-priority" min="1" max="999" value="<?php echo esc_attr( (string) $priority ); ?>" /></td>
-											<td><input type="checkbox" class="cf-field-enabled" <?php checked( $enabled ); ?> <?php disabled( $locked ); ?> /></td>
-											<td><input type="checkbox" class="cf-field-required" <?php checked( $required ); ?> /></td>
-										</tr>
-									<?php endforeach; ?>
-								</tbody>
-							</table>
+											<div class="cf-field-row" data-field-key="<?php echo esc_attr( $key ); ?>" data-field-group="<?php echo esc_attr( $group ); ?>" data-field-type="<?php echo esc_attr( $type ); ?>" data-field-custom="<?php echo ! empty( $field['custom'] ) ? '1' : '0'; ?>" data-field-options="<?php echo esc_attr( wp_json_encode( isset( $field['options'] ) && is_array( $field['options'] ) ? array_values( $field['options'] ) : array() ) ); ?>" data-protected="<?php echo $locked ? '1' : '0'; ?>" data-default-label="<?php echo esc_attr( isset( $default['label'] ) ? (string) $default['label'] : $label ); ?>" data-default-priority="<?php echo esc_attr( isset( $default['priority'] ) ? (string) absint( $default['priority'] ) : (string) $priority ); ?>" data-default-enabled="<?php echo ! empty( $default['enabled'] ) || $locked ? '1' : '0'; ?>" data-default-required="<?php echo ! empty( $default['required'] ) ? '1' : '0'; ?>" data-default-placeholder="<?php echo esc_attr( isset( $default['placeholder'] ) ? (string) $default['placeholder'] : '' ); ?>" data-default-help="<?php echo esc_attr( isset( $default['help'] ) ? (string) $default['help'] : '' ); ?>" data-default-width="<?php echo esc_attr( isset( $default['width'] ) ? (string) $default['width'] : 'default' ); ?>" data-default-value="<?php echo esc_attr( isset( $default['default_value'] ) ? (string) $default['default_value'] : '' ); ?>">
+												<div class="cf-field-move" aria-label="Reorder field">
+													<button type="button" class="cf-field-drag" data-field-drag aria-label="Drag to reorder">☰</button>
+													<button type="button" data-field-move="up" aria-label="Move up">↑</button>
+													<button type="button" data-field-move="down" aria-label="Move down">↓</button>
+												</div>
+												<div class="cf-field-main">
+													<div class="cf-field-title">
+														<strong><?php echo esc_html( $label ); ?></strong>
+														<span><?php echo esc_html( $key ); ?></span>
+														<div class="cf-field-badges">
+															<em><?php echo esc_html( ucfirst( $type ) ); ?></em>
+															<?php echo $locked ? '<em>Locked</em>' : ''; ?>
+															<?php echo ! empty( $field['custom'] ) ? '<em>Custom</em>' : ''; ?>
+														</div>
+													</div>
+													<label>
+														<span>Checkout label</span>
+														<input type="text" class="cf-field-label" value="<?php echo esc_attr( $label ); ?>" />
+													</label>
+												</div>
+												<div class="cf-field-controls">
+													<label class="cf-field-mini">
+														<span>Order</span>
+														<input type="number" class="cf-field-priority" min="1" max="999" value="<?php echo esc_attr( (string) $priority ); ?>" />
+													</label>
+													<label class="cf-field-switch">
+														<input type="checkbox" class="cf-field-enabled" <?php checked( $enabled ); ?> <?php disabled( $locked ); ?> />
+														<span>Show</span>
+													</label>
+													<label class="cf-field-switch">
+														<input type="checkbox" class="cf-field-required" <?php checked( $required ); ?> />
+														<span>Required</span>
+													</label>
+													<button type="button" class="cf-field-settings" data-field-settings aria-expanded="false">Settings</button>
+													<?php if ( ! empty( $field['custom'] ) ) : ?>
+														<button type="button" class="cf-field-delete" data-field-delete aria-label="Delete custom field">Delete</button>
+													<?php endif; ?>
+												</div>
+												<div class="cf-field-advanced" hidden>
+													<label>
+														<span>Placeholder</span>
+														<input type="text" class="cf-field-placeholder" value="<?php echo esc_attr( $placeholder ); ?>" placeholder="Shown inside the input" />
+													</label>
+													<label>
+														<span>Help text</span>
+														<input type="text" class="cf-field-help" value="<?php echo esc_attr( $help ); ?>" placeholder="Small note below the field" />
+													</label>
+													<label>
+														<span>Width</span>
+														<select class="cf-field-width">
+															<option value="default" <?php selected( $width, 'default' ); ?>>Default</option>
+															<option value="full" <?php selected( $width, 'full' ); ?>>Full width</option>
+															<option value="first" <?php selected( $width, 'first' ); ?>>Half - left</option>
+															<option value="last" <?php selected( $width, 'last' ); ?>>Half - right</option>
+														</select>
+													</label>
+													<label>
+														<span>Default value</span>
+														<input type="text" class="cf-field-default-value" value="<?php echo esc_attr( $default_value ); ?>" placeholder="Optional prefilled value" />
+													</label>
+													<div class="cf-field-preview" aria-hidden="true">
+														<span>Preview</span>
+														<strong><?php echo esc_html( $label ); ?></strong>
+														<em><?php echo esc_html( $placeholder ? $placeholder : 'Customer input' ); ?></em>
+														<small><?php echo esc_html( $help ? $help : 'No help text' ); ?></small>
+													</div>
+												</div>
+											</div>
+										<?php endforeach; ?>
+									</div>
+								</section>
+							<?php endforeach; ?>
 						</div>
 					</div>
 				</div>

@@ -101,7 +101,7 @@ final class CheckFlow_Admin {
 		wp_register_script(
 			'checkflow-admin',
 			CHECKFLOW_URL . 'assets/admin.js',
-			array( 'jquery' ),
+			array( 'jquery', 'jquery-ui-sortable' ),
 			$admin_js_version,
 			true
 		);

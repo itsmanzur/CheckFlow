@@ -58,6 +58,8 @@ final class CheckFlow {
 		$this->loader->add_action( 'wp_ajax_checkflow_get_stats', $admin, 'ajax_get_stats' );
 		$this->loader->add_action( 'wp_ajax_checkflow_save_checkout_fields', $field_editor, 'ajax_save_fields' );
 		$this->loader->add_action( 'wp_ajax_checkflow_reset_checkout_fields', $field_editor, 'ajax_reset_fields' );
+		$this->loader->add_action( 'init', $field_editor, 'register_block_checkout_fields', 20 );
+		$this->loader->add_action( 'woocommerce_blocks_loaded', $field_editor, 'register_block_checkout_fields' );
 
 		$this->loader->add_action( 'admin_init', $this, 'maybe_show_wc_notice' );
 		$this->loader->add_action( 'admin_notices', $this, 'render_wc_notice' );
@@ -81,6 +83,10 @@ final class CheckFlow {
 
 		$this->loader->add_filter( 'woocommerce_checkout_cart_item_quantity', $checkout, 'render_checkout_quantity', 10, 3 );
 		$this->loader->add_filter( 'woocommerce_checkout_fields', $field_editor, 'apply_checkout_fields', 20 );
+		$this->loader->add_filter( 'woocommerce_get_country_locale_default', $field_editor, 'apply_blocks_default_locale', 30 );
+		$this->loader->add_filter( 'woocommerce_get_country_locale', $field_editor, 'apply_blocks_country_locales', 30 );
+		$this->loader->add_action( 'woocommerce_checkout_create_order', $field_editor, 'save_custom_order_meta', 20, 1 );
+		$this->loader->add_action( 'woocommerce_store_api_checkout_update_order_from_request', $field_editor, 'save_store_api_custom_order_meta', 20, 2 );
 		$this->loader->add_filter( 'woocommerce_add_to_cart_redirect', $checkout, 'maybe_direct_checkout_redirect', 20 );
 		$this->loader->add_filter( 'option_woocommerce_enable_guest_checkout', $checkout, 'filter_guest_checkout_option', 20 );
 		$this->loader->add_filter( 'woocommerce_checkout_registration_required', $checkout, 'filter_checkout_registration_required', 20 );
