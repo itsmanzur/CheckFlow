@@ -153,6 +153,10 @@
 	box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.16);
 }
 
+.woocommerce-checkout .checkflow-field-conditional-hidden {
+	display: none !important;
+}
+
 .woocommerce-checkout .form-row.checkflow-field-width-full,
 .woocommerce-checkout .checkflow-field-width-full {
 	width: 100%;

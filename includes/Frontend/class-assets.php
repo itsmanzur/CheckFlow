@@ -117,6 +117,7 @@ final class CheckFlow_Frontend_Assets {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'checkflow-checkout' ),
 				'fieldMeta' => class_exists( 'CheckFlow_Field_Editor' ) ? CheckFlow_Field_Editor::instance()->get_checkout_field_meta() : array(),
+				'cartContext' => class_exists( 'CheckFlow_Field_Editor' ) ? CheckFlow_Field_Editor::instance()->get_cart_context() : array(),
 				'strings' => array(
 					'updating' => __( 'Updating total...', 'checkflow' ),
 				),

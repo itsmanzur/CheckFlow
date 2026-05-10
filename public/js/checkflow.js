@@ -218,6 +218,11 @@
 		}
 	}
 
+	function fieldIsConditionHidden(control) {
+		var wrapper = fieldWrapper(control);
+		return !!(wrapper && wrapper.classList.contains("checkflow-field-conditional-hidden"));
+	}
+
 	function setFieldError(control, message) {
 		var wrapper = fieldWrapper(control);
 		if (!wrapper || !message) return;
@@ -291,6 +296,10 @@
 			var config = meta[key] || {};
 			var control = findFieldControl(key);
 			if (!control) return;
+			if (fieldIsConditionHidden(control)) {
+				clearFieldError(control);
+				return;
+			}
 			var value = control.type === "checkbox" ? (control.checked ? "1" : "") : control.value;
 			var message = validateConfiguredValue(value, config);
 			if (message) {
@@ -338,6 +347,99 @@
 				control.addEventListener("change", function () {
 					validateAdvancedFields(false);
 				});
+			}
+		});
+		applyConditionalFields();
+	}
+
+	function checkoutValueForSource(source, condition) {
+		if (source === "payment_method") {
+			var checkedPayment = document.querySelector('input[name="payment_method"]:checked');
+			return checkedPayment ? checkedPayment.value : "";
+		}
+		if (source === "billing_country" || source === "shipping_country") {
+			var country = findFieldControl(source);
+			return country ? country.value : "";
+		}
+		if (source === "field") {
+			var field = condition && condition.field ? findFieldControl(condition.field) : null;
+			if (!field) return "";
+			return field.type === "checkbox" ? (field.checked ? "1" : "") : field.value;
+		}
+		var cart = window.checkflowCheckout && checkflowCheckout.cartContext ? checkflowCheckout.cartContext : {};
+		if (source === "cart_total") {
+			return String(cart.total || 0);
+		}
+		if (source === "product_id") {
+			return (cart.productIds || []).join(",");
+		}
+		if (source === "category_id") {
+			return (cart.categoryIds || []).join(",");
+		}
+		return "";
+	}
+
+	function compareCondition(actual, expected, operator) {
+		actual = String(actual || "").trim();
+		expected = String(expected || "").trim();
+		if (operator === "checked") {
+			return ["1", "yes", "true", "on"].indexOf(actual.toLowerCase()) !== -1;
+		}
+		if (operator === "not_checked") {
+			return ["1", "yes", "true", "on"].indexOf(actual.toLowerCase()) === -1;
+		}
+		if (operator === "greater_equal") {
+			return isFinite(Number(actual)) && isFinite(Number(expected)) && Number(actual) >= Number(expected);
+		}
+		if (operator === "less_equal") {
+			return isFinite(Number(actual)) && isFinite(Number(expected)) && Number(actual) <= Number(expected);
+		}
+		if (operator === "contains") {
+			return actual.split(",").map(function (item) { return item.trim(); }).indexOf(expected) !== -1 || actual.toLowerCase().indexOf(expected.toLowerCase()) !== -1;
+		}
+		if (operator === "not_equals") {
+			return actual.toLowerCase() !== expected.toLowerCase();
+		}
+		return actual.toLowerCase() === expected.toLowerCase();
+	}
+
+	function conditionVisible(config) {
+		var condition = config && config.condition ? config.condition : {};
+		if (!condition.enabled) {
+			return true;
+		}
+		var matched = compareCondition(checkoutValueForSource(condition.source, condition), condition.value, condition.operator || "equals");
+		return condition.action === "hide" ? !matched : matched;
+	}
+
+	function applyConditionalFields() {
+		var meta = window.checkflowCheckout && checkflowCheckout.fieldMeta ? checkflowCheckout.fieldMeta : {};
+		Object.keys(meta).forEach(function (key) {
+			var config = meta[key] || {};
+			var control = findFieldControl(key);
+			if (!control) return;
+			var wrapper = fieldWrapper(control);
+			if (!wrapper) return;
+			var visible = conditionVisible(config);
+			wrapper.classList.toggle("checkflow-field-conditional-hidden", !visible);
+			control.disabled = !visible;
+			if (!visible) {
+				clearFieldError(control);
+			}
+		});
+	}
+
+	function bindConditionalRefresh() {
+		if (document.documentElement.getAttribute("data-checkflow-conditions-bound")) return;
+		document.documentElement.setAttribute("data-checkflow-conditions-bound", "1");
+		document.addEventListener("change", function (event) {
+			if (event.target && event.target.matches && event.target.matches("input, select, textarea")) {
+				window.setTimeout(applyConditionalFields, 20);
+			}
+		});
+		document.addEventListener("input", function (event) {
+			if (event.target && event.target.matches && event.target.matches("input, select, textarea")) {
+				window.setTimeout(applyConditionalFields, 20);
 			}
 		});
 	}
@@ -509,6 +611,7 @@
 		ensureQuickModulesPlacement();
 		initCountdowns();
 		applyAdvancedFieldSettings();
+		bindConditionalRefresh();
 	}
 
 	function initBlocks() {
@@ -527,6 +630,7 @@
 		initCountdowns();
 		enhancePlaceOrder(root);
 		applyAdvancedFieldSettings();
+		bindConditionalRefresh();
 		observeCheckoutEvents();
 	}
 

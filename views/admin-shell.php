@@ -512,9 +512,16 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 										$max_length = isset( $field['max_length'] ) ? absint( $field['max_length'] ) : 0;
 										$required_message = isset( $field['required_message'] ) ? (string) $field['required_message'] : '';
 										$validation_message = isset( $field['validation_message'] ) ? (string) $field['validation_message'] : '';
+										$condition = isset( $field['condition'] ) && is_array( $field['condition'] ) ? $field['condition'] : array();
+										$condition_enabled = ! empty( $condition['enabled'] );
+										$condition_action = isset( $condition['action'] ) ? (string) $condition['action'] : 'show';
+										$condition_source = isset( $condition['source'] ) ? (string) $condition['source'] : 'payment_method';
+										$condition_operator = isset( $condition['operator'] ) ? (string) $condition['operator'] : 'equals';
+										$condition_value = isset( $condition['value'] ) ? (string) $condition['value'] : '';
+										$condition_field = isset( $condition['field'] ) ? (string) $condition['field'] : '';
 										$default   = CheckFlow_Field_Editor::instance()->get_default_field_for_admin( $key );
 										?>
-											<div class="cf-field-row" data-field-key="<?php echo esc_attr( $key ); ?>" data-field-group="<?php echo esc_attr( $group ); ?>" data-field-type="<?php echo esc_attr( $type ); ?>" data-field-custom="<?php echo ! empty( $field['custom'] ) ? '1' : '0'; ?>" data-field-options="<?php echo esc_attr( wp_json_encode( isset( $field['options'] ) && is_array( $field['options'] ) ? array_values( $field['options'] ) : array() ) ); ?>" data-protected="<?php echo $locked ? '1' : '0'; ?>" data-default-label="<?php echo esc_attr( isset( $default['label'] ) ? (string) $default['label'] : $label ); ?>" data-default-priority="<?php echo esc_attr( isset( $default['priority'] ) ? (string) absint( $default['priority'] ) : (string) $priority ); ?>" data-default-enabled="<?php echo ! empty( $default['enabled'] ) || $locked ? '1' : '0'; ?>" data-default-required="<?php echo ! empty( $default['required'] ) ? '1' : '0'; ?>" data-default-placeholder="<?php echo esc_attr( isset( $default['placeholder'] ) ? (string) $default['placeholder'] : '' ); ?>" data-default-help="<?php echo esc_attr( isset( $default['help'] ) ? (string) $default['help'] : '' ); ?>" data-default-width="<?php echo esc_attr( isset( $default['width'] ) ? (string) $default['width'] : 'default' ); ?>" data-default-value="<?php echo esc_attr( isset( $default['default_value'] ) ? (string) $default['default_value'] : '' ); ?>" data-default-validation="<?php echo esc_attr( isset( $default['validation'] ) ? (string) $default['validation'] : 'none' ); ?>" data-default-min="<?php echo esc_attr( isset( $default['min'] ) ? (string) $default['min'] : '' ); ?>" data-default-max="<?php echo esc_attr( isset( $default['max'] ) ? (string) $default['max'] : '' ); ?>" data-default-min-length="<?php echo esc_attr( isset( $default['min_length'] ) ? (string) absint( $default['min_length'] ) : '0' ); ?>" data-default-max-length="<?php echo esc_attr( isset( $default['max_length'] ) ? (string) absint( $default['max_length'] ) : '0' ); ?>" data-default-required-message="<?php echo esc_attr( isset( $default['required_message'] ) ? (string) $default['required_message'] : '' ); ?>" data-default-validation-message="<?php echo esc_attr( isset( $default['validation_message'] ) ? (string) $default['validation_message'] : '' ); ?>">
+											<div class="cf-field-row" data-field-key="<?php echo esc_attr( $key ); ?>" data-field-group="<?php echo esc_attr( $group ); ?>" data-field-type="<?php echo esc_attr( $type ); ?>" data-field-custom="<?php echo ! empty( $field['custom'] ) ? '1' : '0'; ?>" data-field-options="<?php echo esc_attr( wp_json_encode( isset( $field['options'] ) && is_array( $field['options'] ) ? array_values( $field['options'] ) : array() ) ); ?>" data-protected="<?php echo $locked ? '1' : '0'; ?>" data-default-label="<?php echo esc_attr( isset( $default['label'] ) ? (string) $default['label'] : $label ); ?>" data-default-priority="<?php echo esc_attr( isset( $default['priority'] ) ? (string) absint( $default['priority'] ) : (string) $priority ); ?>" data-default-enabled="<?php echo ! empty( $default['enabled'] ) || $locked ? '1' : '0'; ?>" data-default-required="<?php echo ! empty( $default['required'] ) ? '1' : '0'; ?>" data-default-placeholder="<?php echo esc_attr( isset( $default['placeholder'] ) ? (string) $default['placeholder'] : '' ); ?>" data-default-help="<?php echo esc_attr( isset( $default['help'] ) ? (string) $default['help'] : '' ); ?>" data-default-width="<?php echo esc_attr( isset( $default['width'] ) ? (string) $default['width'] : 'default' ); ?>" data-default-value="<?php echo esc_attr( isset( $default['default_value'] ) ? (string) $default['default_value'] : '' ); ?>" data-default-validation="<?php echo esc_attr( isset( $default['validation'] ) ? (string) $default['validation'] : 'none' ); ?>" data-default-min="<?php echo esc_attr( isset( $default['min'] ) ? (string) $default['min'] : '' ); ?>" data-default-max="<?php echo esc_attr( isset( $default['max'] ) ? (string) $default['max'] : '' ); ?>" data-default-min-length="<?php echo esc_attr( isset( $default['min_length'] ) ? (string) absint( $default['min_length'] ) : '0' ); ?>" data-default-max-length="<?php echo esc_attr( isset( $default['max_length'] ) ? (string) absint( $default['max_length'] ) : '0' ); ?>" data-default-required-message="<?php echo esc_attr( isset( $default['required_message'] ) ? (string) $default['required_message'] : '' ); ?>" data-default-validation-message="<?php echo esc_attr( isset( $default['validation_message'] ) ? (string) $default['validation_message'] : '' ); ?>" data-default-condition-enabled="0" data-default-condition-action="show" data-default-condition-source="payment_method" data-default-condition-operator="equals" data-default-condition-value="" data-default-condition-field="">
 												<div class="cf-field-move" aria-label="Reorder field">
 													<button type="button" class="cf-field-drag" data-field-drag aria-label="Drag to reorder">☰</button>
 													<button type="button" data-field-move="up" aria-label="Move up">↑</button>
@@ -607,6 +614,51 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 														<span>Validation message</span>
 														<input type="text" class="cf-field-validation-message" value="<?php echo esc_attr( $validation_message ); ?>" placeholder="Custom invalid error" />
 													</label>
+													<div class="cf-field-condition">
+														<label class="cf-field-switch">
+															<input type="checkbox" class="cf-field-condition-enabled" <?php checked( $condition_enabled ); ?> />
+															<span>Conditional</span>
+														</label>
+														<label>
+															<span>Action</span>
+															<select class="cf-field-condition-action">
+																<option value="show" <?php selected( $condition_action, 'show' ); ?>>Show when</option>
+																<option value="hide" <?php selected( $condition_action, 'hide' ); ?>>Hide when</option>
+															</select>
+														</label>
+														<label>
+															<span>Source</span>
+															<select class="cf-field-condition-source">
+																<option value="payment_method" <?php selected( $condition_source, 'payment_method' ); ?>>Payment method</option>
+																<option value="billing_country" <?php selected( $condition_source, 'billing_country' ); ?>>Billing country</option>
+																<option value="shipping_country" <?php selected( $condition_source, 'shipping_country' ); ?>>Shipping country</option>
+																<option value="field" <?php selected( $condition_source, 'field' ); ?>>Another field</option>
+																<option value="cart_total" <?php selected( $condition_source, 'cart_total' ); ?>>Cart total</option>
+																<option value="product_id" <?php selected( $condition_source, 'product_id' ); ?>>Product ID in cart</option>
+																<option value="category_id" <?php selected( $condition_source, 'category_id' ); ?>>Category ID in cart</option>
+															</select>
+														</label>
+														<label>
+															<span>Operator</span>
+															<select class="cf-field-condition-operator">
+																<option value="equals" <?php selected( $condition_operator, 'equals' ); ?>>Equals</option>
+																<option value="not_equals" <?php selected( $condition_operator, 'not_equals' ); ?>>Not equals</option>
+																<option value="contains" <?php selected( $condition_operator, 'contains' ); ?>>Contains</option>
+																<option value="greater_equal" <?php selected( $condition_operator, 'greater_equal' ); ?>>Greater or equal</option>
+																<option value="less_equal" <?php selected( $condition_operator, 'less_equal' ); ?>>Less or equal</option>
+																<option value="checked" <?php selected( $condition_operator, 'checked' ); ?>>Checked</option>
+																<option value="not_checked" <?php selected( $condition_operator, 'not_checked' ); ?>>Not checked</option>
+															</select>
+														</label>
+														<label>
+															<span>Field key</span>
+															<input type="text" class="cf-field-condition-field" value="<?php echo esc_attr( $condition_field ); ?>" placeholder="For another field" />
+														</label>
+														<label>
+															<span>Value</span>
+															<input type="text" class="cf-field-condition-value" value="<?php echo esc_attr( $condition_value ); ?>" placeholder="cod, BD, 100, product/category ID" />
+														</label>
+													</div>
 													<div class="cf-field-preview" aria-hidden="true">
 														<span>Preview</span>
 														<strong><?php echo esc_html( $label ); ?></strong>

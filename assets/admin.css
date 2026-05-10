@@ -1673,6 +1673,19 @@ html.cf-field-dragging body {
 	grid-template-columns: 1fr 1fr;
 	gap: 6px;
 }
+#checkflow-admin.checkflow-root .cf-field-condition {
+	grid-column: 1 / -1;
+	display: grid;
+	grid-template-columns: 130px repeat(5, minmax(120px, 1fr));
+	gap: 10px;
+	padding: 10px;
+	border: 1px solid var(--bd);
+	border-radius: 10px;
+	background: rgba(79, 142, 255, 0.05);
+}
+#checkflow-admin.checkflow-root .cf-field-condition .cf-field-switch {
+	margin-top: 21px;
+}
 #checkflow-admin.checkflow-root .cf-field-preview {
 	grid-column: 1 / -1;
 	min-height: 70px;
@@ -1875,7 +1888,8 @@ html.cf-field-dragging body {
 	#checkflow-admin.checkflow-root .cf-field-row,
 	#checkflow-admin.checkflow-root .cf-field-main,
 	#checkflow-admin.checkflow-root .cf-field-controls,
-	#checkflow-admin.checkflow-root .cf-field-advanced {
+	#checkflow-admin.checkflow-root .cf-field-advanced,
+	#checkflow-admin.checkflow-root .cf-field-condition {
 		grid-template-columns: 1fr;
 	}
 	#checkflow-admin.checkflow-root .cf-field-advanced {

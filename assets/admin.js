@@ -257,6 +257,18 @@
 			var maxLength = row.querySelector(".cf-field-max-length");
 			var requiredMessage = row.querySelector(".cf-field-required-message");
 			var validationMessage = row.querySelector(".cf-field-validation-message");
+			var conditionEnabled = row.querySelector(".cf-field-condition-enabled");
+			var conditionAction = row.querySelector(".cf-field-condition-action");
+			var conditionSource = row.querySelector(".cf-field-condition-source");
+			var conditionOperator = row.querySelector(".cf-field-condition-operator");
+			var conditionValue = row.querySelector(".cf-field-condition-value");
+			var conditionField = row.querySelector(".cf-field-condition-field");
+			var conditionEnabled = row.querySelector(".cf-field-condition-enabled");
+			var conditionAction = row.querySelector(".cf-field-condition-action");
+			var conditionSource = row.querySelector(".cf-field-condition-source");
+			var conditionOperator = row.querySelector(".cf-field-condition-operator");
+			var conditionValue = row.querySelector(".cf-field-condition-value");
+			var conditionField = row.querySelector(".cf-field-condition-field");
 			var validation = row.querySelector(".cf-field-validation");
 			var min = row.querySelector(".cf-field-min");
 			var max = row.querySelector(".cf-field-max");
@@ -291,6 +303,14 @@
 				max_length: maxLength ? maxLength.value : "",
 				required_message: requiredMessage ? requiredMessage.value : "",
 				validation_message: validationMessage ? validationMessage.value : "",
+				condition: {
+					enabled: conditionEnabled && conditionEnabled.checked ? 1 : 0,
+					action: conditionAction ? conditionAction.value : "show",
+					source: conditionSource ? conditionSource.value : "payment_method",
+					operator: conditionOperator ? conditionOperator.value : "equals",
+					value: conditionValue ? conditionValue.value : "",
+					field: conditionField ? conditionField.value : "",
+				},
 			});
 		});
 		return rows;
@@ -367,6 +387,12 @@
 			if (maxLength) maxLength.value = row.getAttribute("data-default-max-length") || "0";
 			if (requiredMessage) requiredMessage.value = row.getAttribute("data-default-required-message") || "";
 			if (validationMessage) validationMessage.value = row.getAttribute("data-default-validation-message") || "";
+			if (conditionEnabled) conditionEnabled.checked = row.getAttribute("data-default-condition-enabled") === "1";
+			if (conditionAction) conditionAction.value = row.getAttribute("data-default-condition-action") || "show";
+			if (conditionSource) conditionSource.value = row.getAttribute("data-default-condition-source") || "payment_method";
+			if (conditionOperator) conditionOperator.value = row.getAttribute("data-default-condition-operator") || "equals";
+			if (conditionValue) conditionValue.value = row.getAttribute("data-default-condition-value") || "";
+			if (conditionField) conditionField.value = row.getAttribute("data-default-condition-field") || "";
 			if (title && label) title.textContent = label.value;
 			updateFieldPreview(row);
 			row.classList.add("is-reordered");
@@ -761,6 +787,12 @@
 		row.setAttribute("data-default-max-length", "0");
 		row.setAttribute("data-default-required-message", "");
 		row.setAttribute("data-default-validation-message", "");
+		row.setAttribute("data-default-condition-enabled", "0");
+		row.setAttribute("data-default-condition-action", "show");
+		row.setAttribute("data-default-condition-source", "payment_method");
+		row.setAttribute("data-default-condition-operator", "equals");
+		row.setAttribute("data-default-condition-value", "");
+		row.setAttribute("data-default-condition-field", "");
 		row.innerHTML =
 			'<div class="cf-field-move" aria-label="Reorder field">' +
 			'<button type="button" class="cf-field-drag" data-field-drag aria-label="Drag to reorder">☰</button>' +
@@ -788,6 +820,12 @@
 			'<label><span>Length min/max</span><div class="cf-field-pair"><input type="number" class="cf-field-min-length" min="0" placeholder="Min" /><input type="number" class="cf-field-max-length" min="0" placeholder="Max" /></div></label>' +
 			'<label><span>Required message</span><input type="text" class="cf-field-required-message" placeholder="Custom required error" /></label>' +
 			'<label><span>Validation message</span><input type="text" class="cf-field-validation-message" placeholder="Custom invalid error" /></label>' +
+			'<div class="cf-field-condition"><label class="cf-field-switch"><input type="checkbox" class="cf-field-condition-enabled" /><span>Conditional</span></label>' +
+			'<label><span>Action</span><select class="cf-field-condition-action"><option value="show">Show when</option><option value="hide">Hide when</option></select></label>' +
+			'<label><span>Source</span><select class="cf-field-condition-source"><option value="payment_method">Payment method</option><option value="billing_country">Billing country</option><option value="shipping_country">Shipping country</option><option value="field">Another field</option><option value="cart_total">Cart total</option><option value="product_id">Product ID in cart</option><option value="category_id">Category ID in cart</option></select></label>' +
+			'<label><span>Operator</span><select class="cf-field-condition-operator"><option value="equals">Equals</option><option value="not_equals">Not equals</option><option value="contains">Contains</option><option value="greater_equal">Greater or equal</option><option value="less_equal">Less or equal</option><option value="checked">Checked</option><option value="not_checked">Not checked</option></select></label>' +
+			'<label><span>Field key</span><input type="text" class="cf-field-condition-field" placeholder="For another field" /></label>' +
+			'<label><span>Value</span><input type="text" class="cf-field-condition-value" placeholder="cod, BD, 100, product/category ID" /></label></div>' +
 			'<div class="cf-field-preview" aria-hidden="true"><span>Preview</span><strong></strong><em>Customer input</em><small>No help text</small></div>' +
 			"</div>";
 		row.querySelector(".cf-field-title strong").textContent = config.label;

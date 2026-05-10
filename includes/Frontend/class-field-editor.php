@@ -115,10 +115,42 @@ final class CheckFlow_Field_Editor {
 				'maxLength'   => isset( $config['max_length'] ) ? (string) $config['max_length'] : '',
 				'requiredMessage' => isset( $config['required_message'] ) ? (string) $config['required_message'] : '',
 				'validationMessage' => isset( $config['validation_message'] ) ? (string) $config['validation_message'] : '',
+				'condition'   => isset( $config['condition'] ) && is_array( $config['condition'] ) ? $config['condition'] : array(),
 				'type'        => isset( $config['type'] ) ? (string) $config['type'] : 'text',
 				'custom'      => ! empty( $config['custom'] ) ? '1' : '0',
 			);
 		}
+		return $out;
+	}
+
+	/**
+	 * @return array<string,mixed>
+	 */
+	public function get_cart_context() {
+		$out = array(
+			'total'      => 0,
+			'productIds' => array(),
+			'categoryIds' => array(),
+		);
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+			return $out;
+		}
+		$out['total'] = (float) WC()->cart->get_total( 'edit' );
+		foreach ( WC()->cart->get_cart() as $cart_item ) {
+			$product_id = isset( $cart_item['product_id'] ) ? absint( $cart_item['product_id'] ) : 0;
+			if ( ! $product_id ) {
+				continue;
+			}
+			$out['productIds'][] = $product_id;
+			$terms = get_the_terms( $product_id, 'product_cat' );
+			if ( is_array( $terms ) ) {
+				foreach ( $terms as $term ) {
+					$out['categoryIds'][] = absint( $term->term_id );
+				}
+			}
+		}
+		$out['productIds']  = array_values( array_unique( $out['productIds'] ) );
+		$out['categoryIds'] = array_values( array_unique( $out['categoryIds'] ) );
 		return $out;
 	}
 
@@ -163,6 +195,7 @@ final class CheckFlow_Field_Editor {
 			if ( ! in_array( $validation, array( 'none', 'email', 'phone', 'number', 'text' ), true ) ) {
 				$validation = 'none';
 			}
+			$condition = isset( $row['condition'] ) && is_array( $row['condition'] ) ? $this->sanitize_condition( $row['condition'] ) : $this->default_condition();
 			if ( '' === $label ) {
 				$label = $base['label'];
 			}
@@ -184,6 +217,7 @@ final class CheckFlow_Field_Editor {
 					'max_length' => isset( $row['max_length'] ) ? absint( $row['max_length'] ) : 0,
 					'required_message' => isset( $row['required_message'] ) ? sanitize_text_field( wp_unslash( $row['required_message'] ) ) : '',
 					'validation_message' => isset( $row['validation_message'] ) ? sanitize_text_field( wp_unslash( $row['validation_message'] ) ) : '',
+					'condition' => $condition,
 				)
 			);
 		}
@@ -260,6 +294,9 @@ final class CheckFlow_Field_Editor {
 	public function validate_checkout_fields( $data, $errors ) {
 		foreach ( $this->get_settings() as $key => $config ) {
 			if ( empty( $config['enabled'] ) && empty( $config['protected'] ) ) {
+				continue;
+			}
+			if ( ! $this->field_condition_visible( $config, $data ) ) {
 				continue;
 			}
 			$value = '';
@@ -370,6 +407,9 @@ final class CheckFlow_Field_Editor {
 			if ( empty( $config['custom'] ) || empty( $config['enabled'] ) || ! isset( $_POST[ $key ] ) ) {
 				continue;
 			}
+			if ( ! $this->field_condition_visible( $config, $_POST ) ) {
+				continue;
+			}
 			$value = wp_unslash( $_POST[ $key ] );
 			if ( is_array( $value ) ) {
 				$value = implode( ', ', array_map( 'sanitize_text_field', $value ) );
@@ -396,6 +436,9 @@ final class CheckFlow_Field_Editor {
 
 		foreach ( $this->get_settings() as $key => $config ) {
 			if ( empty( $config['custom'] ) || empty( $config['enabled'] ) ) {
+				continue;
+			}
+			if ( ! $this->field_condition_visible( $config, $request->get_params() ) ) {
 				continue;
 			}
 			$block_id = $this->block_field_id( $key );
@@ -441,6 +484,7 @@ final class CheckFlow_Field_Editor {
 			'max_length' => 0,
 			'required_message' => '',
 			'validation_message' => '',
+			'condition' => $this->default_condition(),
 			'enabled'   => true,
 			'required'  => (bool) $required,
 			'priority'  => absint( $priority ),
@@ -491,6 +535,7 @@ final class CheckFlow_Field_Editor {
 			'max_length' => 0,
 			'required_message' => '',
 			'validation_message' => '',
+			'condition' => $this->default_condition(),
 			'enabled'   => true,
 			'required'  => false,
 			'priority'  => 999,
@@ -638,6 +683,121 @@ final class CheckFlow_Field_Editor {
 		}
 
 		return '';
+	}
+
+	/**
+	 * @return array<string,string|bool>
+	 */
+	private function default_condition() {
+		return array(
+			'enabled'  => false,
+			'action'   => 'show',
+			'source'   => 'payment_method',
+			'operator' => 'equals',
+			'value'    => '',
+			'field'    => '',
+		);
+	}
+
+	/**
+	 * @param array<string,mixed> $condition Raw condition.
+	 * @return array<string,string|bool>
+	 */
+	private function sanitize_condition( array $condition ) {
+		$out = $this->default_condition();
+		$out['enabled'] = ! empty( $condition['enabled'] );
+		$action = isset( $condition['action'] ) ? sanitize_key( $condition['action'] ) : 'show';
+		$out['action'] = in_array( $action, array( 'show', 'hide' ), true ) ? $action : 'show';
+		$source = isset( $condition['source'] ) ? sanitize_key( $condition['source'] ) : 'payment_method';
+		$out['source'] = in_array( $source, array( 'payment_method', 'billing_country', 'shipping_country', 'field', 'cart_total', 'product_id', 'category_id' ), true ) ? $source : 'payment_method';
+		$operator = isset( $condition['operator'] ) ? sanitize_key( $condition['operator'] ) : 'equals';
+		$out['operator'] = in_array( $operator, array( 'equals', 'not_equals', 'contains', 'greater_equal', 'less_equal', 'checked', 'not_checked' ), true ) ? $operator : 'equals';
+		$out['value'] = isset( $condition['value'] ) ? sanitize_text_field( wp_unslash( $condition['value'] ) ) : '';
+		$out['field'] = isset( $condition['field'] ) ? sanitize_key( $condition['field'] ) : '';
+		return $out;
+	}
+
+	/**
+	 * @param array<string,mixed> $config Field config.
+	 * @param array<string,mixed> $data Posted data.
+	 * @return bool
+	 */
+	private function field_condition_visible( array $config, array $data ) {
+		$condition = isset( $config['condition'] ) && is_array( $config['condition'] ) ? $config['condition'] : $this->default_condition();
+		if ( empty( $condition['enabled'] ) ) {
+			return true;
+		}
+		$matched = $this->condition_matches( $condition, $data );
+		return 'hide' === ( $condition['action'] ?? 'show' ) ? ! $matched : $matched;
+	}
+
+	/**
+	 * @param array<string,mixed> $condition Condition.
+	 * @param array<string,mixed> $data Posted data.
+	 * @return bool
+	 */
+	private function condition_matches( array $condition, array $data ) {
+		$source = isset( $condition['source'] ) ? (string) $condition['source'] : '';
+		$value  = isset( $condition['value'] ) ? (string) $condition['value'] : '';
+		$actual = '';
+		if ( 'payment_method' === $source ) {
+			$actual = isset( $data['payment_method'] ) ? (string) $data['payment_method'] : ( isset( $_POST['payment_method'] ) ? (string) wp_unslash( $_POST['payment_method'] ) : '' );
+		} elseif ( 'billing_country' === $source || 'shipping_country' === $source ) {
+			$actual = isset( $data[ $source ] ) ? (string) $data[ $source ] : ( isset( $_POST[ $source ] ) ? (string) wp_unslash( $_POST[ $source ] ) : '' );
+		} elseif ( 'field' === $source ) {
+			$field  = isset( $condition['field'] ) ? sanitize_key( $condition['field'] ) : '';
+			$actual = isset( $data[ $field ] ) ? (string) $data[ $field ] : ( isset( $_POST[ $field ] ) ? (string) wp_unslash( $_POST[ $field ] ) : '' );
+		} elseif ( 'cart_total' === $source && function_exists( 'WC' ) && WC()->cart ) {
+			$actual = (string) (float) WC()->cart->get_total( 'edit' );
+		} elseif ( in_array( $source, array( 'product_id', 'category_id' ), true ) && function_exists( 'WC' ) && WC()->cart ) {
+			$ids = array();
+			foreach ( WC()->cart->get_cart() as $cart_item ) {
+				$product_id = isset( $cart_item['product_id'] ) ? absint( $cart_item['product_id'] ) : 0;
+				if ( 'product_id' === $source ) {
+					$ids[] = $product_id;
+					continue;
+				}
+				$terms = $product_id ? get_the_terms( $product_id, 'product_cat' ) : false;
+				if ( is_array( $terms ) ) {
+					foreach ( $terms as $term ) {
+						$ids[] = absint( $term->term_id );
+					}
+				}
+			}
+			$actual = implode( ',', array_unique( array_filter( $ids ) ) );
+		}
+		return $this->compare_condition_values( $actual, $value, isset( $condition['operator'] ) ? (string) $condition['operator'] : 'equals' );
+	}
+
+	/**
+	 * @param string $actual Actual value.
+	 * @param string $expected Expected value.
+	 * @param string $operator Operator.
+	 * @return bool
+	 */
+	private function compare_condition_values( $actual, $expected, $operator ) {
+		$actual = trim( (string) $actual );
+		$expected = trim( (string) $expected );
+		if ( 'checked' === $operator ) {
+			return in_array( strtolower( $actual ), array( '1', 'yes', 'true', 'on' ), true );
+		}
+		if ( 'not_checked' === $operator ) {
+			return ! in_array( strtolower( $actual ), array( '1', 'yes', 'true', 'on' ), true );
+		}
+		if ( 'greater_equal' === $operator ) {
+			return is_numeric( $actual ) && is_numeric( $expected ) && (float) $actual >= (float) $expected;
+		}
+		if ( 'less_equal' === $operator ) {
+			return is_numeric( $actual ) && is_numeric( $expected ) && (float) $actual <= (float) $expected;
+		}
+		if ( 'contains' === $operator ) {
+			$parts = array_map( 'trim', explode( ',', $actual ) );
+			return in_array( $expected, $parts, true ) || false !== stripos( $actual, $expected );
+		}
+		if ( 'not_equals' === $operator ) {
+			return strcasecmp( $actual, $expected ) !== 0;
+		}
+		return strcasecmp( $actual, $expected ) === 0;
 	}
 
 	/**
