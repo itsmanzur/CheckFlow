@@ -1188,6 +1188,148 @@ body.checkflow-admin-screen #wpbody-content {
 #checkflow-admin.checkflow-root .cf-save-fields.is-dirty {
 	box-shadow: 0 0 0 2px var(--or-d), 0 10px 26px var(--pr-g);
 }
+#checkflow-admin.checkflow-root .cf-field-presets-head {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 10px;
+}
+#checkflow-admin.checkflow-root .cf-field-presets-head strong,
+#checkflow-admin.checkflow-root .cf-field-presets-head span {
+	display: block;
+}
+#checkflow-admin.checkflow-root .cf-field-presets-head strong {
+	color: var(--tx);
+	font-size: 13px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-field-presets-head span {
+	margin-top: 3px;
+	color: var(--tx3);
+	font-size: 11px;
+	line-height: 1.4;
+}
+#checkflow-admin.checkflow-root .cf-field-preset-status {
+	display: inline-flex;
+	align-items: center;
+	min-height: 30px;
+	padding: 0 11px;
+	border: 1px solid var(--bd);
+	border-radius: 999px;
+	background: rgba(79, 142, 255, 0.08);
+	color: var(--tx2);
+	font-size: 11px;
+	font-weight: 800;
+	white-space: nowrap;
+}
+#checkflow-admin.checkflow-root .cf-field-preset-status.is-active {
+	border-color: rgba(46, 213, 132, 0.38);
+	background: rgba(46, 213, 132, 0.1);
+	color: var(--gn);
+}
+#checkflow-admin.checkflow-root .cf-export-fields,
+#checkflow-admin.checkflow-root .cf-import-fields {
+	border-color: rgba(79, 142, 255, 0.24);
+	background: rgba(79, 142, 255, 0.07);
+	color: var(--tx2);
+}
+#checkflow-admin.checkflow-root .cf-export-fields:hover,
+#checkflow-admin.checkflow-root .cf-import-fields:hover {
+	border-color: rgba(79, 142, 255, 0.5);
+	color: var(--tx);
+}
+#checkflow-admin.checkflow-root .cf-field-presets {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 10px;
+	margin-bottom: 14px;
+}
+#checkflow-admin.checkflow-root .cf-preset-card {
+	display: grid;
+	grid-template-columns: 42px minmax(0, 1fr) auto;
+	gap: 10px;
+	align-items: center;
+	padding: 12px;
+	border: 1px solid var(--bd);
+	border-radius: 12px;
+	background: linear-gradient(145deg, #141925, #0f121b);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+#checkflow-admin.checkflow-root .cf-preset-card:hover {
+	border-color: rgba(79, 142, 255, 0.42);
+	background: linear-gradient(145deg, #182032, #10141f);
+}
+#checkflow-admin.checkflow-root .cf-preset-card.is-active {
+	border-color: rgba(46, 213, 132, 0.62);
+	background: linear-gradient(145deg, rgba(46, 213, 132, 0.14), #10141f);
+	box-shadow: 0 0 0 1px rgba(46, 213, 132, 0.12), 0 14px 34px rgba(0, 0, 0, 0.2);
+}
+#checkflow-admin.checkflow-root .cf-preset-card.is-active::after {
+	content: "Selected";
+	grid-column: 2 / 4;
+	justify-self: start;
+	padding: 4px 8px;
+	border-radius: 999px;
+	background: rgba(46, 213, 132, 0.12);
+	color: var(--gn);
+	font-size: 10px;
+	font-weight: 900;
+	text-transform: uppercase;
+	letter-spacing: 0.4px;
+}
+#checkflow-admin.checkflow-root .cf-preset-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 10px;
+	background: var(--pr-d);
+	color: var(--pr);
+	font-size: 11px;
+	font-weight: 900;
+	letter-spacing: 0.4px;
+}
+#checkflow-admin.checkflow-root .cf-preset-card--cod .cf-preset-icon {
+	background: var(--gn-d);
+	color: var(--gn);
+}
+#checkflow-admin.checkflow-root .cf-preset-card--digital .cf-preset-icon {
+	background: var(--or-d);
+	color: var(--or);
+}
+#checkflow-admin.checkflow-root .cf-preset-card--b2b .cf-preset-icon {
+	background: var(--rd-d);
+	color: var(--rd);
+}
+#checkflow-admin.checkflow-root .cf-preset-card strong,
+#checkflow-admin.checkflow-root .cf-preset-card span {
+	display: block;
+}
+#checkflow-admin.checkflow-root .cf-preset-card strong {
+	color: var(--tx);
+	font-size: 12px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-preset-card span {
+	margin-top: 3px;
+	color: var(--tx3);
+	font-size: 10.5px;
+	line-height: 1.35;
+}
+#checkflow-admin.checkflow-root .cf-preset-card .cf-btn-ghost {
+	min-height: 32px;
+	padding: 0 10px;
+}
+#checkflow-admin.checkflow-root .cf-preset-card.is-active .cf-btn-ghost {
+	border-color: rgba(46, 213, 132, 0.36);
+	color: var(--gn);
+}
+#checkflow-admin.checkflow-root .cf-field-row.is-preset-hidden {
+	opacity: 0.74;
+	border-style: dashed;
+}
 #checkflow-admin.checkflow-root .cf-field-create {
 	display: grid;
 	grid-template-columns: minmax(170px, 1fr) minmax(160px, 1fr) 130px 140px minmax(190px, 1fr) auto;
@@ -1884,6 +2026,19 @@ html.cf-field-dragging body {
 	}
 	#checkflow-admin.checkflow-root .cf-field-create {
 		grid-template-columns: 1fr;
+	}
+	#checkflow-admin.checkflow-root .cf-field-presets-head {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+	#checkflow-admin.checkflow-root .cf-field-presets {
+		grid-template-columns: 1fr;
+	}
+	#checkflow-admin.checkflow-root .cf-preset-card {
+		grid-template-columns: 42px minmax(0, 1fr);
+	}
+	#checkflow-admin.checkflow-root .cf-preset-card .cf-btn-ghost {
+		grid-column: 1 / -1;
 	}
 	#checkflow-admin.checkflow-root .cf-field-row,
 	#checkflow-admin.checkflow-root .cf-field-main,

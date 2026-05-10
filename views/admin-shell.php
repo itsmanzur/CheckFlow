@@ -451,8 +451,52 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								<input type="search" class="cf-field-search" placeholder="Search fields" aria-label="Search checkout fields" />
 								<button type="button" class="cf-btn-ghost cf-reset-active-fields">Reset tab</button>
 								<span class="cf-field-save-state" aria-live="polite">Saved</span>
+								<button type="button" class="cf-btn-ghost cf-export-fields">Export setup</button>
+								<button type="button" class="cf-btn-ghost cf-import-fields">Import setup</button>
+								<input type="file" class="cf-import-fields-file" accept="application/json,.json" hidden />
 								<button type="button" class="btn-p cf-save-fields">Save fields</button>
 								<button type="button" class="cf-btn-ghost cf-reset-fields">Reset</button>
+							</div>
+						</div>
+						<div class="cf-field-presets-head">
+							<div>
+								<strong>Field templates</strong>
+								<span>Apply a smart checkout setup, review it, then save when it looks right.</span>
+							</div>
+							<div class="cf-field-preset-status" data-field-preset-status aria-live="polite">No template selected</div>
+						</div>
+						<div class="cf-field-presets" aria-label="Checkout field presets">
+							<div class="cf-preset-card cf-preset-card--cod">
+								<div class="cf-preset-icon">COD</div>
+								<div>
+									<strong>Bangladesh COD</strong>
+									<span>Phone-first local delivery flow with address essentials.</span>
+								</div>
+								<button type="button" class="cf-btn-ghost" data-field-preset="bangladesh_cod">Apply</button>
+							</div>
+							<div class="cf-preset-card cf-preset-card--minimal">
+								<div class="cf-preset-icon">MIN</div>
+								<div>
+									<strong>Minimal Checkout</strong>
+									<span>Lean checkout with only high-signal customer fields.</span>
+								</div>
+								<button type="button" class="cf-btn-ghost" data-field-preset="minimal">Apply</button>
+							</div>
+							<div class="cf-preset-card cf-preset-card--digital">
+								<div class="cf-preset-icon">DIG</div>
+								<div>
+									<strong>Digital Product</strong>
+									<span>Email-led checkout for files, courses, and services.</span>
+								</div>
+								<button type="button" class="cf-btn-ghost" data-field-preset="digital">Apply</button>
+							</div>
+							<div class="cf-preset-card cf-preset-card--b2b">
+								<div class="cf-preset-icon">B2B</div>
+								<div>
+									<strong>Business / B2B</strong>
+									<span>Company, billing notes, and procurement-friendly fields.</span>
+								</div>
+								<button type="button" class="cf-btn-ghost" data-field-preset="b2b">Apply</button>
 							</div>
 						</div>
 						<div class="cf-field-create">

@@ -263,19 +263,6 @@
 			var conditionOperator = row.querySelector(".cf-field-condition-operator");
 			var conditionValue = row.querySelector(".cf-field-condition-value");
 			var conditionField = row.querySelector(".cf-field-condition-field");
-			var conditionEnabled = row.querySelector(".cf-field-condition-enabled");
-			var conditionAction = row.querySelector(".cf-field-condition-action");
-			var conditionSource = row.querySelector(".cf-field-condition-source");
-			var conditionOperator = row.querySelector(".cf-field-condition-operator");
-			var conditionValue = row.querySelector(".cf-field-condition-value");
-			var conditionField = row.querySelector(".cf-field-condition-field");
-			var validation = row.querySelector(".cf-field-validation");
-			var min = row.querySelector(".cf-field-min");
-			var max = row.querySelector(".cf-field-max");
-			var minLength = row.querySelector(".cf-field-min-length");
-			var maxLength = row.querySelector(".cf-field-max-length");
-			var requiredMessage = row.querySelector(".cf-field-required-message");
-			var validationMessage = row.querySelector(".cf-field-validation-message");
 			var options = [];
 			try {
 				options = JSON.parse(row.getAttribute("data-field-options") || "[]");
@@ -314,6 +301,135 @@
 			});
 		});
 		return rows;
+	}
+
+	function fieldExportEnvelope() {
+		return {
+			schema: "checkflow-field-setup",
+			version: 1,
+			source: "CheckFlow",
+			exported_at: new Date().toISOString(),
+			fields: collectCheckoutFields(),
+		};
+	}
+
+	function downloadTextFile(filename, text) {
+		var blob = new Blob([text], { type: "application/json;charset=utf-8" });
+		var url = window.URL.createObjectURL(blob);
+		var link = document.createElement("a");
+		link.href = url;
+		link.download = filename;
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		window.setTimeout(function () {
+			window.URL.revokeObjectURL(url);
+		}, 250);
+	}
+
+	function exportFieldSetup() {
+		var payload = fieldExportEnvelope();
+		var stamp = new Date().toISOString().slice(0, 10);
+		downloadTextFile("checkflow-field-setup-" + stamp + ".json", JSON.stringify(payload, null, 2));
+		showToast("Field setup exported");
+	}
+
+	function normalizeImportedFields(payload) {
+		var fields = Array.isArray(payload) ? payload : payload && Array.isArray(payload.fields) ? payload.fields : null;
+		var groups = ["billing", "shipping", "order"];
+		var types = ["text", "select", "checkbox", "date", "textarea"];
+		var widths = ["default", "full", "half", "first", "last"];
+		var validations = ["none", "email", "phone", "number", "text"];
+		if (!fields) return [];
+		return fields
+			.filter(function (field) {
+				return field && typeof field === "object" && field.key;
+			})
+			.map(function (field) {
+				var group = groups.indexOf(field.group) >= 0 ? field.group : "billing";
+				var type = types.indexOf(field.type) >= 0 ? field.type : "text";
+				var width = widths.indexOf(field.width) >= 0 ? field.width : "default";
+				var validation = validations.indexOf(field.validation) >= 0 ? field.validation : "none";
+				var options = Array.isArray(field.options)
+					? field.options
+							.map(function (item) {
+								return String(item || "").trim();
+							})
+							.filter(Boolean)
+					: [];
+				return {
+					key: String(field.key).replace(/[^a-z0-9_]/gi, "_").toLowerCase(),
+					label: String(field.label || field.key || "Checkout field"),
+					priority: parseInt(field.priority || 10, 10) || 10,
+					enabled: field.enabled ? 1 : 0,
+					required: field.required ? 1 : 0,
+					custom: field.custom ? 1 : 0,
+					type: type,
+					group: group,
+					options: options,
+					placeholder: String(field.placeholder || ""),
+					help: String(field.help || ""),
+					width: width,
+					default_value: String(field.default_value || ""),
+					validation: validation,
+					min: String(field.min || ""),
+					max: String(field.max || ""),
+					min_length: parseInt(field.min_length || 0, 10) || 0,
+					max_length: parseInt(field.max_length || 0, 10) || 0,
+					required_message: String(field.required_message || ""),
+					validation_message: String(field.validation_message || ""),
+					condition: field.condition && typeof field.condition === "object" ? field.condition : {},
+				};
+			});
+	}
+
+	function resetFieldRowToDefaults(row) {
+		if (!row) return;
+		var label = row.querySelector(".cf-field-label");
+		var priority = row.querySelector(".cf-field-priority");
+		var enabled = row.querySelector(".cf-field-enabled");
+		var required = row.querySelector(".cf-field-required");
+		var placeholder = row.querySelector(".cf-field-placeholder");
+		var help = row.querySelector(".cf-field-help");
+		var width = row.querySelector(".cf-field-width");
+		var defaultValue = row.querySelector(".cf-field-default-value");
+		var validation = row.querySelector(".cf-field-validation");
+		var min = row.querySelector(".cf-field-min");
+		var max = row.querySelector(".cf-field-max");
+		var minLength = row.querySelector(".cf-field-min-length");
+		var maxLength = row.querySelector(".cf-field-max-length");
+		var requiredMessage = row.querySelector(".cf-field-required-message");
+		var validationMessage = row.querySelector(".cf-field-validation-message");
+		var conditionEnabled = row.querySelector(".cf-field-condition-enabled");
+		var conditionAction = row.querySelector(".cf-field-condition-action");
+		var conditionSource = row.querySelector(".cf-field-condition-source");
+		var conditionOperator = row.querySelector(".cf-field-condition-operator");
+		var conditionValue = row.querySelector(".cf-field-condition-value");
+		var conditionField = row.querySelector(".cf-field-condition-field");
+		var title = row.querySelector(".cf-field-title strong");
+		if (label) label.value = row.getAttribute("data-default-label") || label.value;
+		if (priority) priority.value = row.getAttribute("data-default-priority") || priority.value;
+		if (enabled && !enabled.disabled) enabled.checked = row.getAttribute("data-default-enabled") === "1";
+		if (required) required.checked = row.getAttribute("data-default-required") === "1";
+		if (placeholder) placeholder.value = row.getAttribute("data-default-placeholder") || "";
+		if (help) help.value = row.getAttribute("data-default-help") || "";
+		if (width) width.value = row.getAttribute("data-default-width") || "default";
+		if (defaultValue) defaultValue.value = row.getAttribute("data-default-value") || "";
+		if (validation) validation.value = row.getAttribute("data-default-validation") || "none";
+		if (min) min.value = row.getAttribute("data-default-min") || "";
+		if (max) max.value = row.getAttribute("data-default-max") || "";
+		if (minLength) minLength.value = row.getAttribute("data-default-min-length") || "0";
+		if (maxLength) maxLength.value = row.getAttribute("data-default-max-length") || "0";
+		if (requiredMessage) requiredMessage.value = row.getAttribute("data-default-required-message") || "";
+		if (validationMessage) validationMessage.value = row.getAttribute("data-default-validation-message") || "";
+		if (conditionEnabled) conditionEnabled.checked = row.getAttribute("data-default-condition-enabled") === "1";
+		if (conditionAction) conditionAction.value = row.getAttribute("data-default-condition-action") || "show";
+		if (conditionSource) conditionSource.value = row.getAttribute("data-default-condition-source") || "payment_method";
+		if (conditionOperator) conditionOperator.value = row.getAttribute("data-default-condition-operator") || "equals";
+		if (conditionValue) conditionValue.value = row.getAttribute("data-default-condition-value") || "";
+		if (conditionField) conditionField.value = row.getAttribute("data-default-condition-field") || "";
+		if (title && label) title.textContent = label.value;
+		updateFieldPreview(row);
 	}
 
 	function setFieldEditorDirty(dirty) {
@@ -371,6 +487,19 @@
 			var help = row.querySelector(".cf-field-help");
 			var width = row.querySelector(".cf-field-width");
 			var defaultValue = row.querySelector(".cf-field-default-value");
+			var validation = row.querySelector(".cf-field-validation");
+			var min = row.querySelector(".cf-field-min");
+			var max = row.querySelector(".cf-field-max");
+			var minLength = row.querySelector(".cf-field-min-length");
+			var maxLength = row.querySelector(".cf-field-max-length");
+			var requiredMessage = row.querySelector(".cf-field-required-message");
+			var validationMessage = row.querySelector(".cf-field-validation-message");
+			var conditionEnabled = row.querySelector(".cf-field-condition-enabled");
+			var conditionAction = row.querySelector(".cf-field-condition-action");
+			var conditionSource = row.querySelector(".cf-field-condition-source");
+			var conditionOperator = row.querySelector(".cf-field-condition-operator");
+			var conditionValue = row.querySelector(".cf-field-condition-value");
+			var conditionField = row.querySelector(".cf-field-condition-field");
 			var title = row.querySelector(".cf-field-title strong");
 			if (label) label.value = row.getAttribute("data-default-label") || label.value;
 			if (priority) priority.value = row.getAttribute("data-default-priority") || priority.value;
@@ -835,6 +964,425 @@
 		return row;
 	}
 
+	var fieldPresets = {
+		bangladesh_cod: {
+			label: "Bangladesh COD",
+			fields: {
+				billing_first_name: { enabled: true, required: true, priority: 10, width: "first", placeholder: "Your first name" },
+				billing_last_name: { enabled: true, required: true, priority: 20, width: "last", placeholder: "Your last name" },
+				billing_phone: { enabled: true, required: true, priority: 30, width: "full", validation: "phone", placeholder: "01XXXXXXXXX", help: "We will call this number before delivery.", required_message: "Phone number is required for COD delivery.", validation_message: "Enter a valid phone number." },
+				billing_email: { enabled: true, required: false, priority: 40, width: "full", validation: "email", placeholder: "you@example.com" },
+				billing_country: { enabled: true, required: true, priority: 50, width: "full" },
+				billing_address_1: { enabled: true, required: true, priority: 60, width: "full", placeholder: "House, road, area" },
+				billing_city: { enabled: true, required: true, priority: 70, width: "first" },
+				billing_state: { enabled: true, required: true, priority: 80, width: "last", label: "District" },
+				billing_company: { enabled: false, required: false },
+				billing_address_2: { enabled: false, required: false },
+				billing_postcode: { enabled: false, required: false },
+				shipping_first_name: { enabled: true, required: true, priority: 10, width: "first" },
+				shipping_last_name: { enabled: true, required: true, priority: 20, width: "last" },
+				shipping_country: { enabled: true, required: true, priority: 30, width: "full" },
+				shipping_address_1: { enabled: true, required: true, priority: 40, width: "full", placeholder: "House, road, area" },
+				shipping_city: { enabled: true, required: true, priority: 50, width: "first" },
+				shipping_state: { enabled: true, required: true, priority: 60, width: "last", label: "District" },
+				shipping_company: { enabled: false, required: false },
+				shipping_address_2: { enabled: false, required: false },
+				shipping_postcode: { enabled: false, required: false },
+				order_comments: { enabled: true, required: false, priority: 10, placeholder: "Delivery note, landmark, preferred time" },
+			},
+			custom: [
+				{ key: "checkflow_custom_alt_phone", label: "Alternative phone", type: "text", group: "billing", priority: 90, validation: "phone", placeholder: "Optional backup number", condition: { enabled: true, action: "show", source: "payment_method", operator: "equals", value: "cod", field: "" } },
+			],
+		},
+		minimal: {
+			label: "Minimal Checkout",
+			fields: {
+				billing_email: { enabled: true, required: true, priority: 10, width: "full", validation: "email", placeholder: "Email address" },
+				billing_first_name: { enabled: true, required: true, priority: 20, width: "first" },
+				billing_last_name: { enabled: true, required: true, priority: 30, width: "last" },
+				billing_phone: { enabled: true, required: false, priority: 40, width: "full", validation: "phone" },
+				billing_country: { enabled: true, required: true, priority: 50, width: "full" },
+				billing_address_1: { enabled: true, required: true, priority: 60, width: "full" },
+				billing_city: { enabled: true, required: true, priority: 70, width: "first" },
+				billing_state: { enabled: true, required: true, priority: 80, width: "last" },
+				billing_company: { enabled: false, required: false },
+				billing_address_2: { enabled: false, required: false },
+				billing_postcode: { enabled: false, required: false },
+				shipping_first_name: { enabled: true, required: true, priority: 10, width: "first" },
+				shipping_last_name: { enabled: true, required: true, priority: 20, width: "last" },
+				shipping_country: { enabled: true, required: true, priority: 30, width: "full" },
+				shipping_address_1: { enabled: true, required: true, priority: 40, width: "full" },
+				shipping_city: { enabled: true, required: true, priority: 50, width: "first" },
+				shipping_state: { enabled: true, required: true, priority: 60, width: "last" },
+				shipping_company: { enabled: false, required: false },
+				shipping_address_2: { enabled: false, required: false },
+				shipping_postcode: { enabled: false, required: false },
+				order_comments: { enabled: false, required: false },
+			},
+			custom: [],
+		},
+		digital: {
+			label: "Digital Product",
+			fields: {
+				billing_email: { enabled: true, required: true, priority: 10, width: "full", validation: "email", placeholder: "Where should we send access?" },
+				billing_first_name: { enabled: true, required: false, priority: 20, width: "first" },
+				billing_last_name: { enabled: true, required: false, priority: 30, width: "last" },
+				billing_phone: { enabled: false, required: false },
+				billing_company: { enabled: false, required: false },
+				billing_country: { enabled: false, required: false },
+				billing_address_1: { enabled: false, required: false },
+				billing_address_2: { enabled: false, required: false },
+				billing_city: { enabled: false, required: false },
+				billing_state: { enabled: false, required: false },
+				billing_postcode: { enabled: false, required: false },
+				shipping_first_name: { enabled: false, required: false },
+				shipping_last_name: { enabled: false, required: false },
+				shipping_company: { enabled: false, required: false },
+				shipping_country: { enabled: false, required: false },
+				shipping_address_1: { enabled: false, required: false },
+				shipping_address_2: { enabled: false, required: false },
+				shipping_city: { enabled: false, required: false },
+				shipping_state: { enabled: false, required: false },
+				shipping_postcode: { enabled: false, required: false },
+				order_comments: { enabled: true, required: false, priority: 10, placeholder: "Anything we should know?" },
+			},
+			custom: [
+				{ key: "checkflow_custom_account_email", label: "Account email", type: "text", group: "billing", priority: 40, validation: "email", placeholder: "Optional different login email" },
+			],
+		},
+		b2b: {
+			label: "Business / B2B",
+			fields: {
+				billing_company: { enabled: true, required: true, priority: 10, width: "full", placeholder: "Company name" },
+				billing_first_name: { enabled: true, required: true, priority: 20, width: "first" },
+				billing_last_name: { enabled: true, required: true, priority: 30, width: "last" },
+				billing_email: { enabled: true, required: true, priority: 40, width: "first", validation: "email" },
+				billing_phone: { enabled: true, required: true, priority: 50, width: "last", validation: "phone" },
+				billing_country: { enabled: true, required: true, priority: 60, width: "full" },
+				billing_address_1: { enabled: true, required: true, priority: 70, width: "full" },
+				billing_city: { enabled: true, required: true, priority: 80, width: "first" },
+				billing_state: { enabled: true, required: true, priority: 90, width: "last" },
+				billing_postcode: { enabled: true, required: false, priority: 100, width: "first" },
+				billing_address_2: { enabled: true, required: false, priority: 110, width: "last" },
+				shipping_company: { enabled: true, required: true, priority: 10, width: "full", placeholder: "Company name" },
+				shipping_first_name: { enabled: true, required: true, priority: 20, width: "first" },
+				shipping_last_name: { enabled: true, required: true, priority: 30, width: "last" },
+				shipping_country: { enabled: true, required: true, priority: 40, width: "full" },
+				shipping_address_1: { enabled: true, required: true, priority: 50, width: "full" },
+				shipping_city: { enabled: true, required: true, priority: 60, width: "first" },
+				shipping_state: { enabled: true, required: true, priority: 70, width: "last" },
+				shipping_postcode: { enabled: true, required: false, priority: 80, width: "first" },
+				shipping_address_2: { enabled: true, required: false, priority: 90, width: "last" },
+				order_comments: { enabled: true, required: false, priority: 10, placeholder: "Procurement notes, delivery window, invoice instructions" },
+			},
+			custom: [
+				{ key: "checkflow_custom_tax_id", label: "Tax / BIN number", type: "text", group: "billing", priority: 120, placeholder: "Optional tax identifier", min_length: 4 },
+				{ key: "checkflow_custom_po_number", label: "Purchase order number", type: "text", group: "order", priority: 20, placeholder: "PO number if required" },
+			],
+		},
+	};
+	var activeFieldPreset = "";
+
+	function allPresetCustomKeys() {
+		var keys = [];
+		Object.keys(fieldPresets).forEach(function (presetKey) {
+			(fieldPresets[presetKey].custom || []).forEach(function (field) {
+				if (field.key && keys.indexOf(field.key) === -1) {
+					keys.push(field.key);
+				}
+			});
+		});
+		return keys;
+	}
+
+	function activePresetCustomKeys(preset) {
+		return (preset.custom || []).map(function (field) {
+			return field.key;
+		});
+	}
+
+	function fieldRow(key) {
+		return document.querySelector('.cf-field-row[data-field-key="' + key + '"]');
+	}
+
+	function setIfExists(row, selector, value) {
+		var el = row ? row.querySelector(selector) : null;
+		if (!el || value === undefined) return;
+		if (el.type === "checkbox") {
+			if (!el.disabled) el.checked = !!value;
+			return;
+		}
+		el.value = value == null ? "" : String(value);
+	}
+
+	function clearAdvancedRow(row) {
+		setIfExists(row, ".cf-field-placeholder", "");
+		setIfExists(row, ".cf-field-help", "");
+		setIfExists(row, ".cf-field-width", "default");
+		setIfExists(row, ".cf-field-default-value", "");
+		setIfExists(row, ".cf-field-validation", "none");
+		setIfExists(row, ".cf-field-min", "");
+		setIfExists(row, ".cf-field-max", "");
+		setIfExists(row, ".cf-field-min-length", "");
+		setIfExists(row, ".cf-field-max-length", "");
+		setIfExists(row, ".cf-field-required-message", "");
+		setIfExists(row, ".cf-field-validation-message", "");
+		setIfExists(row, ".cf-field-condition-enabled", false);
+		setIfExists(row, ".cf-field-condition-action", "show");
+		setIfExists(row, ".cf-field-condition-source", "payment_method");
+		setIfExists(row, ".cf-field-condition-operator", "equals");
+		setIfExists(row, ".cf-field-condition-value", "");
+		setIfExists(row, ".cf-field-condition-field", "");
+	}
+
+	function applyRowConfig(row, config) {
+		if (!row || !config) return;
+		clearAdvancedRow(row);
+		setIfExists(row, ".cf-field-enabled", config.enabled);
+		setIfExists(row, ".cf-field-required", config.required);
+		setIfExists(row, ".cf-field-priority", config.priority);
+		setIfExists(row, ".cf-field-label", config.label);
+		setIfExists(row, ".cf-field-placeholder", config.placeholder);
+		setIfExists(row, ".cf-field-help", config.help);
+		setIfExists(row, ".cf-field-width", config.width);
+		setIfExists(row, ".cf-field-default-value", config.default_value);
+		setIfExists(row, ".cf-field-validation", config.validation);
+		setIfExists(row, ".cf-field-min", config.min);
+		setIfExists(row, ".cf-field-max", config.max);
+		setIfExists(row, ".cf-field-min-length", config.min_length);
+		setIfExists(row, ".cf-field-max-length", config.max_length);
+		setIfExists(row, ".cf-field-required-message", config.required_message);
+		setIfExists(row, ".cf-field-validation-message", config.validation_message);
+		if (config.condition) {
+			setIfExists(row, ".cf-field-condition-enabled", !!config.condition.enabled);
+			setIfExists(row, ".cf-field-condition-action", config.condition.action || "show");
+			setIfExists(row, ".cf-field-condition-source", config.condition.source || "payment_method");
+			setIfExists(row, ".cf-field-condition-operator", config.condition.operator || "equals");
+			setIfExists(row, ".cf-field-condition-value", config.condition.value || "");
+			setIfExists(row, ".cf-field-condition-field", config.condition.field || "");
+		}
+		var labelInput = row.querySelector(".cf-field-label");
+		var title = row.querySelector(".cf-field-title strong");
+		if (title && labelInput) title.textContent = labelInput.value;
+		updateFieldPreview(row);
+		row.classList.add("is-reordered");
+		window.setTimeout(function () {
+			row.classList.remove("is-reordered");
+		}, 520);
+	}
+
+	function ensurePresetCustomField(config) {
+		var row = fieldRow(config.key);
+		if (row) {
+			row.setAttribute("data-preset-field", "1");
+			return row;
+		}
+		var list = document.querySelector('[data-field-list="' + config.group + '"]');
+		if (!list) return null;
+		row = createCustomFieldRow({
+			key: config.key,
+			label: config.label,
+			type: config.type || "text",
+			group: config.group || "billing",
+			options: config.options || [],
+		});
+		row.setAttribute("data-preset-field", "1");
+		list.appendChild(row);
+		if ($.fn && $.fn.sortable) {
+			$(list).sortable("refresh");
+		}
+		return row;
+	}
+
+	function disableInactivePresetCustomFields(activeKeys) {
+		allPresetCustomKeys().forEach(function (key) {
+			if (activeKeys.indexOf(key) !== -1) return;
+			var row = fieldRow(key);
+			if (!row) return;
+			setIfExists(row, ".cf-field-enabled", false);
+			setIfExists(row, ".cf-field-required", false);
+			row.classList.add("is-preset-hidden");
+			updateFieldPreview(row);
+		});
+		activeKeys.forEach(function (key) {
+			var row = fieldRow(key);
+			if (row) row.classList.remove("is-preset-hidden");
+		});
+	}
+
+	function setPresetUi(key, summary) {
+		activeFieldPreset = key;
+		document.querySelectorAll("[data-field-preset]").forEach(function (button) {
+			var isActive = button.getAttribute("data-field-preset") === key;
+			var card = button.closest ? button.closest(".cf-preset-card") : null;
+			if (card) card.classList.toggle("is-active", isActive);
+			button.textContent = isActive ? "Selected" : "Apply";
+		});
+		var status = document.querySelector("[data-field-preset-status]");
+		if (status) {
+			status.classList.add("is-active");
+			status.textContent = summary || "Selected: " + (fieldPresets[key] ? fieldPresets[key].label : key) + " - save to publish";
+		}
+		try {
+			window.localStorage.setItem("checkflow_field_preset", key);
+		} catch (e) {}
+	}
+
+	function presetSummary(preset) {
+		var enabled = 0;
+		var hidden = 0;
+		Object.keys(preset.fields || {}).forEach(function (fieldKey) {
+			if (preset.fields[fieldKey].enabled === false) hidden++;
+			if (preset.fields[fieldKey].enabled === true) enabled++;
+		});
+		var customCount = (preset.custom || []).length;
+		return "Selected: " + preset.label + " - " + enabled + " shown, " + hidden + " hidden, " + customCount + " smart field" + (customCount === 1 ? "" : "s") + " - save to publish";
+	}
+
+	function sortFieldLists() {
+		document.querySelectorAll(".cf-field-list").forEach(function (list) {
+			Array.prototype.slice.call(list.querySelectorAll(".cf-field-row"))
+				.sort(function (a, b) {
+					var pa = parseInt((a.querySelector(".cf-field-priority") || {}).value || "999", 10);
+					var pb = parseInt((b.querySelector(".cf-field-priority") || {}).value || "999", 10);
+					return pa - pb;
+				})
+				.forEach(function (row) {
+					list.appendChild(row);
+				});
+		});
+	}
+
+	function applyFieldPreset(key) {
+		var preset = fieldPresets[key];
+		if (!preset) return;
+		if (!window.confirm("Apply " + preset.label + " preset? Review the changes, then Save fields to publish.")) {
+			return;
+		}
+		document.querySelectorAll(".cf-field-row").forEach(function (row) {
+			if (row.getAttribute("data-field-custom") === "1") return;
+			clearAdvancedRow(row);
+			var enabled = row.getAttribute("data-protected") === "1";
+			setIfExists(row, ".cf-field-enabled", enabled);
+			setIfExists(row, ".cf-field-required", false);
+		});
+		Object.keys(preset.fields || {}).forEach(function (fieldKey) {
+			applyRowConfig(fieldRow(fieldKey), preset.fields[fieldKey]);
+		});
+		disableInactivePresetCustomFields(activePresetCustomKeys(preset));
+		(preset.custom || []).forEach(function (field) {
+			applyRowConfig(ensurePresetCustomField(field), Object.assign({ enabled: true, required: false, width: "default" }, field));
+		});
+		sortFieldLists();
+		setPresetUi(key, presetSummary(preset));
+		setFieldEditorDirty(true);
+		updateFieldSearch();
+		showToast(preset.label + " template selected. Review changes, then Save fields.");
+	}
+
+	function restorePresetUi() {
+		var key = "";
+		try {
+			key = window.localStorage.getItem("checkflow_field_preset") || "";
+		} catch (e) {}
+		if (!key || !fieldPresets[key]) return;
+		document.querySelectorAll("[data-field-preset]").forEach(function (button) {
+			var isActive = button.getAttribute("data-field-preset") === key;
+			var card = button.closest ? button.closest(".cf-preset-card") : null;
+			if (card) card.classList.toggle("is-active", isActive);
+			button.textContent = isActive ? "Last selected" : "Apply";
+		});
+		var status = document.querySelector("[data-field-preset-status]");
+		if (status) {
+			status.classList.add("is-active");
+			status.textContent = "Last selected: " + fieldPresets[key].label + " - apply again or save after edits";
+		}
+	}
+
+	function ensureImportedCustomField(field) {
+		var row = fieldRow(field.key);
+		if (row) return row;
+		var list = document.querySelector('[data-field-list="' + field.group + '"]');
+		if (!list) return null;
+		row = createCustomFieldRow({
+			key: field.key,
+			label: field.label,
+			type: field.type || "text",
+			group: field.group || "billing",
+			options: field.options || [],
+		});
+		list.appendChild(row);
+		if ($.fn && $.fn.sortable) {
+			$(list).sortable("refresh");
+		}
+		return row;
+	}
+
+	function applyImportedFieldSetup(fields) {
+		var normalized = normalizeImportedFields(fields);
+		if (!normalized.length) {
+			showToast("No valid fields found in import file", "error");
+			return;
+		}
+		var customCount = normalized.filter(function (field) {
+			return !!field.custom;
+		}).length;
+		if (!window.confirm("Import " + normalized.length + " fields and replace the current editor setup? Review, then Save fields to publish.")) {
+			return;
+		}
+		document.querySelectorAll('.cf-field-row[data-field-custom="1"]').forEach(function (row) {
+			row.remove();
+		});
+		document.querySelectorAll('.cf-field-row[data-field-custom="0"]').forEach(function (row) {
+			resetFieldRowToDefaults(row);
+		});
+		normalized.forEach(function (field) {
+			var row = field.custom ? ensureImportedCustomField(field) : fieldRow(field.key);
+			if (!row) return;
+			if (field.custom) {
+				row.setAttribute("data-field-options", JSON.stringify(field.options || []));
+			}
+			applyRowConfig(row, field);
+		});
+		sortFieldLists();
+		setFieldEditorDirty(true);
+		updateFieldSearch();
+		try {
+			window.localStorage.removeItem("checkflow_field_preset");
+		} catch (e) {}
+		document.querySelectorAll("[data-field-preset]").forEach(function (button) {
+			var card = button.closest ? button.closest(".cf-preset-card") : null;
+			if (card) card.classList.remove("is-active");
+			button.textContent = "Apply";
+		});
+		var status = document.querySelector("[data-field-preset-status]");
+		if (status) {
+			status.classList.add("is-active");
+			status.textContent = "Imported setup: " + normalized.length + " fields, " + customCount + " custom - save to publish";
+		}
+		showToast("Field setup imported. Review changes, then Save fields.");
+	}
+
+	function importFieldSetupFile(file) {
+		if (!file) return;
+		if (file.size > 1024 * 1024) {
+			showToast("Import file is too large", "error");
+			return;
+		}
+		var reader = new FileReader();
+		reader.onload = function () {
+			try {
+				applyImportedFieldSetup(JSON.parse(String(reader.result || "{}")));
+			} catch (e) {
+				showToast("Invalid JSON import file", "error");
+			}
+		};
+		reader.onerror = function () {
+			showToast("Could not read import file", "error");
+		};
+		reader.readAsText(file);
+	}
+
 	function addCustomField() {
 		var labelInput = document.querySelector(".cf-new-field-label");
 		var typeInput = document.querySelector(".cf-new-field-type");
@@ -932,6 +1480,9 @@
 			.done(function (res) {
 				if (res && res.success) {
 					showToast("Checkout fields reset");
+					try {
+						window.localStorage.removeItem("checkflow_field_preset");
+					} catch (e) {}
 					window.setTimeout(function () {
 						window.location.reload();
 					}, 500);
@@ -1050,7 +1601,26 @@
 			addCustomField();
 		});
 
+		$(document).on("click", "[data-field-preset]", function () {
+			applyFieldPreset(this.getAttribute("data-field-preset"));
+		});
+
+		$(document).on("click", ".cf-export-fields", function () {
+			exportFieldSetup();
+		});
+
+		$(document).on("click", ".cf-import-fields", function () {
+			var input = document.querySelector(".cf-import-fields-file");
+			if (input) input.click();
+		});
+
+		$(document).on("change", ".cf-import-fields-file", function () {
+			importFieldSetupFile(this.files && this.files[0]);
+			this.value = "";
+		});
+
 		bindFieldDragEvents();
+		restorePresetUi();
 
 		window.addEventListener("beforeunload", function (event) {
 			if (!fieldEditorDirty) return;
