@@ -250,6 +250,20 @@
 			var help = row.querySelector(".cf-field-help");
 			var width = row.querySelector(".cf-field-width");
 			var defaultValue = row.querySelector(".cf-field-default-value");
+			var validation = row.querySelector(".cf-field-validation");
+			var min = row.querySelector(".cf-field-min");
+			var max = row.querySelector(".cf-field-max");
+			var minLength = row.querySelector(".cf-field-min-length");
+			var maxLength = row.querySelector(".cf-field-max-length");
+			var requiredMessage = row.querySelector(".cf-field-required-message");
+			var validationMessage = row.querySelector(".cf-field-validation-message");
+			var validation = row.querySelector(".cf-field-validation");
+			var min = row.querySelector(".cf-field-min");
+			var max = row.querySelector(".cf-field-max");
+			var minLength = row.querySelector(".cf-field-min-length");
+			var maxLength = row.querySelector(".cf-field-max-length");
+			var requiredMessage = row.querySelector(".cf-field-required-message");
+			var validationMessage = row.querySelector(".cf-field-validation-message");
 			var options = [];
 			try {
 				options = JSON.parse(row.getAttribute("data-field-options") || "[]");
@@ -270,6 +284,13 @@
 				help: help ? help.value : "",
 				width: width ? width.value : "default",
 				default_value: defaultValue ? defaultValue.value : "",
+				validation: validation ? validation.value : "none",
+				min: min ? min.value : "",
+				max: max ? max.value : "",
+				min_length: minLength ? minLength.value : "",
+				max_length: maxLength ? maxLength.value : "",
+				required_message: requiredMessage ? requiredMessage.value : "",
+				validation_message: validationMessage ? validationMessage.value : "",
 			});
 		});
 		return rows;
@@ -339,6 +360,13 @@
 			if (help) help.value = row.getAttribute("data-default-help") || "";
 			if (width) width.value = row.getAttribute("data-default-width") || "default";
 			if (defaultValue) defaultValue.value = row.getAttribute("data-default-value") || "";
+			if (validation) validation.value = row.getAttribute("data-default-validation") || "none";
+			if (min) min.value = row.getAttribute("data-default-min") || "";
+			if (max) max.value = row.getAttribute("data-default-max") || "";
+			if (minLength) minLength.value = row.getAttribute("data-default-min-length") || "0";
+			if (maxLength) maxLength.value = row.getAttribute("data-default-max-length") || "0";
+			if (requiredMessage) requiredMessage.value = row.getAttribute("data-default-required-message") || "";
+			if (validationMessage) validationMessage.value = row.getAttribute("data-default-validation-message") || "";
 			if (title && label) title.textContent = label.value;
 			updateFieldPreview(row);
 			row.classList.add("is-reordered");
@@ -726,6 +754,13 @@
 		row.setAttribute("data-default-help", "");
 		row.setAttribute("data-default-width", "default");
 		row.setAttribute("data-default-value", "");
+		row.setAttribute("data-default-validation", "none");
+		row.setAttribute("data-default-min", "");
+		row.setAttribute("data-default-max", "");
+		row.setAttribute("data-default-min-length", "0");
+		row.setAttribute("data-default-max-length", "0");
+		row.setAttribute("data-default-required-message", "");
+		row.setAttribute("data-default-validation-message", "");
 		row.innerHTML =
 			'<div class="cf-field-move" aria-label="Reorder field">' +
 			'<button type="button" class="cf-field-drag" data-field-drag aria-label="Drag to reorder">☰</button>' +
@@ -748,6 +783,11 @@
 			'<label><span>Help text</span><input type="text" class="cf-field-help" placeholder="Small note below the field" /></label>' +
 			'<label><span>Width</span><select class="cf-field-width"><option value="default">Default</option><option value="full">Full width</option><option value="first">Half - left</option><option value="last">Half - right</option></select></label>' +
 			'<label><span>Default value</span><input type="text" class="cf-field-default-value" placeholder="Optional prefilled value" /></label>' +
+			'<label><span>Validation</span><select class="cf-field-validation"><option value="none">None</option><option value="email">Email</option><option value="phone">Phone</option><option value="number">Number</option><option value="text">Letters only</option></select></label>' +
+			'<label><span>Number min/max</span><div class="cf-field-pair"><input type="number" class="cf-field-min" placeholder="Min" /><input type="number" class="cf-field-max" placeholder="Max" /></div></label>' +
+			'<label><span>Length min/max</span><div class="cf-field-pair"><input type="number" class="cf-field-min-length" min="0" placeholder="Min" /><input type="number" class="cf-field-max-length" min="0" placeholder="Max" /></div></label>' +
+			'<label><span>Required message</span><input type="text" class="cf-field-required-message" placeholder="Custom required error" /></label>' +
+			'<label><span>Validation message</span><input type="text" class="cf-field-validation-message" placeholder="Custom invalid error" /></label>' +
 			'<div class="cf-field-preview" aria-hidden="true"><span>Preview</span><strong></strong><em>Customer input</em><small>No help text</small></div>' +
 			"</div>";
 		row.querySelector(".cf-field-title strong").textContent = config.label;

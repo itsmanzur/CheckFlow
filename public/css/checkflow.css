@@ -137,6 +137,22 @@
 	line-height: 1.35;
 }
 
+.woocommerce-checkout .checkflow-field-error {
+	display: block;
+	margin-top: 6px;
+	color: var(--cf-error);
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.35;
+}
+
+.woocommerce-checkout .checkflow-field-invalid input,
+.woocommerce-checkout .checkflow-field-invalid select,
+.woocommerce-checkout .checkflow-field-invalid textarea {
+	border-color: var(--cf-error) !important;
+	box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.16);
+}
+
 .woocommerce-checkout .form-row.checkflow-field-width-full,
 .woocommerce-checkout .checkflow-field-width-full {
 	width: 100%;

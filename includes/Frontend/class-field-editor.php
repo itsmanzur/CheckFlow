@@ -107,6 +107,14 @@ final class CheckFlow_Field_Editor {
 				'help'        => isset( $config['help'] ) ? (string) $config['help'] : '',
 				'width'       => isset( $config['width'] ) ? (string) $config['width'] : 'default',
 				'defaultValue' => isset( $config['default_value'] ) ? (string) $config['default_value'] : '',
+				'required'    => ! empty( $config['required'] ) ? '1' : '0',
+				'validation'  => isset( $config['validation'] ) ? (string) $config['validation'] : 'none',
+				'min'         => isset( $config['min'] ) ? (string) $config['min'] : '',
+				'max'         => isset( $config['max'] ) ? (string) $config['max'] : '',
+				'minLength'   => isset( $config['min_length'] ) ? (string) $config['min_length'] : '',
+				'maxLength'   => isset( $config['max_length'] ) ? (string) $config['max_length'] : '',
+				'requiredMessage' => isset( $config['required_message'] ) ? (string) $config['required_message'] : '',
+				'validationMessage' => isset( $config['validation_message'] ) ? (string) $config['validation_message'] : '',
 				'type'        => isset( $config['type'] ) ? (string) $config['type'] : 'text',
 				'custom'      => ! empty( $config['custom'] ) ? '1' : '0',
 			);
@@ -151,6 +159,10 @@ final class CheckFlow_Field_Editor {
 			if ( ! in_array( $width, array( 'default', 'full', 'half', 'first', 'last' ), true ) ) {
 				$width = 'default';
 			}
+			$validation = isset( $row['validation'] ) ? sanitize_key( $row['validation'] ) : ( isset( $base['validation'] ) ? (string) $base['validation'] : 'none' );
+			if ( ! in_array( $validation, array( 'none', 'email', 'phone', 'number', 'text' ), true ) ) {
+				$validation = 'none';
+			}
 			if ( '' === $label ) {
 				$label = $base['label'];
 			}
@@ -165,6 +177,13 @@ final class CheckFlow_Field_Editor {
 					'help'      => isset( $row['help'] ) ? sanitize_text_field( wp_unslash( $row['help'] ) ) : '',
 					'width'     => $width,
 					'default_value' => isset( $row['default_value'] ) ? sanitize_text_field( wp_unslash( $row['default_value'] ) ) : '',
+					'validation' => $validation,
+					'min'       => isset( $row['min'] ) ? sanitize_text_field( wp_unslash( $row['min'] ) ) : '',
+					'max'       => isset( $row['max'] ) ? sanitize_text_field( wp_unslash( $row['max'] ) ) : '',
+					'min_length' => isset( $row['min_length'] ) ? absint( $row['min_length'] ) : 0,
+					'max_length' => isset( $row['max_length'] ) ? absint( $row['max_length'] ) : 0,
+					'required_message' => isset( $row['required_message'] ) ? sanitize_text_field( wp_unslash( $row['required_message'] ) ) : '',
+					'validation_message' => isset( $row['validation_message'] ) ? sanitize_text_field( wp_unslash( $row['validation_message'] ) ) : '',
 				)
 			);
 		}
@@ -230,6 +249,41 @@ final class CheckFlow_Field_Editor {
 		}
 
 		return $fields;
+	}
+
+	/**
+	 * Validate Field Editor rules during classic checkout submission.
+	 *
+	 * @param array<string,mixed> $data Checkout data.
+	 * @param WP_Error           $errors Validation errors.
+	 */
+	public function validate_checkout_fields( $data, $errors ) {
+		foreach ( $this->get_settings() as $key => $config ) {
+			if ( empty( $config['enabled'] ) && empty( $config['protected'] ) ) {
+				continue;
+			}
+			$value = '';
+			if ( isset( $data[ $key ] ) ) {
+				$value = $data[ $key ];
+			} elseif ( isset( $_POST[ $key ] ) ) {
+				$value = wp_unslash( $_POST[ $key ] );
+			} else {
+				continue;
+			}
+			if ( is_array( $value ) ) {
+				$value = implode( ', ', array_map( 'sanitize_text_field', $value ) );
+			} else {
+				$value = sanitize_text_field( (string) $value );
+			}
+			$message = $this->validate_value( $value, $config );
+			if ( '' !== $message ) {
+				if ( is_object( $errors ) && method_exists( $errors, 'add' ) ) {
+					$errors->add( 'checkflow_' . sanitize_key( $key ), $message );
+				} elseif ( function_exists( 'wc_add_notice' ) ) {
+					wc_add_notice( $message, 'error' );
+				}
+			}
+		}
 	}
 
 	/**
@@ -380,6 +434,13 @@ final class CheckFlow_Field_Editor {
 			'help'      => '',
 			'width'     => 'default',
 			'default_value' => '',
+			'validation' => 'none',
+			'min'       => '',
+			'max'       => '',
+			'min_length' => 0,
+			'max_length' => 0,
+			'required_message' => '',
+			'validation_message' => '',
 			'enabled'   => true,
 			'required'  => (bool) $required,
 			'priority'  => absint( $priority ),
@@ -423,6 +484,13 @@ final class CheckFlow_Field_Editor {
 			'help'      => '',
 			'width'     => 'default',
 			'default_value' => '',
+			'validation' => 'none',
+			'min'       => '',
+			'max'       => '',
+			'min_length' => 0,
+			'max_length' => 0,
+			'required_message' => '',
+			'validation_message' => '',
 			'enabled'   => true,
 			'required'  => false,
 			'priority'  => 999,
@@ -475,6 +543,101 @@ final class CheckFlow_Field_Editor {
 			return array( 'form-row-last' );
 		}
 		return array();
+	}
+
+	/**
+	 * @param string              $value Field value.
+	 * @param array<string,mixed> $config Field config.
+	 * @return string Error message or empty string.
+	 */
+	private function validate_value( $value, array $config ) {
+		$label              = isset( $config['label'] ) ? (string) $config['label'] : __( 'This field', 'checkflow' );
+		$required_message   = isset( $config['required_message'] ) ? (string) $config['required_message'] : '';
+		$validation_message = isset( $config['validation_message'] ) ? (string) $config['validation_message'] : '';
+		$value              = trim( (string) $value );
+
+		if ( ! empty( $config['required'] ) && '' === $value ) {
+			return '' !== $required_message ? $required_message : sprintf(
+				/* translators: %s: field label */
+				__( '%s is required.', 'checkflow' ),
+				$label
+			);
+		}
+
+		if ( '' === $value ) {
+			return '';
+		}
+
+		$validation = isset( $config['validation'] ) ? (string) $config['validation'] : 'none';
+		if ( 'email' === $validation && ! is_email( $value ) ) {
+			return '' !== $validation_message ? $validation_message : sprintf(
+				/* translators: %s: field label */
+				__( '%s must be a valid email address.', 'checkflow' ),
+				$label
+			);
+		}
+		if ( 'phone' === $validation && ! preg_match( '/^[0-9+\-\s().]{7,20}$/', $value ) ) {
+			return '' !== $validation_message ? $validation_message : sprintf(
+				/* translators: %s: field label */
+				__( '%s must be a valid phone number.', 'checkflow' ),
+				$label
+			);
+		}
+		if ( 'number' === $validation ) {
+			if ( ! is_numeric( $value ) ) {
+				return '' !== $validation_message ? $validation_message : sprintf(
+					/* translators: %s: field label */
+					__( '%s must be a number.', 'checkflow' ),
+					$label
+				);
+			}
+			$number = (float) $value;
+			if ( '' !== (string) ( $config['min'] ?? '' ) && $number < (float) $config['min'] ) {
+				return '' !== $validation_message ? $validation_message : sprintf(
+					/* translators: 1: field label, 2: minimum */
+					__( '%1$s must be at least %2$s.', 'checkflow' ),
+					$label,
+					(string) $config['min']
+				);
+			}
+			if ( '' !== (string) ( $config['max'] ?? '' ) && $number > (float) $config['max'] ) {
+				return '' !== $validation_message ? $validation_message : sprintf(
+					/* translators: 1: field label, 2: maximum */
+					__( '%1$s must be no more than %2$s.', 'checkflow' ),
+					$label,
+					(string) $config['max']
+				);
+			}
+		}
+		if ( 'text' === $validation && ! preg_match( '/^[\p{L}\p{M}\s.\'-]+$/u', $value ) ) {
+			return '' !== $validation_message ? $validation_message : sprintf(
+				/* translators: %s: field label */
+				__( '%s can only contain letters.', 'checkflow' ),
+				$label
+			);
+		}
+
+		$length     = function_exists( 'mb_strlen' ) ? mb_strlen( $value ) : strlen( $value );
+		$min_length = isset( $config['min_length'] ) ? absint( $config['min_length'] ) : 0;
+		$max_length = isset( $config['max_length'] ) ? absint( $config['max_length'] ) : 0;
+		if ( $min_length && $length < $min_length ) {
+			return '' !== $validation_message ? $validation_message : sprintf(
+				/* translators: 1: field label, 2: minimum length */
+				__( '%1$s must be at least %2$d characters.', 'checkflow' ),
+				$label,
+				$min_length
+			);
+		}
+		if ( $max_length && $length > $max_length ) {
+			return '' !== $validation_message ? $validation_message : sprintf(
+				/* translators: 1: field label, 2: maximum length */
+				__( '%1$s must be no more than %2$d characters.', 'checkflow' ),
+				$label,
+				$max_length
+			);
+		}
+
+		return '';
 	}
 
 	/**

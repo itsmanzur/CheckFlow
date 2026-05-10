@@ -505,9 +505,16 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 										$help      = isset( $field['help'] ) ? (string) $field['help'] : '';
 										$width     = isset( $field['width'] ) ? (string) $field['width'] : 'default';
 										$default_value = isset( $field['default_value'] ) ? (string) $field['default_value'] : '';
+										$validation = isset( $field['validation'] ) ? (string) $field['validation'] : 'none';
+										$min       = isset( $field['min'] ) ? (string) $field['min'] : '';
+										$max       = isset( $field['max'] ) ? (string) $field['max'] : '';
+										$min_length = isset( $field['min_length'] ) ? absint( $field['min_length'] ) : 0;
+										$max_length = isset( $field['max_length'] ) ? absint( $field['max_length'] ) : 0;
+										$required_message = isset( $field['required_message'] ) ? (string) $field['required_message'] : '';
+										$validation_message = isset( $field['validation_message'] ) ? (string) $field['validation_message'] : '';
 										$default   = CheckFlow_Field_Editor::instance()->get_default_field_for_admin( $key );
 										?>
-											<div class="cf-field-row" data-field-key="<?php echo esc_attr( $key ); ?>" data-field-group="<?php echo esc_attr( $group ); ?>" data-field-type="<?php echo esc_attr( $type ); ?>" data-field-custom="<?php echo ! empty( $field['custom'] ) ? '1' : '0'; ?>" data-field-options="<?php echo esc_attr( wp_json_encode( isset( $field['options'] ) && is_array( $field['options'] ) ? array_values( $field['options'] ) : array() ) ); ?>" data-protected="<?php echo $locked ? '1' : '0'; ?>" data-default-label="<?php echo esc_attr( isset( $default['label'] ) ? (string) $default['label'] : $label ); ?>" data-default-priority="<?php echo esc_attr( isset( $default['priority'] ) ? (string) absint( $default['priority'] ) : (string) $priority ); ?>" data-default-enabled="<?php echo ! empty( $default['enabled'] ) || $locked ? '1' : '0'; ?>" data-default-required="<?php echo ! empty( $default['required'] ) ? '1' : '0'; ?>" data-default-placeholder="<?php echo esc_attr( isset( $default['placeholder'] ) ? (string) $default['placeholder'] : '' ); ?>" data-default-help="<?php echo esc_attr( isset( $default['help'] ) ? (string) $default['help'] : '' ); ?>" data-default-width="<?php echo esc_attr( isset( $default['width'] ) ? (string) $default['width'] : 'default' ); ?>" data-default-value="<?php echo esc_attr( isset( $default['default_value'] ) ? (string) $default['default_value'] : '' ); ?>">
+											<div class="cf-field-row" data-field-key="<?php echo esc_attr( $key ); ?>" data-field-group="<?php echo esc_attr( $group ); ?>" data-field-type="<?php echo esc_attr( $type ); ?>" data-field-custom="<?php echo ! empty( $field['custom'] ) ? '1' : '0'; ?>" data-field-options="<?php echo esc_attr( wp_json_encode( isset( $field['options'] ) && is_array( $field['options'] ) ? array_values( $field['options'] ) : array() ) ); ?>" data-protected="<?php echo $locked ? '1' : '0'; ?>" data-default-label="<?php echo esc_attr( isset( $default['label'] ) ? (string) $default['label'] : $label ); ?>" data-default-priority="<?php echo esc_attr( isset( $default['priority'] ) ? (string) absint( $default['priority'] ) : (string) $priority ); ?>" data-default-enabled="<?php echo ! empty( $default['enabled'] ) || $locked ? '1' : '0'; ?>" data-default-required="<?php echo ! empty( $default['required'] ) ? '1' : '0'; ?>" data-default-placeholder="<?php echo esc_attr( isset( $default['placeholder'] ) ? (string) $default['placeholder'] : '' ); ?>" data-default-help="<?php echo esc_attr( isset( $default['help'] ) ? (string) $default['help'] : '' ); ?>" data-default-width="<?php echo esc_attr( isset( $default['width'] ) ? (string) $default['width'] : 'default' ); ?>" data-default-value="<?php echo esc_attr( isset( $default['default_value'] ) ? (string) $default['default_value'] : '' ); ?>" data-default-validation="<?php echo esc_attr( isset( $default['validation'] ) ? (string) $default['validation'] : 'none' ); ?>" data-default-min="<?php echo esc_attr( isset( $default['min'] ) ? (string) $default['min'] : '' ); ?>" data-default-max="<?php echo esc_attr( isset( $default['max'] ) ? (string) $default['max'] : '' ); ?>" data-default-min-length="<?php echo esc_attr( isset( $default['min_length'] ) ? (string) absint( $default['min_length'] ) : '0' ); ?>" data-default-max-length="<?php echo esc_attr( isset( $default['max_length'] ) ? (string) absint( $default['max_length'] ) : '0' ); ?>" data-default-required-message="<?php echo esc_attr( isset( $default['required_message'] ) ? (string) $default['required_message'] : '' ); ?>" data-default-validation-message="<?php echo esc_attr( isset( $default['validation_message'] ) ? (string) $default['validation_message'] : '' ); ?>">
 												<div class="cf-field-move" aria-label="Reorder field">
 													<button type="button" class="cf-field-drag" data-field-drag aria-label="Drag to reorder">☰</button>
 													<button type="button" data-field-move="up" aria-label="Move up">↑</button>
@@ -567,6 +574,38 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 													<label>
 														<span>Default value</span>
 														<input type="text" class="cf-field-default-value" value="<?php echo esc_attr( $default_value ); ?>" placeholder="Optional prefilled value" />
+													</label>
+													<label>
+														<span>Validation</span>
+														<select class="cf-field-validation">
+															<option value="none" <?php selected( $validation, 'none' ); ?>>None</option>
+															<option value="email" <?php selected( $validation, 'email' ); ?>>Email</option>
+															<option value="phone" <?php selected( $validation, 'phone' ); ?>>Phone</option>
+															<option value="number" <?php selected( $validation, 'number' ); ?>>Number</option>
+															<option value="text" <?php selected( $validation, 'text' ); ?>>Letters only</option>
+														</select>
+													</label>
+													<label>
+														<span>Number min/max</span>
+														<div class="cf-field-pair">
+															<input type="number" class="cf-field-min" value="<?php echo esc_attr( $min ); ?>" placeholder="Min" />
+															<input type="number" class="cf-field-max" value="<?php echo esc_attr( $max ); ?>" placeholder="Max" />
+														</div>
+													</label>
+													<label>
+														<span>Length min/max</span>
+														<div class="cf-field-pair">
+															<input type="number" class="cf-field-min-length" min="0" value="<?php echo esc_attr( (string) $min_length ); ?>" placeholder="Min" />
+															<input type="number" class="cf-field-max-length" min="0" value="<?php echo esc_attr( (string) $max_length ); ?>" placeholder="Max" />
+														</div>
+													</label>
+													<label>
+														<span>Required message</span>
+														<input type="text" class="cf-field-required-message" value="<?php echo esc_attr( $required_message ); ?>" placeholder="Custom required error" />
+													</label>
+													<label>
+														<span>Validation message</span>
+														<input type="text" class="cf-field-validation-message" value="<?php echo esc_attr( $validation_message ); ?>" placeholder="Custom invalid error" />
 													</label>
 													<div class="cf-field-preview" aria-hidden="true">
 														<span>Preview</span>

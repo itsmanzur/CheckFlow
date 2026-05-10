@@ -1632,7 +1632,7 @@ html.cf-field-dragging body {
 #checkflow-admin.checkflow-root .cf-field-advanced {
 	grid-column: 2 / -1;
 	display: grid;
-	grid-template-columns: repeat(4, minmax(140px, 1fr)) minmax(160px, 0.8fr);
+	grid-template-columns: repeat(4, minmax(140px, 1fr));
 	gap: 10px;
 	padding-top: 12px;
 	border-top: 1px solid var(--bd);
@@ -1668,7 +1668,13 @@ html.cf-field-dragging body {
 	box-shadow: 0 0 0 2px var(--pr-d);
 	outline: none;
 }
+#checkflow-admin.checkflow-root .cf-field-pair {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 6px;
+}
 #checkflow-admin.checkflow-root .cf-field-preview {
+	grid-column: 1 / -1;
 	min-height: 70px;
 	padding: 10px;
 	border: 1px solid var(--bd);

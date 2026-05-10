@@ -205,6 +205,114 @@
 		note.textContent = help;
 	}
 
+	function clearFieldError(control) {
+		var wrapper = fieldWrapper(control);
+		if (!wrapper) return;
+		wrapper.classList.remove("checkflow-field-invalid");
+		var error = wrapper.querySelector(".checkflow-field-error");
+		if (error) {
+			error.remove();
+		}
+		if (control.removeAttribute) {
+			control.removeAttribute("aria-invalid");
+		}
+	}
+
+	function setFieldError(control, message) {
+		var wrapper = fieldWrapper(control);
+		if (!wrapper || !message) return;
+		wrapper.classList.add("checkflow-field-invalid");
+		control.setAttribute("aria-invalid", "true");
+		var error = wrapper.querySelector(".checkflow-field-error");
+		if (!error) {
+			error = document.createElement("small");
+			error.className = "checkflow-field-error";
+			wrapper.appendChild(error);
+		}
+		error.textContent = message;
+	}
+
+	function fieldLabel(config) {
+		return (config && config.label) || "This field";
+	}
+
+	function validationMessage(config, fallback) {
+		return (config && config.validationMessage) || fallback;
+	}
+
+	function validateConfiguredValue(value, config) {
+		var label = fieldLabel(config);
+		var text = String(value || "").trim();
+		if (config.required === true || config.required === "1") {
+			if (!text) {
+				return config.requiredMessage || label + " is required.";
+			}
+		}
+		if (!text) {
+			return "";
+		}
+		if (config.validation === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) {
+			return validationMessage(config, label + " must be a valid email address.");
+		}
+		if (config.validation === "phone" && !/^[0-9+\-\s().]{7,20}$/.test(text)) {
+			return validationMessage(config, label + " must be a valid phone number.");
+		}
+		if (config.validation === "number") {
+			var number = Number(text);
+			if (!isFinite(number)) {
+				return validationMessage(config, label + " must be a number.");
+			}
+			if (config.min !== "" && config.min != null && number < Number(config.min)) {
+				return validationMessage(config, label + " must be at least " + config.min + ".");
+			}
+			if (config.max !== "" && config.max != null && number > Number(config.max)) {
+				return validationMessage(config, label + " must be no more than " + config.max + ".");
+			}
+		}
+		if (config.validation === "text" && !/^[\p{L}\p{M}\s.'-]+$/u.test(text)) {
+			return validationMessage(config, label + " can only contain letters.");
+		}
+		var minLength = parseInt(config.minLength || "0", 10);
+		var maxLength = parseInt(config.maxLength || "0", 10);
+		if (minLength && text.length < minLength) {
+			return validationMessage(config, label + " must be at least " + minLength + " characters.");
+		}
+		if (maxLength && text.length > maxLength) {
+			return validationMessage(config, label + " must be no more than " + maxLength + " characters.");
+		}
+		return "";
+	}
+
+	function validateAdvancedFields(focusFirst) {
+		var meta = window.checkflowCheckout && checkflowCheckout.fieldMeta ? checkflowCheckout.fieldMeta : {};
+		var firstInvalid = null;
+		var messages = [];
+		Object.keys(meta).forEach(function (key) {
+			var config = meta[key] || {};
+			var control = findFieldControl(key);
+			if (!control) return;
+			var value = control.type === "checkbox" ? (control.checked ? "1" : "") : control.value;
+			var message = validateConfiguredValue(value, config);
+			if (message) {
+				setFieldError(control, message);
+				messages.push(message);
+				if (!firstInvalid) {
+					firstInvalid = control;
+				}
+			} else {
+				clearFieldError(control);
+			}
+		});
+		if (firstInvalid && focusFirst) {
+			setError(messages[0] || "Please check the highlighted checkout fields.");
+			firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+			window.setTimeout(function () {
+				firstInvalid.focus({ preventScroll: true });
+			}, 250);
+		}
+		return !firstInvalid;
+	}
+
 	function applyAdvancedFieldSettings() {
 		var meta = window.checkflowCheckout && checkflowCheckout.fieldMeta ? checkflowCheckout.fieldMeta : {};
 		Object.keys(meta).forEach(function (key) {
@@ -222,6 +330,15 @@
 			}
 			applyFieldWidth(wrapper, config.width || "default");
 			applyFieldHelp(wrapper, key, config.help || "");
+			if (!control.getAttribute("data-checkflow-validation-bound")) {
+				control.setAttribute("data-checkflow-validation-bound", "1");
+				control.addEventListener("input", function () {
+					validateAdvancedFields(false);
+				});
+				control.addEventListener("change", function () {
+					validateAdvancedFields(false);
+				});
+			}
 		});
 	}
 
@@ -336,7 +453,13 @@
 			return;
 		}
 		placeOrder.setAttribute("data-checkflow-bound", "1");
-		placeOrder.addEventListener("click", function () {
+		placeOrder.addEventListener("click", function (event) {
+			if (!validateAdvancedFields(true)) {
+				event.preventDefault();
+				event.stopPropagation();
+				setBusy(false);
+				return false;
+			}
 			setError("");
 			setBusy(true);
 			window.setTimeout(function () {
