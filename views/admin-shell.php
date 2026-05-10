@@ -737,7 +737,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 						<div class="cf-template-grid">
 							<?php foreach ( $checkout_templates as $key => $tpl ) : ?>
 								<?php $is_active_template = $key === $active_checkout_template; ?>
-								<div class="cf-template-card<?php echo $is_active_template ? ' is-active' : ''; ?>" data-checkout-template="<?php echo esc_attr( $key ); ?>">
+								<div class="cf-template-card<?php echo $is_active_template ? ' is-active' : ''; ?>" data-checkout-template="<?php echo esc_attr( $key ); ?>" data-template-name="<?php echo esc_attr( $tpl['name'] ); ?>" data-template-description="<?php echo esc_attr( $tpl['description'] ); ?>" data-template-tag="<?php echo esc_attr( $tpl['tag'] ); ?>" data-template-field-preset="<?php echo esc_attr( isset( $tpl['field_preset'] ) ? $tpl['field_preset'] : '' ); ?>" data-template-field-preset-label="<?php echo esc_attr( isset( $tpl['field_preset_label'] ) ? $tpl['field_preset_label'] : '' ); ?>">
 									<div class="cf-template-thumb cf-template-thumb--<?php echo esc_attr( $key ); ?>" aria-hidden="true">
 										<span></span><span></span><span></span>
 									</div>
@@ -754,6 +754,33 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								</div>
 							<?php endforeach; ?>
 						</div>
+					</div>
+					<div class="cf-template-compare" data-template-compare>
+						<div class="cf-template-compare-card">
+							<span>Current live template</span>
+							<strong data-template-compare-current><?php echo esc_html( isset( $checkout_templates[ $active_checkout_template ] ) ? $checkout_templates[ $active_checkout_template ]['name'] : 'Default One Page' ); ?></strong>
+							<small data-template-compare-current-copy><?php echo esc_html( isset( $checkout_templates[ $active_checkout_template ] ) ? $checkout_templates[ $active_checkout_template ]['description'] : '' ); ?></small>
+						</div>
+						<div class="cf-template-compare-card is-selected">
+							<span>Preview selected</span>
+							<strong data-template-compare-selected><?php echo esc_html( isset( $checkout_templates[ $active_checkout_template ] ) ? $checkout_templates[ $active_checkout_template ]['name'] : 'Default One Page' ); ?></strong>
+							<small data-template-compare-selected-copy>Hover a template to compare its layout, field pairing, and visual focus.</small>
+						</div>
+						<div class="cf-template-compare-list">
+							<strong>What changes</strong>
+							<ul data-template-compare-points>
+								<li>Visual theme and checkout spacing</li>
+								<li>Order summary emphasis and trust modules</li>
+								<li>Suggested matching field preset</li>
+							</ul>
+						</div>
+					</div>
+					<div class="cf-template-pairing" data-template-pairing hidden>
+						<div>
+							<strong data-template-pairing-title>Matching field preset available</strong>
+							<span data-template-pairing-copy>Apply the paired field preset to align the checkout form with this template.</span>
+						</div>
+						<button type="button" class="btn-p" data-apply-template-field-preset>Apply matching fields</button>
 					</div>
 				</div>
 			</div>

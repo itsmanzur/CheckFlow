@@ -179,10 +179,12 @@
 	}
 
 	function setTemplateUi(template, label) {
+		var activeCard = null;
 		document.querySelectorAll("[data-checkout-template]").forEach(function (card) {
 			var key = card.getAttribute("data-checkout-template");
 			var active = key === template;
 			card.classList.toggle("is-active", active);
+			if (active) activeCard = card;
 			var button = card.querySelector("[data-save-checkout-template]");
 			if (button) {
 				button.textContent = active ? "Active" : "Use template";
@@ -195,6 +197,66 @@
 		if (window.checkflowAdmin) {
 			checkflowAdmin.checkoutTemplate = template;
 		}
+		showTemplatePairing(activeCard, label || template);
+		updateTemplateCompare(activeCard || document.querySelector("[data-checkout-template]"));
+	}
+
+	function templateComparePoints(key, presetLabel) {
+		var map = {
+			default_one_page: ["Balanced two-column checkout", "Neutral inputs and summary styling", "Pairs with " + presetLabel + " fields"],
+			bangladesh_cod: ["COD trust color and local delivery emphasis", "Phone-first checkout field structure", "Pairs with " + presetLabel + " fields"],
+			minimal_digital: ["Lower visual weight for short digital checkout", "Hides heavy trust/urgency styling", "Pairs with " + presetLabel + " fields"],
+			trust_checkout: ["Stronger reassurance across form and summary", "Highlighted payment, address, and trust modules", "Pairs with " + presetLabel + " fields"],
+			compact_mobile: ["Tighter spacing and mobile-friendly field rhythm", "Compact cards and taller tap targets", "Pairs with " + presetLabel + " fields"],
+		};
+		return map[key] || ["Visual checkout template changes", "Order/payment flow remains native", "Pairs with " + presetLabel + " fields"];
+	}
+
+	function updateTemplateCompare(card) {
+		var root = document.querySelector("[data-template-compare]");
+		if (!root || !card) return;
+		var currentCard = document.querySelector(".cf-template-card.is-active") || card;
+		var selectedName = card.getAttribute("data-template-name") || "";
+		var selectedCopy = card.getAttribute("data-template-description") || "";
+		var selectedKey = card.getAttribute("data-checkout-template") || "";
+		var presetLabel = card.getAttribute("data-template-field-preset-label") || "matching";
+		var currentName = currentCard.getAttribute("data-template-name") || "";
+		var currentCopy = currentCard.getAttribute("data-template-description") || "";
+		var currentEl = root.querySelector("[data-template-compare-current]");
+		var currentCopyEl = root.querySelector("[data-template-compare-current-copy]");
+		var selectedEl = root.querySelector("[data-template-compare-selected]");
+		var selectedCopyEl = root.querySelector("[data-template-compare-selected-copy]");
+		var points = root.querySelector("[data-template-compare-points]");
+		if (currentEl) currentEl.textContent = currentName;
+		if (currentCopyEl) currentCopyEl.textContent = currentCopy;
+		if (selectedEl) selectedEl.textContent = selectedName;
+		if (selectedCopyEl) selectedCopyEl.textContent = selectedCopy;
+		if (points) {
+			points.innerHTML = "";
+			templateComparePoints(selectedKey, presetLabel).forEach(function (point) {
+				var li = document.createElement("li");
+				li.textContent = point;
+				points.appendChild(li);
+			});
+		}
+	}
+
+	function showTemplatePairing(card, templateLabel) {
+		var box = document.querySelector("[data-template-pairing]");
+		if (!box || !card) return;
+		var preset = card.getAttribute("data-template-field-preset") || "";
+		var presetLabel = card.getAttribute("data-template-field-preset-label") || "";
+		if (!preset) {
+			box.hidden = true;
+			return;
+		}
+		box.hidden = false;
+		box.setAttribute("data-pairing-preset", preset);
+		box.setAttribute("data-pairing-preset-label", presetLabel);
+		var title = box.querySelector("[data-template-pairing-title]");
+		var copy = box.querySelector("[data-template-pairing-copy]");
+		if (title) title.textContent = "Pair " + templateLabel + " with " + presetLabel + " fields";
+		if (copy) copy.textContent = "This aligns checkout fields, ordering, validation, and custom fields with the selected template. Review changes before saving.";
 	}
 
 	function saveCheckoutTemplate(template, btnEl) {
@@ -1330,6 +1392,19 @@
 		showToast(preset.label + " template selected. Review changes, then Save fields.");
 	}
 
+	function applyTemplateFieldPairing(button) {
+		var box = button && button.closest ? button.closest("[data-template-pairing]") : null;
+		var preset = box ? box.getAttribute("data-pairing-preset") : "";
+		if (!preset || !fieldPresets[preset]) {
+			showToast("No matching field preset found", "error");
+			return;
+		}
+		setPane("field_editor");
+		window.setTimeout(function () {
+			applyFieldPreset(preset);
+		}, 120);
+	}
+
 	function restorePresetUi() {
 		var key = "";
 		try {
@@ -1577,6 +1652,21 @@
 		$(document).on("click", "[data-save-checkout-template]", function () {
 			saveCheckoutTemplate(this.getAttribute("data-save-checkout-template"), this);
 		});
+
+		$(document).on("mouseenter focusin click", ".cf-template-card", function () {
+			updateTemplateCompare(this);
+		});
+
+		$(document).on("click", "[data-apply-template-field-preset]", function () {
+			applyTemplateFieldPairing(this);
+		});
+
+		var activeTemplateCard = document.querySelector(".cf-template-card.is-active");
+		if (activeTemplateCard) {
+			var activeTemplateName = activeTemplateCard.querySelector(".cf-template-name");
+			showTemplatePairing(activeTemplateCard, activeTemplateName ? activeTemplateName.textContent : activeTemplateCard.getAttribute("data-checkout-template"));
+			updateTemplateCompare(activeTemplateCard);
+		}
 
 		$(document).on("change", ".cf-locale-switch", function () {
 			persistLocale($(this).val());

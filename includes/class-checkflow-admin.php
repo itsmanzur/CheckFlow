@@ -372,26 +372,36 @@ final class CheckFlow_Admin {
 				'name'        => __( 'Default One Page', 'checkflow' ),
 				'description' => __( 'Clean Shopify-like two-column checkout with balanced spacing.', 'checkflow' ),
 				'tag'         => __( 'Safe default', 'checkflow' ),
+				'field_preset' => 'minimal',
+				'field_preset_label' => __( 'Minimal Checkout', 'checkflow' ),
 			),
 			'bangladesh_cod'  => array(
 				'name'        => __( 'Bangladesh COD', 'checkflow' ),
 				'description' => __( 'Phone-first checkout for cash on delivery and local delivery trust.', 'checkflow' ),
 				'tag'         => __( 'COD focused', 'checkflow' ),
+				'field_preset' => 'bangladesh_cod',
+				'field_preset_label' => __( 'Bangladesh COD', 'checkflow' ),
 			),
 			'minimal_digital' => array(
 				'name'        => __( 'Minimal Digital', 'checkflow' ),
 				'description' => __( 'Reduced visual weight for digital products, courses, and services.', 'checkflow' ),
 				'tag'         => __( 'Lean flow', 'checkflow' ),
+				'field_preset' => 'digital',
+				'field_preset_label' => __( 'Digital Product', 'checkflow' ),
 			),
 			'trust_checkout'  => array(
 				'name'        => __( 'Trust Checkout', 'checkflow' ),
 				'description' => __( 'Stronger reassurance, payment confidence, and summary emphasis.', 'checkflow' ),
 				'tag'         => __( 'Trust heavy', 'checkflow' ),
+				'field_preset' => 'minimal',
+				'field_preset_label' => __( 'Minimal Checkout', 'checkflow' ),
 			),
 			'compact_mobile'  => array(
 				'name'        => __( 'Compact Mobile', 'checkflow' ),
 				'description' => __( 'Tighter spacing for mobile-first stores and shorter checkout pages.', 'checkflow' ),
 				'tag'         => __( 'Mobile first', 'checkflow' ),
+				'field_preset' => 'minimal',
+				'field_preset_label' => __( 'Minimal Checkout', 'checkflow' ),
 			),
 		);
 	}

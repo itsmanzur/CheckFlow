@@ -1966,6 +1966,110 @@ html.cf-field-dragging body {
 	min-height: 32px;
 	padding: 0 10px;
 }
+#checkflow-admin.checkflow-root .cf-template-compare {
+	display: grid;
+	grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(260px, 1fr);
+	gap: 12px;
+	margin: 0 18px 18px;
+}
+#checkflow-admin.checkflow-root .cf-template-compare-card,
+#checkflow-admin.checkflow-root .cf-template-compare-list {
+	min-height: 118px;
+	padding: 14px;
+	border: 1px solid var(--bd);
+	border-radius: 12px;
+	background: #111722;
+}
+#checkflow-admin.checkflow-root .cf-template-compare-card.is-selected {
+	border-color: rgba(79, 142, 255, 0.4);
+	background: linear-gradient(145deg, #172033, #101722);
+}
+#checkflow-admin.checkflow-root .cf-template-compare-card span,
+#checkflow-admin.checkflow-root .cf-template-compare-card strong,
+#checkflow-admin.checkflow-root .cf-template-compare-card small,
+#checkflow-admin.checkflow-root .cf-template-compare-list strong {
+	display: block;
+}
+#checkflow-admin.checkflow-root .cf-template-compare-card span {
+	color: var(--tx3);
+	font-size: 10px;
+	font-weight: 900;
+	text-transform: uppercase;
+	letter-spacing: 0.45px;
+}
+#checkflow-admin.checkflow-root .cf-template-compare-card strong {
+	margin-top: 8px;
+	color: var(--tx);
+	font-size: 15px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-template-compare-card small {
+	margin-top: 8px;
+	color: var(--tx3);
+	font-size: 11px;
+	line-height: 1.45;
+}
+#checkflow-admin.checkflow-root .cf-template-compare-list strong {
+	color: var(--tx);
+	font-size: 12px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-template-compare-list ul {
+	margin: 10px 0 0;
+	padding: 0;
+	list-style: none;
+}
+#checkflow-admin.checkflow-root .cf-template-compare-list li {
+	position: relative;
+	margin: 8px 0 0;
+	padding-left: 18px;
+	color: var(--tx2);
+	font-size: 11px;
+	line-height: 1.4;
+}
+#checkflow-admin.checkflow-root .cf-template-compare-list li::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 0.5em;
+	width: 7px;
+	height: 7px;
+	border-radius: 999px;
+	background: var(--pr);
+	box-shadow: 0 0 0 3px rgba(79, 142, 255, 0.1);
+}
+#checkflow-admin.checkflow-root .cf-template-pairing {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	margin: 14px 18px 18px;
+	padding: 14px;
+	border: 1px solid rgba(79, 142, 255, 0.32);
+	border-radius: 12px;
+	background: linear-gradient(145deg, rgba(79, 142, 255, 0.12), rgba(46, 213, 132, 0.08));
+}
+#checkflow-admin.checkflow-root .cf-template-pairing[hidden] {
+	display: none;
+}
+#checkflow-admin.checkflow-root .cf-template-pairing strong,
+#checkflow-admin.checkflow-root .cf-template-pairing span {
+	display: block;
+}
+#checkflow-admin.checkflow-root .cf-template-pairing strong {
+	color: var(--tx);
+	font-size: 13px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-template-pairing span {
+	margin-top: 4px;
+	color: var(--tx3);
+	font-size: 11px;
+	line-height: 1.45;
+}
+#checkflow-admin.checkflow-root .cf-template-pairing button {
+	white-space: nowrap;
+}
 
 #checkflow-admin.checkflow-root .cf-string-editor {
 	max-height: 420px;
@@ -2026,6 +2130,9 @@ html.cf-field-dragging body {
 	#checkflow-admin.checkflow-root .cf-template-grid {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
+	#checkflow-admin.checkflow-root .cf-template-compare {
+		grid-template-columns: 1fr;
+	}
 	#checkflow-admin.checkflow-root .g2,
 	#checkflow-admin.checkflow-root .g3 {
 		grid-template-columns: 1fr;
@@ -2075,6 +2182,17 @@ html.cf-field-dragging body {
 	#checkflow-admin.checkflow-root .cf-mini-grid,
 	#checkflow-admin.checkflow-root .cg {
 		grid-template-columns: 1fr;
+	}
+	#checkflow-admin.checkflow-root .cf-template-pairing {
+		align-items: stretch;
+		flex-direction: column;
+		margin: 12px;
+	}
+	#checkflow-admin.checkflow-root .cf-template-compare {
+		margin: 0 12px 12px;
+	}
+	#checkflow-admin.checkflow-root .cf-template-pairing button {
+		width: 100%;
 	}
 	#checkflow-admin.checkflow-root .cf-field-toolbar {
 		align-items: flex-start;
