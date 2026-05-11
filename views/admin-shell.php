@@ -48,6 +48,8 @@ $st_map = array(
 $admin_instance = CheckFlow_Admin::instance();
 $order_rows     = $admin_instance->get_recent_orders( 12 );
 $order_metrics  = $admin_instance->get_order_metrics();
+$courier_providers = $admin_instance->get_courier_providers();
+$courier_settings  = $admin_instance->get_courier_settings();
 
 $str_keys       = $i18n->get_flat_keys_sorted();
 $quick_settings = $admin_instance->get_quick_settings();
@@ -314,7 +316,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 											<td><a class="oid" href="<?php echo esc_url( $r['edit_url'] ); ?>"><?php echo esc_html( $r['id'] ); ?></a></td>
 											<td><span class="ocust"><?php echo esc_html( $r['customer'] ); ?></span></td>
 											<td><span class="gtag <?php echo esc_attr( $r['payment_class'] ); ?>"><?php echo esc_html( $r['payment'] ); ?></span></td>
-											<td style="color:var(--tx3);font-size:12px"><?php echo esc_html( $r['courier'] ); ?></td>
+											<td><span class="ocourier<?php echo 'draft_ready' === $r['courier_status'] ? ' is-ready' : ''; ?>"><?php echo esc_html( $r['courier'] ); ?></span></td>
 											<td><span class="oamt"><?php echo esc_html( $r['amount'] ); ?></span></td>
 											<td><span class="stag <?php echo esc_attr( $r['status_class'] ); ?>"><?php echo esc_html( $r['status'] ); ?></span></td>
 										</tr>
@@ -422,11 +424,20 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 					<button type="button" class="cf-btn-ghost" data-order-bulk-action="export">Export selected</button>
 					<button type="button" class="cf-btn-ghost" data-order-clear-selection>Clear</button>
 				</div>
-				<div class="g2">
+				<div class="g2 cf-orders-layout">
 					<div class="panel">
 						<div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'nav.orders' ) ); ?></div><div class="pa">WooCommerce sync</div></div>
-						<div class="pb" style="padding:0">
+						<div class="pb cf-orders-table-wrap">
 							<table class="ot">
+								<colgroup>
+									<col class="cf-order-col-select" />
+									<col class="cf-order-col-id" />
+									<col class="cf-order-col-customer" />
+									<col class="cf-order-col-payment" />
+									<col class="cf-order-col-courier" />
+									<col class="cf-order-col-amount" />
+									<col class="cf-order-col-status" />
+								</colgroup>
 								<thead>
 									<tr>
 										<th class="cf-order-select-col"><input type="checkbox" data-order-select-all aria-label="Select all visible orders" /></th>
@@ -441,19 +452,24 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								<tbody>
 									<?php foreach ( $order_rows as $r ) : ?>
 										<?php
-										$order_payment_filter = in_array( $r['payment_class'], array( 'bkash', 'nagad' ), true ) ? 'mobile' : $r['payment_class'];
+										$order_payment_filter = in_array( $r['payment_class'], array( 'bkash', 'nagad' ), true ) ? 'mobile' : ( 'gateway-card' === $r['payment_class'] ? 'card' : $r['payment_class'] );
 										$order_search_text    = strtolower( implode( ' ', array( $r['id'], $r['customer'], $r['payment'], $r['courier'], $r['amount'], $r['status'], $r['date'] ) ) );
 										$order_detail_json    = wp_json_encode(
 											array(
+												'orderId'  => $r['order_id'],
 												'id'       => $r['id'],
 												'customer' => $r['customer'],
 												'email'    => $r['email'],
 												'phone'    => $r['phone'],
 												'address'  => $r['address'],
 												'payment'  => $r['payment'],
+												'paymentClass' => $r['payment_class'],
 												'courier'  => $r['courier'],
+												'courierProvider' => $r['courier_provider'],
+												'courierStatus' => $r['courier_status'],
 												'amount'   => $r['amount'],
 												'status'   => $r['status'],
+												'statusClass' => $r['status_class'],
 												'statusKey' => $r['status_key'],
 												'date'     => $r['date'],
 												'items'    => $r['items'],
@@ -466,7 +482,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 											<td><a class="oid" href="<?php echo esc_url( $r['edit_url'] ); ?>"><?php echo esc_html( $r['id'] ); ?></a></td>
 											<td><span class="ocust"><?php echo esc_html( $r['customer'] ); ?></span></td>
 											<td><span class="gtag <?php echo esc_attr( $r['payment_class'] ); ?>"><?php echo esc_html( $r['payment'] ); ?></span></td>
-											<td style="color:var(--tx3);font-size:12px"><?php echo esc_html( $r['courier'] ); ?></td>
+											<td><span class="ocourier<?php echo 'draft_ready' === $r['courier_status'] ? ' is-ready' : ''; ?>"><?php echo esc_html( $r['courier'] ); ?></span></td>
 											<td><span class="oamt"><?php echo esc_html( $r['amount'] ); ?></span></td>
 											<td><span class="stag <?php echo esc_attr( $r['status_class'] ); ?>"><?php echo esc_html( $r['status'] ); ?></span></td>
 										</tr>
@@ -492,12 +508,13 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 					</div>
 					<div class="cf-order-drawer-body">
 						<div class="cf-order-detail-status"><span data-order-detail-status>Status</span><strong data-order-detail-amount>0</strong></div>
+						<div class="cf-order-activity" data-order-activity hidden></div>
 						<div class="cf-order-detail-section"><small>Customer</small><strong data-order-detail-customer></strong><span data-order-detail-email></span><span data-order-detail-phone></span></div>
 						<div class="cf-order-detail-section"><small>Address</small><p data-order-detail-address></p></div>
 						<div class="cf-order-detail-grid"><div><small>Payment</small><strong data-order-detail-payment></strong></div><div><small>Courier</small><strong data-order-detail-courier></strong></div><div><small>Date</small><strong data-order-detail-date></strong></div></div>
 						<div class="cf-order-detail-section"><small>Items</small><div class="cf-order-detail-items" data-order-detail-items></div></div>
 						<div class="cf-order-workflow">
-							<div class="cf-order-workflow-head"><small>Status workflow</small><span>Draft actions only</span></div>
+							<div class="cf-order-workflow-head"><small>Status workflow</small><span>Real WooCommerce update</span></div>
 							<div class="cf-order-status-actions">
 								<button type="button" class="cf-order-status-action" data-order-status-draft="processing">Mark processing</button>
 								<button type="button" class="cf-order-status-action" data-order-status-draft="completed">Mark completed</button>
@@ -507,12 +524,12 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								<span data-order-status-confirm-text></span>
 								<div>
 									<button type="button" class="cf-btn-ghost" data-order-status-cancel>Cancel</button>
-									<button type="button" class="btn-p" data-order-status-confirm-btn>Confirm draft</button>
+									<button type="button" class="btn-p" data-order-status-confirm-btn>Update status</button>
 								</div>
 							</div>
 						</div>
 						<div class="cf-order-note-box">
-							<div class="cf-order-workflow-head"><small>Order note</small><span>Prepared for WooCommerce sync</span></div>
+							<div class="cf-order-workflow-head"><small>Order note</small><span>Saves to WooCommerce</span></div>
 							<select data-order-note-type aria-label="Order note type">
 								<option value="internal">Internal note</option>
 								<option value="customer">Customer note</option>
@@ -520,7 +537,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 							<textarea data-order-note-text placeholder="Write a quick note for this order..."></textarea>
 							<div class="cf-order-note-actions">
 								<button type="button" class="cf-btn-ghost" data-order-note-clear>Clear</button>
-								<button type="button" class="btn-p" data-order-note-draft>Prepare note</button>
+								<button type="button" class="btn-p" data-order-note-draft>Save note</button>
 							</div>
 							<div class="cf-order-note-preview" data-order-note-preview hidden></div>
 						</div>
@@ -552,8 +569,45 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 
 			<div class="cf-pane<?php echo esc_attr( $screen_class( 'courier' ) ); ?>" data-pane="courier">
 				<div class="g2">
-					<div class="panel"><div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'courier.summary_title' ) ); ?></div><div class="pa">Configure</div></div><div class="pb"><div class="cg"><div class="cc"><div class="ccn">Pathao</div><div class="cco"><?php echo esc_html( checkflow_str( 'courier.pathao' ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div><div class="cc"><div class="ccn">RedX</div><div class="cco"><?php echo esc_html( checkflow_str( 'courier.redx' ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div><div class="cc"><div class="ccn">SteadFast</div><div class="cco"><?php echo esc_html( checkflow_str( 'courier.steadfast' ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div></div></div></div>
-					<div class="panel"><div class="ph"><div class="pt">Booking workflow</div></div><div class="pb"><div class="cf-action-row"><span>Auto book after processing</span><div class="tgl on" role="switch" aria-checked="true" tabindex="0"></div></div><div class="cf-action-row"><span>COD reconciliation</span><div class="tgl" role="switch" aria-checked="false" tabindex="0"></div></div><div class="cf-action-row"><span>Fallback courier suggestion</span><div class="tgl on" role="switch" aria-checked="true" tabindex="0"></div></div></div></div>
+					<div class="panel">
+						<div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'courier.summary_title' ) ); ?></div><div class="pa">Sandbox ready</div></div>
+						<div class="pb">
+							<div class="cf-courier-providers">
+								<?php foreach ( $courier_providers as $provider_key => $provider ) : ?>
+									<?php
+									$enabled_key = $provider_key . '_enabled';
+									$mode_key    = $provider_key . '_mode';
+									$token_key   = $provider_key . '_token';
+									$is_default  = $provider_key === $courier_settings['default_provider'];
+									?>
+									<div class="cf-courier-provider<?php echo $is_default ? ' is-default' : ''; ?>" data-courier-provider-card="<?php echo esc_attr( $provider_key ); ?>">
+										<div class="cf-courier-provider-head">
+											<div><strong><?php echo esc_html( $provider['label'] ); ?></strong><span><?php echo $is_default ? 'Default provider' : 'Courier provider'; ?></span></div>
+											<label><input type="radio" name="cf_courier_default" value="<?php echo esc_attr( $provider_key ); ?>" data-courier-default <?php checked( $is_default ); ?> /> Default</label>
+										</div>
+										<div class="cf-courier-provider-controls">
+											<label><span>Enabled</span><input type="checkbox" data-courier-setting="<?php echo esc_attr( $enabled_key ); ?>" <?php checked( ! empty( $courier_settings[ $enabled_key ] ) ); ?> /></label>
+											<label><span>Mode</span><select data-courier-setting="<?php echo esc_attr( $mode_key ); ?>"><option value="sandbox" <?php selected( $courier_settings[ $mode_key ], 'sandbox' ); ?>>Sandbox</option><option value="live" <?php selected( $courier_settings[ $mode_key ], 'live' ); ?>>Live</option></select></label>
+										</div>
+										<label class="cf-courier-token"><span>API token / key</span><input type="password" data-courier-setting="<?php echo esc_attr( $token_key ); ?>" value="<?php echo esc_attr( $courier_settings[ $token_key ] ); ?>" placeholder="Saved locally for future API booking" /></label>
+									</div>
+								<?php endforeach; ?>
+							</div>
+							<div class="cf-courier-save-row">
+								<span data-courier-save-status>Provider setup only. Prepare courier creates an order draft; no live API call yet.</span>
+								<button type="button" class="btn-p" data-save-courier-settings>Save courier settings</button>
+							</div>
+						</div>
+					</div>
+					<div class="panel">
+						<div class="ph"><div class="pt">Booking workflow</div></div>
+						<div class="pb">
+							<div class="cf-action-row"><span>Order drawer prepare action</span><strong>Creates courier draft meta</strong></div>
+							<div class="cf-action-row"><span>Auto book after processing</span><div class="tgl" role="switch" aria-checked="false" tabindex="0"></div></div>
+							<div class="cf-action-row"><span>COD reconciliation</span><div class="tgl" role="switch" aria-checked="false" tabindex="0"></div></div>
+							<div class="cf-action-row"><span>Live API booking</span><strong>Next pass</strong></div>
+						</div>
+					</div>
 				</div>
 			</div>
 

@@ -20,6 +20,8 @@ final class CheckFlow_Admin {
 
 	const TEMPLATE_OPTION = 'checkflow_checkout_template';
 
+	const COURIER_SETTINGS_OPTION = 'checkflow_courier_settings';
+
 	/** @var self|null */
 	private static $instance;
 
@@ -120,6 +122,7 @@ final class CheckFlow_Admin {
 				'settings' => $this->get_quick_settings(),
 				'checkoutTemplate' => $this->get_checkout_template(),
 				'checkoutTemplates' => $this->get_checkout_templates(),
+				'courierSettings' => $this->get_courier_settings(),
 				'screens' => array(
 					'dashboard'    => array(
 						'title' => checkflow_str( 'nav.dashboard' ),
@@ -294,33 +297,7 @@ final class CheckFlow_Admin {
 			if ( ! $order instanceof WC_Order ) {
 				continue;
 			}
-
-			$payment_id    = (string) $order->get_payment_method();
-			$payment_title = (string) $order->get_payment_method_title();
-			$status        = (string) $order->get_status();
-			$address       = $this->order_address( $order );
-			$courier       = (string) $order->get_meta( '_checkflow_courier', true );
-			if ( '' === $courier ) {
-				$courier = (string) $order->get_meta( 'checkflow_courier', true );
-			}
-
-			$rows[] = array(
-				'id'            => '#' . $order->get_order_number(),
-				'customer'      => $this->order_customer_name( $order ),
-				'email'         => (string) $order->get_billing_email(),
-				'phone'         => (string) $order->get_billing_phone(),
-				'address'       => $address,
-				'payment'       => $this->payment_label( $payment_id, $payment_title ),
-				'payment_class' => $this->payment_class( $payment_id, $payment_title ),
-				'courier'       => '' !== $courier ? $courier : __( 'Not booked', 'checkflow' ),
-				'amount'        => wp_strip_all_tags( $order->get_formatted_order_total() ),
-				'status'        => wc_get_order_status_name( $status ),
-				'status_class'  => $this->order_status_class( $status ),
-				'status_key'    => $status,
-				'date'          => $order->get_date_created() ? $order->get_date_created()->date_i18n( 'M j, Y' ) : '',
-				'items'         => $this->order_items_summary( $order ),
-				'edit_url'      => $order->get_edit_order_url(),
-			);
+			$rows[] = $this->format_order_row( $order );
 		}
 
 		return $rows;
@@ -334,12 +311,12 @@ final class CheckFlow_Admin {
 	public function get_order_metrics() {
 		$orders = $this->get_recent_orders( 50 );
 		if ( ! function_exists( 'wc_get_orders' ) || ! $orders ) {
-			return array(
-				'total_orders' => '0',
-				'processing'   => '0',
-				'pending'      => '0',
-				'revenue'      => function_exists( 'wc_price' ) ? wp_strip_all_tags( wc_price( 0 ) ) : '0',
-			);
+		return array(
+			'total_orders' => '0',
+			'processing'   => '0',
+			'pending'      => '0',
+			'revenue'      => function_exists( 'wc_price' ) ? $this->clean_money_text( wc_price( 0 ) ) : '0',
+		);
 		}
 
 		$raw_orders = wc_get_orders(
@@ -373,7 +350,276 @@ final class CheckFlow_Admin {
 			'total_orders' => (string) count( $raw_orders ),
 			'processing'   => (string) $processing,
 			'pending'      => (string) $pending,
-			'revenue'      => function_exists( 'wc_price' ) ? wp_strip_all_tags( wc_price( $revenue ) ) : number_format_i18n( $revenue, 2 ),
+			'revenue'      => function_exists( 'wc_price' ) ? $this->clean_money_text( wc_price( $revenue ) ) : number_format_i18n( $revenue, 2 ),
+		);
+	}
+
+	/**
+	 * Update a WooCommerce order status from the CheckFlow drawer.
+	 */
+	public function ajax_update_order_status() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'checkflow' ) ),
+				403
+			);
+		}
+
+		if ( ! function_exists( 'wc_get_order' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'WooCommerce is not available.', 'checkflow' ) ),
+				400
+			);
+		}
+
+		$order_id = isset( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : 0;
+		$status   = isset( $_POST['status'] ) ? sanitize_key( wp_unslash( $_POST['status'] ) ) : '';
+		$allowed  = array( 'processing', 'completed', 'cancelled' );
+		$order    = $order_id ? wc_get_order( $order_id ) : false;
+
+		if ( ! $order instanceof WC_Order || ! in_array( $status, $allowed, true ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Invalid order status request.', 'checkflow' ) ),
+				400
+			);
+		}
+
+		try {
+			$order->update_status(
+				$status,
+				sprintf(
+					/* translators: %s: status name. */
+					__( 'CheckFlow changed order status to %s.', 'checkflow' ),
+					wc_get_order_status_name( $status )
+				),
+				true
+			);
+			$order = wc_get_order( $order_id );
+		} catch ( Exception $e ) {
+			wp_send_json_error(
+				array( 'message' => $e->getMessage() ),
+				500
+			);
+		}
+
+		wp_send_json_success(
+			array(
+				'message' => __( 'Order status updated.', 'checkflow' ),
+				'order'   => $this->format_order_row( $order ),
+			)
+		);
+	}
+
+	/**
+	 * Add an internal or customer order note from the CheckFlow drawer.
+	 */
+	public function ajax_add_order_note() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'checkflow' ) ),
+				403
+			);
+		}
+
+		if ( ! function_exists( 'wc_get_order' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'WooCommerce is not available.', 'checkflow' ) ),
+				400
+			);
+		}
+
+		$order_id = isset( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : 0;
+		$type     = isset( $_POST['note_type'] ) ? sanitize_key( wp_unslash( $_POST['note_type'] ) ) : 'internal';
+		$note     = isset( $_POST['note'] ) ? sanitize_textarea_field( wp_unslash( $_POST['note'] ) ) : '';
+		$order    = $order_id ? wc_get_order( $order_id ) : false;
+
+		if ( ! $order instanceof WC_Order || '' === trim( $note ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Write a note before saving.', 'checkflow' ) ),
+				400
+			);
+		}
+
+		$is_customer_note = 'customer' === $type;
+		$note_id          = $order->add_order_note( $note, $is_customer_note, true );
+
+		wp_send_json_success(
+			array(
+				'message'   => $is_customer_note ? __( 'Customer note saved.', 'checkflow' ) : __( 'Internal note saved.', 'checkflow' ),
+				'note_id'   => (string) $note_id,
+				'note_type' => $is_customer_note ? 'customer' : 'internal',
+				'note'      => $note,
+			)
+		);
+	}
+
+	/**
+	 * Save courier provider settings for the base integration layer.
+	 */
+	public function ajax_save_courier_settings() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'checkflow' ) ),
+				403
+			);
+		}
+
+		$settings = $this->get_courier_settings();
+		foreach ( array_keys( $this->get_courier_providers() ) as $provider ) {
+			$enabled_key = $provider . '_enabled';
+			$mode_key    = $provider . '_mode';
+			$token_key   = $provider . '_token';
+			$settings[ $enabled_key ] = isset( $_POST[ $enabled_key ] ) ? (bool) absint( wp_unslash( $_POST[ $enabled_key ] ) ) : false;
+			$settings[ $mode_key ]    = isset( $_POST[ $mode_key ] ) && 'live' === sanitize_key( wp_unslash( $_POST[ $mode_key ] ) ) ? 'live' : 'sandbox';
+			if ( isset( $_POST[ $token_key ] ) ) {
+				$settings[ $token_key ] = sanitize_text_field( wp_unslash( $_POST[ $token_key ] ) );
+			}
+		}
+		$settings['default_provider'] = isset( $_POST['default_provider'] ) ? sanitize_key( wp_unslash( $_POST['default_provider'] ) ) : 'pathao';
+		if ( ! isset( $this->get_courier_providers()[ $settings['default_provider'] ] ) ) {
+			$settings['default_provider'] = 'pathao';
+		}
+
+		update_option( self::COURIER_SETTINGS_OPTION, $settings, false );
+
+		wp_send_json_success(
+			array(
+				'message'  => __( 'Courier settings saved.', 'checkflow' ),
+				'settings' => $settings,
+			)
+		);
+	}
+
+	/**
+	 * Prepare a courier draft on the WooCommerce order.
+	 */
+	public function ajax_prepare_courier() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'checkflow' ) ),
+				403
+			);
+		}
+
+		if ( ! function_exists( 'wc_get_order' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'WooCommerce is not available.', 'checkflow' ) ),
+				400
+			);
+		}
+
+		$order_id = isset( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : 0;
+		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+		$providers = $this->get_courier_providers();
+		$settings  = $this->get_courier_settings();
+		if ( '' === $provider ) {
+			$provider = $settings['default_provider'];
+		}
+		$order = $order_id ? wc_get_order( $order_id ) : false;
+		if ( ! $order instanceof WC_Order || ! isset( $providers[ $provider ] ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Invalid courier request.', 'checkflow' ) ),
+				400
+			);
+		}
+		if ( empty( $settings[ $provider . '_enabled' ] ) ) {
+			wp_send_json_error(
+				array( 'message' => sprintf( __( 'Enable %s before preparing courier draft.', 'checkflow' ), $providers[ $provider ]['label'] ) ),
+				400
+			);
+		}
+
+		$label            = $providers[ $provider ]['label'];
+		$current_provider = (string) $order->get_meta( '_checkflow_courier_provider', true );
+		$current_status   = (string) $order->get_meta( '_checkflow_courier_status', true );
+		$already_ready    = $provider === $current_provider && 'draft_ready' === $current_status;
+		if ( ! $already_ready ) {
+			$order->update_meta_data( '_checkflow_courier_provider', $provider );
+			$order->update_meta_data( '_checkflow_courier_status', 'draft_ready' );
+			$order->update_meta_data( '_checkflow_courier', sprintf( 'Draft ready - %s', $label ) );
+			$order->add_order_note( sprintf( __( 'CheckFlow prepared courier draft for %s.', 'checkflow' ), $label ), false, true );
+			$order->save();
+		}
+
+		wp_send_json_success(
+			array(
+				'message' => $already_ready ? sprintf( __( 'Courier draft already ready for %s.', 'checkflow' ), $label ) : sprintf( __( 'Courier draft ready for %s.', 'checkflow' ), $label ),
+				'order'   => $this->format_order_row( $order ),
+			)
+		);
+	}
+
+	/**
+	 * @return array<string,array<string,string>>
+	 */
+	public function get_courier_providers() {
+		return array(
+			'pathao'    => array( 'label' => 'Pathao' ),
+			'redx'      => array( 'label' => 'RedX' ),
+			'steadfast' => array( 'label' => 'SteadFast' ),
+		);
+	}
+
+	/**
+	 * @return array<string,mixed>
+	 */
+	public function get_courier_settings() {
+		$defaults = array(
+			'default_provider'  => 'pathao',
+			'pathao_enabled'    => true,
+			'pathao_mode'       => 'sandbox',
+			'pathao_token'      => '',
+			'redx_enabled'      => false,
+			'redx_mode'         => 'sandbox',
+			'redx_token'        => '',
+			'steadfast_enabled' => false,
+			'steadfast_mode'    => 'sandbox',
+			'steadfast_token'   => '',
+		);
+		$saved = get_option( self::COURIER_SETTINGS_OPTION, array() );
+		return wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+	}
+
+	/**
+	 * @param WC_Order $order Order object.
+	 * @return array<string,mixed>
+	 */
+	private function format_order_row( $order ) {
+		$payment_id    = (string) $order->get_payment_method();
+		$payment_title = (string) $order->get_payment_method_title();
+		$status        = (string) $order->get_status();
+		$courier       = (string) $order->get_meta( '_checkflow_courier', true );
+		if ( '' === $courier ) {
+			$courier = (string) $order->get_meta( 'checkflow_courier', true );
+		}
+
+		return array(
+			'order_id'      => (string) $order->get_id(),
+			'id'            => '#' . $order->get_order_number(),
+			'customer'      => $this->order_customer_name( $order ),
+			'email'         => (string) $order->get_billing_email(),
+			'phone'         => (string) $order->get_billing_phone(),
+			'address'       => $this->order_address( $order ),
+			'payment'       => $this->payment_label( $payment_id, $payment_title ),
+			'payment_class' => $this->payment_class( $payment_id, $payment_title ),
+			'courier'       => '' !== $courier ? $courier : __( 'Not booked', 'checkflow' ),
+			'courier_provider' => (string) $order->get_meta( '_checkflow_courier_provider', true ),
+			'courier_status' => (string) $order->get_meta( '_checkflow_courier_status', true ),
+			'amount'        => $this->clean_money_text( $order->get_formatted_order_total() ),
+			'status'        => wc_get_order_status_name( $status ),
+			'status_class'  => $this->order_status_class( $status ),
+			'status_key'    => $status,
+			'date'          => $order->get_date_created() ? $order->get_date_created()->date_i18n( 'M j, Y' ) : '',
+			'items'         => $this->order_items_summary( $order ),
+			'edit_url'      => $order->get_edit_order_url(),
 		);
 	}
 
@@ -422,11 +668,23 @@ final class CheckFlow_Admin {
 			$items[] = array(
 				'name'  => wp_strip_all_tags( $item->get_name() ),
 				'qty'   => (string) $item->get_quantity(),
-				'total' => wp_strip_all_tags( wc_price( (float) $item->get_total(), array( 'currency' => $order->get_currency() ) ) ),
+				'total' => $this->clean_money_text( wc_price( (float) $item->get_total(), array( 'currency' => $order->get_currency() ) ) ),
 			);
 		}
 
 		return $items;
+	}
+
+	/**
+	 * Normalize WooCommerce price HTML into clean admin text.
+	 *
+	 * @param string $value Price HTML/text.
+	 * @return string
+	 */
+	private function clean_money_text( $value ) {
+		$text = html_entity_decode( wp_strip_all_tags( (string) $value ), ENT_QUOTES | ENT_HTML5, get_bloginfo( 'charset' ) );
+		$text = str_replace( "\xc2\xa0", ' ', $text );
+		return trim( preg_replace( '/\s+/', ' ', $text ) );
 	}
 
 	/**
@@ -457,7 +715,7 @@ final class CheckFlow_Admin {
 		if ( false !== strpos( $haystack, 'cod' ) || false !== strpos( $haystack, 'cash' ) ) {
 			return 'cod';
 		}
-		return 'card';
+		return 'gateway-card';
 	}
 
 	/**

@@ -198,6 +198,32 @@
 		}
 	}
 
+	function normalizeOrderDetail(order) {
+		if (!order) {
+			return null;
+		}
+		return {
+			orderId: order.order_id || order.orderId || "",
+			id: order.id || "",
+			customer: order.customer || "",
+			email: order.email || "",
+			phone: order.phone || "",
+			address: order.address || "",
+			payment: order.payment || "",
+			paymentClass: order.payment_class || order.paymentClass || "",
+			courier: order.courier || "",
+			courierProvider: order.courier_provider || order.courierProvider || "",
+			courierStatus: order.courier_status || order.courierStatus || "",
+			amount: order.amount || "",
+			status: order.status || "",
+			statusKey: order.status_key || order.statusKey || "",
+			statusClass: order.status_class || order.statusClass || "",
+			date: order.date || "",
+			items: order.items || [],
+			editUrl: order.edit_url || order.editUrl || "",
+		};
+	}
+
 	function setText(selector, value) {
 		var el = document.querySelector(selector);
 		if (el) {
@@ -207,7 +233,7 @@
 
 	function openOrderDrawer(row) {
 		var root = document.getElementById("checkflow-admin");
-		var detail = parseOrderDetail(row);
+		var detail = normalizeOrderDetail(parseOrderDetail(row));
 		if (!root || !detail) {
 			return;
 		}
@@ -231,6 +257,7 @@
 		if (edit) {
 			edit.href = detail.editUrl || "#";
 		}
+		updateCourierAction(detail);
 
 		var itemsWrap = root.querySelector("[data-order-detail-items]");
 		if (itemsWrap) {
@@ -257,6 +284,7 @@
 		}
 
 		root._cfActiveOrderDetail = detail;
+		root._cfActiveOrderRow = row;
 		root._cfPendingStatusDraft = "";
 		resetOrderWorkflowUi(root);
 		backdrop.hidden = false;
@@ -278,6 +306,96 @@
 		if (backdrop) {
 			backdrop.hidden = true;
 		}
+	}
+
+	function setOrderActivity(message) {
+		var root = document.getElementById("checkflow-admin");
+		var activity = root ? root.querySelector("[data-order-activity]") : null;
+		if (!activity) {
+			return;
+		}
+		activity.textContent = message || "";
+		activity.hidden = !message;
+	}
+
+	function orderDetailSearchText(detail) {
+		return [detail.id, detail.customer, detail.payment, detail.courier, detail.amount, detail.status, detail.date].join(" ").toLowerCase();
+	}
+
+	function paymentFilterFromClass(paymentClass) {
+		if (paymentClass === "bkash" || paymentClass === "nagad") {
+			return "mobile";
+		}
+		return paymentClass === "cod" ? "cod" : "card";
+	}
+
+	function updateOrderRow(row, detail) {
+		if (!row || !detail) {
+			return;
+		}
+		row.setAttribute("data-order-status", detail.statusClass || "");
+		row.setAttribute("data-order-payment", paymentFilterFromClass(detail.paymentClass));
+		row.setAttribute("data-order-search", orderDetailSearchText(detail));
+		row.setAttribute("data-order-detail", JSON.stringify(detail));
+
+		var gateway = row.querySelector(".gtag");
+		var status = row.querySelector(".stag");
+		var amount = row.querySelector(".oamt");
+		var customer = row.querySelector(".ocust");
+		var courier = row.querySelector(".ocourier");
+		if (gateway) {
+			gateway.className = "gtag " + (detail.paymentClass || "gateway-card");
+			gateway.textContent = detail.payment || "";
+		}
+		if (status) {
+			status.className = "stag " + (detail.statusClass || "");
+			status.textContent = detail.status || "";
+		}
+		if (amount) {
+			amount.textContent = detail.amount || "";
+		}
+		if (customer) {
+			customer.textContent = detail.customer || "";
+		}
+		if (courier) {
+			courier.textContent = detail.courier || "";
+			courier.classList.toggle("is-ready", detail.courierStatus === "draft_ready" || String(detail.courier || "").toLowerCase().indexOf("draft ready") !== -1);
+		}
+		row.classList.remove("is-updated");
+		row.offsetHeight;
+		row.classList.add("is-updated");
+		window.setTimeout(function () {
+			row.classList.remove("is-updated");
+		}, 1500);
+		applyOrderFilters();
+	}
+
+	function refreshOpenOrderDetail(detail) {
+		var root = document.getElementById("checkflow-admin");
+		if (!root || !detail) {
+			return;
+		}
+		root._cfActiveOrderDetail = detail;
+		setText("[data-order-detail-id]", detail.id);
+		setText("[data-order-detail-status]", detail.status);
+		setText("[data-order-detail-amount]", detail.amount);
+		setText("[data-order-detail-customer]", detail.customer);
+		setText("[data-order-detail-email]", detail.email);
+		setText("[data-order-detail-phone]", detail.phone);
+		setText("[data-order-detail-address]", detail.address);
+		setText("[data-order-detail-payment]", detail.payment);
+		setText("[data-order-detail-courier]", detail.courier);
+		setText("[data-order-detail-date]", detail.date);
+		updateCourierAction(detail);
+		updateOrderRow(root._cfActiveOrderRow, detail);
+	}
+
+	function updateCourierAction(detail) {
+		var button = document.querySelector('[data-order-single-action="courier"]');
+		if (!button) {
+			return;
+		}
+		button.textContent = detail && detail.courierStatus === "draft_ready" ? "Refresh courier draft" : "Prepare courier";
 	}
 
 	function resetOrderWorkflowUi(root) {
@@ -304,6 +422,7 @@
 			notePreview.hidden = true;
 			notePreview.textContent = "";
 		}
+		setOrderActivity("");
 	}
 
 	function prepareStatusDraft(button) {
@@ -322,7 +441,7 @@
 		var text = root.querySelector("[data-order-status-confirm-text]");
 		var confirm = root.querySelector("[data-order-status-confirm]");
 		if (text) {
-			text.textContent = detail.id + " will be prepared for: " + label + ". Final WooCommerce status update will be connected in the AJAX pass.";
+			text.textContent = detail.id + " will be updated to: " + label + ". This will change the real WooCommerce order status.";
 		}
 		if (confirm) {
 			confirm.hidden = false;
@@ -352,8 +471,46 @@
 			showToast("Choose a status action first", "error");
 			return;
 		}
-		showToast(detail.id + " status draft prepared");
-		cancelStatusDraft();
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl || !detail.orderId) {
+			showToast("Could not update order status", "error");
+			return;
+		}
+		var button = root.querySelector("[data-order-status-confirm-btn]");
+		if (button) {
+			button.disabled = true;
+		}
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_update_order_status",
+				nonce: checkflowAdmin.nonce,
+				order_id: detail.orderId,
+				status: next,
+			},
+		})
+			.done(function (res) {
+				if (res && res.success && res.data && res.data.order) {
+					var updated = normalizeOrderDetail(res.data.order);
+					refreshOpenOrderDetail(updated);
+					setOrderActivity((res.data.message || "Order status updated") + " Table row refreshed.");
+					showToast(res.data.message || "Order status updated");
+					cancelStatusDraft();
+					return;
+				}
+				showToast((res && res.data && res.data.message) || "Could not update order status", "error");
+			})
+			.fail(function (xhr) {
+				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not update order status";
+				showToast(message, "error");
+			})
+			.always(function () {
+				if (button) {
+					button.disabled = false;
+				}
+			});
 	}
 
 	function prepareOrderNoteDraft() {
@@ -371,12 +528,52 @@
 			showToast("Write a note first", "error");
 			return;
 		}
-		var noteType = type && type.value === "customer" ? "Customer note" : "Internal note";
-		if (preview) {
-			preview.textContent = noteType + " prepared for " + detail.id + ": " + note;
-			preview.hidden = false;
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl || !detail.orderId) {
+			showToast("Could not save note", "error");
+			return;
 		}
-		showToast(noteType + " draft prepared");
+		var button = root.querySelector("[data-order-note-draft]");
+		if (button) {
+			button.disabled = true;
+		}
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_add_order_note",
+				nonce: checkflowAdmin.nonce,
+				order_id: detail.orderId,
+				note_type: type ? type.value : "internal",
+				note: note,
+			},
+		})
+			.done(function (res) {
+				if (res && res.success) {
+					var noteType = res.data && res.data.note_type === "customer" ? "Customer note" : "Internal note";
+					if (preview) {
+						preview.textContent = noteType + " saved to " + detail.id + ": " + note;
+						preview.hidden = false;
+					}
+					setOrderActivity(noteType + " saved to WooCommerce order notes.");
+					if (text) {
+						text.value = "";
+					}
+					showToast((res.data && res.data.message) || noteType + " saved");
+					return;
+				}
+				showToast((res && res.data && res.data.message) || "Could not save note", "error");
+			})
+			.fail(function (xhr) {
+				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not save note";
+				showToast(message, "error");
+			})
+			.always(function () {
+				if (button) {
+					button.disabled = false;
+				}
+			});
 	}
 
 	function clearOrderNoteDraft() {
@@ -397,7 +594,7 @@
 	}
 
 	function selectedOrderDetails() {
-		return getSelectedOrderRows().map(parseOrderDetail).filter(Boolean);
+		return getSelectedOrderRows().map(parseOrderDetail).map(normalizeOrderDetail).filter(Boolean);
 	}
 
 	function exportSelectedOrders() {
@@ -437,12 +634,129 @@
 			return;
 		}
 		if (action === "courier") {
-			showToast(count + " order courier queue prepared");
+			showToast("Open an order drawer to prepare courier draft");
 			return;
 		}
 		if (action === "followup") {
 			showToast(count + " payment follow-up items prepared");
 		}
+	}
+
+	function collectCourierSettings() {
+		var root = document.getElementById("checkflow-admin");
+		var data = {};
+		if (!root) {
+			return data;
+		}
+		root.querySelectorAll("[data-courier-setting]").forEach(function (field) {
+			var key = field.getAttribute("data-courier-setting");
+			if (!key) {
+				return;
+			}
+			data[key] = field.type === "checkbox" ? (field.checked ? "1" : "0") : field.value;
+		});
+		var checkedDefault = root.querySelector("[data-courier-default]:checked");
+		data.default_provider = checkedDefault ? checkedDefault.value : "pathao";
+		return data;
+	}
+
+	function saveCourierSettings(buttonEl) {
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl) {
+			return;
+		}
+		var data = collectCourierSettings();
+		data.action = "checkflow_save_courier_settings";
+		data.nonce = checkflowAdmin.nonce;
+		var button = buttonEl || document.querySelector("[data-save-courier-settings]");
+		var status = document.querySelector("[data-courier-save-status]");
+		if (button) {
+			button.disabled = true;
+		}
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: data,
+		})
+			.done(function (res) {
+				if (res && res.success) {
+					if (window.checkflowAdmin) {
+						checkflowAdmin.courierSettings = res.data.settings || data;
+					}
+					var savedSettings = (res.data && res.data.settings) || data;
+					if (status) {
+						status.textContent = (res.data.message || "Courier settings saved.") + " Default: " + (savedSettings.default_provider || "pathao") + ". No live API call yet.";
+					}
+					showToast(res.data.message || "Courier settings saved");
+					return;
+				}
+				showToast((res && res.data && res.data.message) || "Could not save courier settings", "error");
+			})
+			.fail(function (xhr) {
+				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not save courier settings";
+				showToast(message, "error");
+			})
+			.always(function () {
+				if (button) {
+					button.disabled = false;
+				}
+			});
+	}
+
+	function prepareCourierDraft(buttonEl) {
+		var root = document.getElementById("checkflow-admin");
+		var detail = root && root._cfActiveOrderDetail ? root._cfActiveOrderDetail : null;
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!detail || !detail.orderId) {
+			showToast("Open an order first", "error");
+			return;
+		}
+		if (!ajaxUrl) {
+			showToast("Could not prepare courier", "error");
+			return;
+		}
+		var settings = (window.checkflowAdmin && checkflowAdmin.courierSettings) || {};
+		var provider = settings.default_provider || "pathao";
+		if (detail.courierStatus === "draft_ready" && detail.courierProvider === provider) {
+			showToast("Courier draft is already ready");
+			setOrderActivity("Courier draft is already ready for this provider. No duplicate note was added.");
+			return;
+		}
+		var button = buttonEl || document.querySelector('[data-order-single-action="courier"]');
+		if (button) {
+			button.disabled = true;
+		}
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_prepare_courier",
+				nonce: checkflowAdmin.nonce,
+				order_id: detail.orderId,
+				provider: provider,
+			},
+		})
+			.done(function (res) {
+				if (res && res.success && res.data && res.data.order) {
+					var updated = normalizeOrderDetail(res.data.order);
+					refreshOpenOrderDetail(updated);
+					setOrderActivity((res.data.message || "Courier draft ready") + " No live courier API call was made.");
+					showToast(res.data.message || "Courier draft ready");
+					return;
+				}
+				showToast((res && res.data && res.data.message) || "Could not prepare courier", "error");
+			})
+			.fail(function (xhr) {
+				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not prepare courier";
+				showToast(message, "error");
+			})
+			.always(function () {
+				if (button) {
+					button.disabled = false;
+				}
+			});
 	}
 
 	function copyOrderValue(type) {
@@ -2254,7 +2568,23 @@
 		});
 
 		$(document).on("click", "[data-order-single-action]", function () {
-			showToast("Courier queue prepared for this order");
+			if (this.getAttribute("data-order-single-action") === "courier") {
+				prepareCourierDraft(this);
+			}
+		});
+
+		$(document).on("click", "[data-save-courier-settings]", function () {
+			saveCourierSettings(this);
+		});
+
+		$(document).on("change", "[data-courier-default]", function () {
+			document.querySelectorAll("[data-courier-provider-card]").forEach(function (card) {
+				card.classList.toggle("is-default", card.getAttribute("data-courier-provider-card") === this.value);
+				var label = card.querySelector(".cf-courier-provider-head span");
+				if (label) {
+					label.textContent = card.classList.contains("is-default") ? "Default provider" : "Courier provider";
+				}
+			}, this);
 		});
 
 		$(document).on("click", "[data-order-status-draft]", function () {
