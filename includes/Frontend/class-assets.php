@@ -27,11 +27,34 @@ final class CheckFlow_Frontend_Assets {
 	}
 
 	/**
+	 * Detect checkout pages even when WooCommerce conditionals are late or theme-filtered.
+	 *
+	 * @return bool
+	 */
+	private function is_checkout_request() {
+		if ( function_exists( 'is_checkout' ) && is_checkout() ) {
+			return true;
+		}
+
+		if ( function_exists( 'is_page' ) && is_page( 'checkout' ) ) {
+			return true;
+		}
+
+		$post = get_post();
+		if ( $post && isset( $post->post_content ) ) {
+			$content = (string) $post->post_content;
+			return false !== strpos( $content, '[woocommerce_checkout]' ) || false !== strpos( $content, 'wp:woocommerce/checkout' );
+		}
+
+		return false;
+	}
+
+	/**
 	 * Conditionally enqueue checkout assets.
 	 */
 	public function enqueue() {
 		$settings          = CheckFlow_Admin::instance()->get_quick_settings();
-		$is_checkout_page  = function_exists( 'is_checkout' ) && is_checkout();
+		$is_checkout_page  = $this->is_checkout_request();
 		$is_order_received = function_exists( 'is_order_received_page' ) && is_order_received_page();
 		$is_checkout       = $is_checkout_page && ! $is_order_received;
 		$storefront_mode   = '';

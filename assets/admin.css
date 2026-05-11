@@ -2070,6 +2070,31 @@ html.cf-field-dragging body {
 #checkflow-admin.checkflow-root .cf-template-pairing button {
 	white-space: nowrap;
 }
+#checkflow-admin.checkflow-root .cf-template-pairing-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+#checkflow-admin.checkflow-root .cf-template-auto-pair {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 34px;
+	padding: 0 10px;
+	border: 1px solid var(--bd);
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.03);
+	color: var(--tx2);
+	font-size: 11px;
+	font-weight: 800;
+	white-space: nowrap;
+}
+#checkflow-admin.checkflow-root .cf-template-auto-pair input {
+	margin: 0;
+	accent-color: var(--pr);
+}
 
 #checkflow-admin.checkflow-root .cf-string-editor {
 	max-height: 420px;
@@ -2193,6 +2218,14 @@ html.cf-field-dragging body {
 	}
 	#checkflow-admin.checkflow-root .cf-template-pairing button {
 		width: 100%;
+	}
+	#checkflow-admin.checkflow-root .cf-template-pairing-actions,
+	#checkflow-admin.checkflow-root .cf-template-auto-pair {
+		width: 100%;
+	}
+	#checkflow-admin.checkflow-root .cf-template-pairing-actions {
+		align-items: stretch;
+		flex-direction: column;
 	}
 	#checkflow-admin.checkflow-root .cf-field-toolbar {
 		align-items: flex-start;

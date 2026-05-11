@@ -27,6 +27,29 @@ final class CheckFlow_Frontend_Checkout {
 	}
 
 	/**
+	 * Detect checkout pages even when WooCommerce conditionals are late or theme-filtered.
+	 *
+	 * @return bool
+	 */
+	private function is_checkout_request() {
+		if ( function_exists( 'is_checkout' ) && is_checkout() ) {
+			return true;
+		}
+
+		if ( function_exists( 'is_page' ) && is_page( 'checkout' ) ) {
+			return true;
+		}
+
+		$post = get_post();
+		if ( $post && isset( $post->post_content ) ) {
+			$content = (string) $post->post_content;
+			return false !== strpos( $content, '[woocommerce_checkout]' ) || false !== strpos( $content, 'wp:woocommerce/checkout' );
+		}
+
+		return false;
+	}
+
+	/**
 	 * Whether shell intro may show on this request.
 	 *
 	 * @return bool
@@ -35,7 +58,7 @@ final class CheckFlow_Frontend_Checkout {
 		if ( is_admin() || wp_doing_ajax() ) {
 			return false;
 		}
-		if ( ! function_exists( 'is_checkout' ) || ! is_checkout() || is_order_received_page() ) {
+		if ( ! $this->is_checkout_request() || is_order_received_page() ) {
 			return false;
 		}
 		return true;
@@ -50,7 +73,7 @@ final class CheckFlow_Frontend_Checkout {
 		if ( is_admin() ) {
 			return false;
 		}
-		if ( ! function_exists( 'is_checkout' ) || ! is_checkout() || is_order_received_page() ) {
+		if ( ! $this->is_checkout_request() || is_order_received_page() ) {
 			return false;
 		}
 		return true;
@@ -72,7 +95,7 @@ final class CheckFlow_Frontend_Checkout {
 	 * @return array<int,string>
 	 */
 	public function body_class( $classes ) {
-		if ( is_admin() || ! function_exists( 'is_checkout' ) || ! is_checkout() || is_order_received_page() ) {
+		if ( is_admin() || ! $this->is_checkout_request() || is_order_received_page() ) {
 			return $classes;
 		}
 

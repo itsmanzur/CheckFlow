@@ -780,7 +780,13 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 							<strong data-template-pairing-title>Matching field preset available</strong>
 							<span data-template-pairing-copy>Apply the paired field preset to align the checkout form with this template.</span>
 						</div>
-						<button type="button" class="btn-p" data-apply-template-field-preset>Apply matching fields</button>
+						<div class="cf-template-pairing-actions">
+							<label class="cf-template-auto-pair">
+								<input type="checkbox" data-template-auto-pair />
+								<span>Auto-apply after template select</span>
+							</label>
+							<button type="button" class="btn-p" data-apply-template-field-preset>Apply matching fields</button>
+						</div>
 					</div>
 				</div>
 			</div>

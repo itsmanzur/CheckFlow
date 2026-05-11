@@ -259,6 +259,39 @@
 		if (copy) copy.textContent = "This aligns checkout fields, ordering, validation, and custom fields with the selected template. Review changes before saving.";
 	}
 
+	function templateAutoPairEnabled() {
+		try {
+			return window.localStorage.getItem("checkflow_template_auto_pair") === "1";
+		} catch (e) {
+			return false;
+		}
+	}
+
+	function setTemplateAutoPairEnabled(enabled) {
+		try {
+			window.localStorage.setItem("checkflow_template_auto_pair", enabled ? "1" : "0");
+		} catch (e) {}
+		document.querySelectorAll("[data-template-auto-pair]").forEach(function (input) {
+			input.checked = !!enabled;
+		});
+	}
+
+	function activeTemplatePairingPreset() {
+		var box = document.querySelector("[data-template-pairing]");
+		return box ? box.getAttribute("data-pairing-preset") || "" : "";
+	}
+
+	function applyTemplatePairingPreset(preset, silent) {
+		if (!preset || !fieldPresets[preset]) {
+			showToast("No matching field preset found", "error");
+			return;
+		}
+		setPane("field_editor");
+		window.setTimeout(function () {
+			applyFieldPreset(preset, { skipConfirm: !!silent, source: silent ? "auto" : "manual" });
+		}, 120);
+	}
+
 	function saveCheckoutTemplate(template, btnEl) {
 		var ajaxUrl = getAdminAjaxUrl();
 		if (!ajaxUrl || !template) return;
@@ -281,6 +314,9 @@
 				}
 				setTemplateUi(res.data.template, res.data.label);
 				showToast(res.data.label + " template is active");
+				if (templateAutoPairEnabled()) {
+					applyTemplatePairingPreset(activeTemplatePairingPreset(), true);
+				}
 			})
 			.fail(function () {
 				showToast("Could not save checkout template", "error");
@@ -1365,10 +1401,11 @@
 		});
 	}
 
-	function applyFieldPreset(key) {
+	function applyFieldPreset(key, options) {
+		options = options || {};
 		var preset = fieldPresets[key];
 		if (!preset) return;
-		if (!window.confirm("Apply " + preset.label + " preset? Review the changes, then Save fields to publish.")) {
+		if (!options.skipConfirm && !window.confirm("Apply " + preset.label + " preset? Review the changes, then Save fields to publish.")) {
 			return;
 		}
 		document.querySelectorAll(".cf-field-row").forEach(function (row) {
@@ -1389,20 +1426,12 @@
 		setPresetUi(key, presetSummary(preset));
 		setFieldEditorDirty(true);
 		updateFieldSearch();
-		showToast(preset.label + " template selected. Review changes, then Save fields.");
+		showToast(preset.label + (options.source === "auto" ? " fields auto-applied. Review, then Save fields." : " template selected. Review changes, then Save fields."));
 	}
 
 	function applyTemplateFieldPairing(button) {
 		var box = button && button.closest ? button.closest("[data-template-pairing]") : null;
-		var preset = box ? box.getAttribute("data-pairing-preset") : "";
-		if (!preset || !fieldPresets[preset]) {
-			showToast("No matching field preset found", "error");
-			return;
-		}
-		setPane("field_editor");
-		window.setTimeout(function () {
-			applyFieldPreset(preset);
-		}, 120);
+		applyTemplatePairingPreset(box ? box.getAttribute("data-pairing-preset") : "", false);
 	}
 
 	function restorePresetUi() {
@@ -1661,12 +1690,18 @@
 			applyTemplateFieldPairing(this);
 		});
 
+		$(document).on("change", "[data-template-auto-pair]", function () {
+			setTemplateAutoPairEnabled(this.checked);
+			showToast("Template auto-pairing is " + (this.checked ? "ON" : "OFF"));
+		});
+
 		var activeTemplateCard = document.querySelector(".cf-template-card.is-active");
 		if (activeTemplateCard) {
 			var activeTemplateName = activeTemplateCard.querySelector(".cf-template-name");
 			showTemplatePairing(activeTemplateCard, activeTemplateName ? activeTemplateName.textContent : activeTemplateCard.getAttribute("data-checkout-template"));
 			updateTemplateCompare(activeTemplateCard);
 		}
+		setTemplateAutoPairEnabled(templateAutoPairEnabled());
 
 		$(document).on("change", ".cf-locale-switch", function () {
 			persistLocale($(this).val());
