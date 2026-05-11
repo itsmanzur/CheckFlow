@@ -45,10 +45,14 @@ $st_map = array(
 	'fail' => 'orders.st.fail',
 );
 
+$admin_instance = CheckFlow_Admin::instance();
+$order_rows     = $admin_instance->get_recent_orders( 12 );
+$order_metrics  = $admin_instance->get_order_metrics();
+
 $str_keys       = $i18n->get_flat_keys_sorted();
-$quick_settings = CheckFlow_Admin::instance()->get_quick_settings();
-$checkout_templates = CheckFlow_Admin::instance()->get_checkout_templates();
-$active_checkout_template = CheckFlow_Admin::instance()->get_checkout_template();
+$quick_settings = $admin_instance->get_quick_settings();
+$checkout_templates = $admin_instance->get_checkout_templates();
+$active_checkout_template = $admin_instance->get_checkout_template();
 $field_rows     = class_exists( 'CheckFlow_Field_Editor' ) ? CheckFlow_Field_Editor::instance()->get_admin_rows() : array();
 $field_groups   = array(
 	'billing'  => array(),
@@ -305,16 +309,19 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 									</tr>
 								</thead>
 								<tbody>
-									<?php foreach ( $order_rows as $i => $r ) : ?>
+									<?php foreach ( array_slice( $order_rows, 0, 7 ) as $r ) : ?>
 										<tr>
-											<td><span class="oid"><?php echo esc_html( $r[0] ); ?></span></td>
-											<td><span class="ocust"><?php echo esc_html( $r[1] ); ?></span></td>
-											<td><span class="gtag <?php echo esc_attr( $r[2] ); ?>"><?php echo esc_html( checkflow_str( $gw_map[ $r[2] ] ) ); ?></span></td>
-											<td style="color:var(--tx3);font-size:12px"><?php echo esc_html( $r[3] ); ?></td>
-											<td><span class="oamt"><?php echo isset( $amts[ $i ] ) ? esc_html( $amts[ $i ] ) : ''; ?></span></td>
-											<td><span class="stag <?php echo esc_attr( 'paid' === $r[4] ? 'paid' : ( 'pend' === $r[4] ? 'pend' : 'fail' ) ); ?>"><?php echo esc_html( checkflow_str( $st_map[ $r[4] ] ) ); ?></span></td>
+											<td><a class="oid" href="<?php echo esc_url( $r['edit_url'] ); ?>"><?php echo esc_html( $r['id'] ); ?></a></td>
+											<td><span class="ocust"><?php echo esc_html( $r['customer'] ); ?></span></td>
+											<td><span class="gtag <?php echo esc_attr( $r['payment_class'] ); ?>"><?php echo esc_html( $r['payment'] ); ?></span></td>
+											<td style="color:var(--tx3);font-size:12px"><?php echo esc_html( $r['courier'] ); ?></td>
+											<td><span class="oamt"><?php echo esc_html( $r['amount'] ); ?></span></td>
+											<td><span class="stag <?php echo esc_attr( $r['status_class'] ); ?>"><?php echo esc_html( $r['status'] ); ?></span></td>
 										</tr>
 									<?php endforeach; ?>
+									<?php if ( empty( $order_rows ) ) : ?>
+										<tr><td colspan="6" class="cf-empty-row">No WooCommerce orders found yet.</td></tr>
+									<?php endif; ?>
 								</tbody>
 							</table>
 						</div>
@@ -383,6 +390,38 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 			</div><!-- dashboard -->
 
 			<div class="cf-pane<?php echo esc_attr( $screen_class( 'orders' ) ); ?>" data-pane="orders">
+				<div class="cf-orders-metrics">
+					<div class="cf-order-metric"><span>Total recent</span><strong><?php echo esc_html( $order_metrics['total_orders'] ); ?></strong><small>Last 50 orders</small></div>
+					<div class="cf-order-metric"><span>Processing</span><strong><?php echo esc_html( $order_metrics['processing'] ); ?></strong><small>Paid or in progress</small></div>
+					<div class="cf-order-metric"><span>Pending</span><strong><?php echo esc_html( $order_metrics['pending'] ); ?></strong><small>Needs attention</small></div>
+					<div class="cf-order-metric"><span>Revenue</span><strong><?php echo esc_html( $order_metrics['revenue'] ); ?></strong><small>Completed/processing</small></div>
+				</div>
+				<div class="cf-orders-toolbar">
+					<label class="cf-orders-search">
+						<span>Search orders</span>
+						<input type="search" class="cf-orders-search-input" placeholder="Order ID, customer, payment, courier, status" aria-label="Search orders" />
+					</label>
+					<div class="cf-orders-filter-group" aria-label="Filter orders by status">
+						<button type="button" class="cf-order-filter is-active" data-order-filter="status" data-filter-value="all">All</button>
+						<button type="button" class="cf-order-filter" data-order-filter="status" data-filter-value="paid">Processing</button>
+						<button type="button" class="cf-order-filter" data-order-filter="status" data-filter-value="pend">Pending</button>
+						<button type="button" class="cf-order-filter" data-order-filter="status" data-filter-value="fail">Other</button>
+					</div>
+					<div class="cf-orders-filter-group" aria-label="Filter orders by payment">
+						<button type="button" class="cf-order-filter is-active" data-order-filter="payment" data-filter-value="all">All payments</button>
+						<button type="button" class="cf-order-filter" data-order-filter="payment" data-filter-value="cod">COD</button>
+						<button type="button" class="cf-order-filter" data-order-filter="payment" data-filter-value="mobile">bKash/Nagad</button>
+						<button type="button" class="cf-order-filter" data-order-filter="payment" data-filter-value="card">Card/Other</button>
+					</div>
+					<div class="cf-orders-count"><strong data-orders-visible-count><?php echo esc_html( count( $order_rows ) ); ?></strong><span>shown</span></div>
+				</div>
+				<div class="cf-orders-bulkbar" data-orders-bulkbar hidden>
+					<div><strong data-orders-selected-count>0</strong><span> selected</span></div>
+					<button type="button" class="cf-btn-ghost" data-order-bulk-action="courier">Prepare courier</button>
+					<button type="button" class="cf-btn-ghost" data-order-bulk-action="followup">Payment follow-up</button>
+					<button type="button" class="cf-btn-ghost" data-order-bulk-action="export">Export selected</button>
+					<button type="button" class="cf-btn-ghost" data-order-clear-selection>Clear</button>
+				</div>
 				<div class="g2">
 					<div class="panel">
 						<div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'nav.orders' ) ); ?></div><div class="pa">WooCommerce sync</div></div>
@@ -390,6 +429,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 							<table class="ot">
 								<thead>
 									<tr>
+										<th class="cf-order-select-col"><input type="checkbox" data-order-select-all aria-label="Select all visible orders" /></th>
 										<th style="padding:12px 10px 10px"><?php echo esc_html( checkflow_str( 'orders.th_id' ) ); ?></th>
 										<th><?php echo esc_html( checkflow_str( 'orders.th_customer' ) ); ?></th>
 										<th><?php echo esc_html( checkflow_str( 'orders.th_payment' ) ); ?></th>
@@ -399,25 +439,99 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 									</tr>
 								</thead>
 								<tbody>
-									<?php foreach ( $order_rows as $i => $r ) : ?>
-										<tr>
-											<td><span class="oid"><?php echo esc_html( $r[0] ); ?></span></td>
-											<td><span class="ocust"><?php echo esc_html( $r[1] ); ?></span></td>
-											<td><span class="gtag <?php echo esc_attr( $r[2] ); ?>"><?php echo esc_html( checkflow_str( $gw_map[ $r[2] ] ) ); ?></span></td>
-											<td style="color:var(--tx3);font-size:12px"><?php echo esc_html( $r[3] ); ?></td>
-											<td><span class="oamt"><?php echo isset( $amts[ $i ] ) ? esc_html( $amts[ $i ] ) : ''; ?></span></td>
-											<td><span class="stag <?php echo esc_attr( 'paid' === $r[4] ? 'paid' : ( 'pend' === $r[4] ? 'pend' : 'fail' ) ); ?>"><?php echo esc_html( checkflow_str( $st_map[ $r[4] ] ) ); ?></span></td>
+									<?php foreach ( $order_rows as $r ) : ?>
+										<?php
+										$order_payment_filter = in_array( $r['payment_class'], array( 'bkash', 'nagad' ), true ) ? 'mobile' : $r['payment_class'];
+										$order_search_text    = strtolower( implode( ' ', array( $r['id'], $r['customer'], $r['payment'], $r['courier'], $r['amount'], $r['status'], $r['date'] ) ) );
+										$order_detail_json    = wp_json_encode(
+											array(
+												'id'       => $r['id'],
+												'customer' => $r['customer'],
+												'email'    => $r['email'],
+												'phone'    => $r['phone'],
+												'address'  => $r['address'],
+												'payment'  => $r['payment'],
+												'courier'  => $r['courier'],
+												'amount'   => $r['amount'],
+												'status'   => $r['status'],
+												'statusKey' => $r['status_key'],
+												'date'     => $r['date'],
+												'items'    => $r['items'],
+												'editUrl'  => $r['edit_url'],
+											)
+										);
+										?>
+										<tr data-order-row data-order-status="<?php echo esc_attr( $r['status_class'] ); ?>" data-order-payment="<?php echo esc_attr( $order_payment_filter ); ?>" data-order-search="<?php echo esc_attr( $order_search_text ); ?>" data-order-detail="<?php echo esc_attr( $order_detail_json ); ?>">
+											<td class="cf-order-select-col"><input type="checkbox" data-order-select aria-label="<?php echo esc_attr( sprintf( 'Select order %s', $r['id'] ) ); ?>" /></td>
+											<td><a class="oid" href="<?php echo esc_url( $r['edit_url'] ); ?>"><?php echo esc_html( $r['id'] ); ?></a></td>
+											<td><span class="ocust"><?php echo esc_html( $r['customer'] ); ?></span></td>
+											<td><span class="gtag <?php echo esc_attr( $r['payment_class'] ); ?>"><?php echo esc_html( $r['payment'] ); ?></span></td>
+											<td style="color:var(--tx3);font-size:12px"><?php echo esc_html( $r['courier'] ); ?></td>
+											<td><span class="oamt"><?php echo esc_html( $r['amount'] ); ?></span></td>
+											<td><span class="stag <?php echo esc_attr( $r['status_class'] ); ?>"><?php echo esc_html( $r['status'] ); ?></span></td>
 										</tr>
 									<?php endforeach; ?>
+									<?php if ( empty( $order_rows ) ) : ?>
+										<tr><td colspan="7" class="cf-empty-row">No WooCommerce orders found yet.</td></tr>
+									<?php endif; ?>
+									<tr class="cf-orders-no-results" hidden><td colspan="7" class="cf-empty-row">No matching orders found.</td></tr>
 								</tbody>
 							</table>
 						</div>
 					</div>
 					<div class="gcol">
-						<div class="panel"><div class="ph"><div class="pt">Order actions</div></div><div class="pb"><div class="cf-action-row"><span>Bulk courier booking</span><button type="button" class="btn-p">Prepare</button></div><div class="cf-action-row"><span>Failed payment follow-up</span><button type="button" class="btn-p">Review</button></div><div class="cf-action-row"><span>CSV export</span><button type="button" class="btn-p">Export</button></div></div></div>
-						<div class="panel"><div class="ph"><div class="pt">Status mix</div></div><div class="pb"><div class="cf-mini-grid"><div class="cf-mini-card"><strong>5</strong><span>Paid</span></div><div class="cf-mini-card"><strong>1</strong><span>Pending</span></div><div class="cf-mini-card"><strong>1</strong><span>Failed</span></div></div></div></div>
+						<div class="panel"><div class="ph"><div class="pt">Order actions</div></div><div class="pb"><div class="cf-action-row"><span>Bulk courier booking</span><button type="button" class="btn-p" data-order-bulk-action="courier">Prepare</button></div><div class="cf-action-row"><span>Failed payment follow-up</span><button type="button" class="btn-p" data-order-bulk-action="followup">Review</button></div><div class="cf-action-row"><span>CSV export</span><button type="button" class="btn-p" data-order-bulk-action="export">Export</button></div></div></div>
+						<div class="panel"><div class="ph"><div class="pt">Status mix</div></div><div class="pb"><div class="cf-mini-grid"><div class="cf-mini-card"><strong><?php echo esc_html( $order_metrics['processing'] ); ?></strong><span>Processing</span></div><div class="cf-mini-card"><strong><?php echo esc_html( $order_metrics['pending'] ); ?></strong><span>Pending</span></div><div class="cf-mini-card"><strong><?php echo esc_html( max( 0, absint( $order_metrics['total_orders'] ) - absint( $order_metrics['processing'] ) - absint( $order_metrics['pending'] ) ) ); ?></strong><span>Other</span></div></div></div></div>
 					</div>
 				</div>
+				<div class="cf-order-drawer-backdrop" data-order-drawer-close hidden></div>
+				<aside class="cf-order-drawer" aria-hidden="true" aria-label="Order details">
+					<div class="cf-order-drawer-head">
+						<div><span>Order details</span><strong data-order-detail-id>Order</strong></div>
+						<button type="button" class="cf-order-drawer-close" data-order-drawer-close aria-label="Close order details">×</button>
+					</div>
+					<div class="cf-order-drawer-body">
+						<div class="cf-order-detail-status"><span data-order-detail-status>Status</span><strong data-order-detail-amount>0</strong></div>
+						<div class="cf-order-detail-section"><small>Customer</small><strong data-order-detail-customer></strong><span data-order-detail-email></span><span data-order-detail-phone></span></div>
+						<div class="cf-order-detail-section"><small>Address</small><p data-order-detail-address></p></div>
+						<div class="cf-order-detail-grid"><div><small>Payment</small><strong data-order-detail-payment></strong></div><div><small>Courier</small><strong data-order-detail-courier></strong></div><div><small>Date</small><strong data-order-detail-date></strong></div></div>
+						<div class="cf-order-detail-section"><small>Items</small><div class="cf-order-detail-items" data-order-detail-items></div></div>
+						<div class="cf-order-workflow">
+							<div class="cf-order-workflow-head"><small>Status workflow</small><span>Draft actions only</span></div>
+							<div class="cf-order-status-actions">
+								<button type="button" class="cf-order-status-action" data-order-status-draft="processing">Mark processing</button>
+								<button type="button" class="cf-order-status-action" data-order-status-draft="completed">Mark completed</button>
+								<button type="button" class="cf-order-status-action danger" data-order-status-draft="cancelled">Cancel order</button>
+							</div>
+							<div class="cf-order-confirm" data-order-status-confirm hidden>
+								<span data-order-status-confirm-text></span>
+								<div>
+									<button type="button" class="cf-btn-ghost" data-order-status-cancel>Cancel</button>
+									<button type="button" class="btn-p" data-order-status-confirm-btn>Confirm draft</button>
+								</div>
+							</div>
+						</div>
+						<div class="cf-order-note-box">
+							<div class="cf-order-workflow-head"><small>Order note</small><span>Prepared for WooCommerce sync</span></div>
+							<select data-order-note-type aria-label="Order note type">
+								<option value="internal">Internal note</option>
+								<option value="customer">Customer note</option>
+							</select>
+							<textarea data-order-note-text placeholder="Write a quick note for this order..."></textarea>
+							<div class="cf-order-note-actions">
+								<button type="button" class="cf-btn-ghost" data-order-note-clear>Clear</button>
+								<button type="button" class="btn-p" data-order-note-draft>Prepare note</button>
+							</div>
+							<div class="cf-order-note-preview" data-order-note-preview hidden></div>
+						</div>
+					</div>
+					<div class="cf-order-drawer-actions">
+						<a class="btn-p" data-order-detail-edit href="#">View Woo order</a>
+						<button type="button" class="cf-btn-ghost" data-copy-order-phone>Copy phone</button>
+						<button type="button" class="cf-btn-ghost" data-copy-order-address>Copy address</button>
+						<button type="button" class="cf-btn-ghost" data-order-single-action="courier">Prepare courier</button>
+					</div>
+				</aside>
 			</div>
 
 			<div class="cf-pane<?php echo esc_attr( $screen_class( 'pixel' ) ); ?>" data-pane="pixel">

@@ -269,6 +269,212 @@ final class CheckFlow_Admin {
 	}
 
 	/**
+	 * Recent WooCommerce orders for the CheckFlow admin.
+	 *
+	 * @param int $limit Number of orders.
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function get_recent_orders( $limit = 12 ) {
+		if ( ! function_exists( 'wc_get_orders' ) ) {
+			return array();
+		}
+
+		$orders = wc_get_orders(
+			array(
+				'limit'   => max( 1, absint( $limit ) ),
+				'orderby' => 'date',
+				'order'   => 'DESC',
+				'return'  => 'objects',
+				'status'  => array_keys( wc_get_order_statuses() ),
+			)
+		);
+
+		$rows = array();
+		foreach ( $orders as $order ) {
+			if ( ! $order instanceof WC_Order ) {
+				continue;
+			}
+
+			$payment_id    = (string) $order->get_payment_method();
+			$payment_title = (string) $order->get_payment_method_title();
+			$status        = (string) $order->get_status();
+			$address       = $this->order_address( $order );
+			$courier       = (string) $order->get_meta( '_checkflow_courier', true );
+			if ( '' === $courier ) {
+				$courier = (string) $order->get_meta( 'checkflow_courier', true );
+			}
+
+			$rows[] = array(
+				'id'            => '#' . $order->get_order_number(),
+				'customer'      => $this->order_customer_name( $order ),
+				'email'         => (string) $order->get_billing_email(),
+				'phone'         => (string) $order->get_billing_phone(),
+				'address'       => $address,
+				'payment'       => $this->payment_label( $payment_id, $payment_title ),
+				'payment_class' => $this->payment_class( $payment_id, $payment_title ),
+				'courier'       => '' !== $courier ? $courier : __( 'Not booked', 'checkflow' ),
+				'amount'        => wp_strip_all_tags( $order->get_formatted_order_total() ),
+				'status'        => wc_get_order_status_name( $status ),
+				'status_class'  => $this->order_status_class( $status ),
+				'status_key'    => $status,
+				'date'          => $order->get_date_created() ? $order->get_date_created()->date_i18n( 'M j, Y' ) : '',
+				'items'         => $this->order_items_summary( $order ),
+				'edit_url'      => $order->get_edit_order_url(),
+			);
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Lightweight order metrics for the Orders screen.
+	 *
+	 * @return array<string,string>
+	 */
+	public function get_order_metrics() {
+		$orders = $this->get_recent_orders( 50 );
+		if ( ! function_exists( 'wc_get_orders' ) || ! $orders ) {
+			return array(
+				'total_orders' => '0',
+				'processing'   => '0',
+				'pending'      => '0',
+				'revenue'      => function_exists( 'wc_price' ) ? wp_strip_all_tags( wc_price( 0 ) ) : '0',
+			);
+		}
+
+		$raw_orders = wc_get_orders(
+			array(
+				'limit'   => 50,
+				'orderby' => 'date',
+				'order'   => 'DESC',
+				'return'  => 'objects',
+				'status'  => array_keys( wc_get_order_statuses() ),
+			)
+		);
+
+		$revenue    = 0.0;
+		$processing = 0;
+		$pending    = 0;
+		foreach ( $raw_orders as $order ) {
+			if ( ! $order instanceof WC_Order ) {
+				continue;
+			}
+			$status = (string) $order->get_status();
+			if ( in_array( $status, array( 'completed', 'processing' ), true ) ) {
+				$revenue += (float) $order->get_total();
+				$processing++;
+			}
+			if ( in_array( $status, array( 'pending', 'on-hold' ), true ) ) {
+				$pending++;
+			}
+		}
+
+		return array(
+			'total_orders' => (string) count( $raw_orders ),
+			'processing'   => (string) $processing,
+			'pending'      => (string) $pending,
+			'revenue'      => function_exists( 'wc_price' ) ? wp_strip_all_tags( wc_price( $revenue ) ) : number_format_i18n( $revenue, 2 ),
+		);
+	}
+
+	/**
+	 * @param WC_Order $order Order object.
+	 * @return string
+	 */
+	private function order_customer_name( $order ) {
+		$name = trim( (string) $order->get_formatted_billing_full_name() );
+		if ( '' !== $name ) {
+			return $name;
+		}
+		$email = (string) $order->get_billing_email();
+		return '' !== $email ? $email : __( 'Guest customer', 'checkflow' );
+	}
+
+	/**
+	 * @param WC_Order $order Order object.
+	 * @return string
+	 */
+	private function order_address( $order ) {
+		$parts = array_filter(
+			array(
+				$order->get_billing_address_1(),
+				$order->get_billing_address_2(),
+				$order->get_billing_city(),
+				$order->get_billing_state(),
+				$order->get_billing_postcode(),
+				$order->get_billing_country(),
+			)
+		);
+
+		return $parts ? implode( ', ', array_map( 'wp_strip_all_tags', $parts ) ) : __( 'No billing address', 'checkflow' );
+	}
+
+	/**
+	 * @param WC_Order $order Order object.
+	 * @return array<int,array<string,string>>
+	 */
+	private function order_items_summary( $order ) {
+		$items = array();
+		foreach ( $order->get_items() as $item ) {
+			if ( ! $item instanceof WC_Order_Item_Product ) {
+				continue;
+			}
+			$items[] = array(
+				'name'  => wp_strip_all_tags( $item->get_name() ),
+				'qty'   => (string) $item->get_quantity(),
+				'total' => wp_strip_all_tags( wc_price( (float) $item->get_total(), array( 'currency' => $order->get_currency() ) ) ),
+			);
+		}
+
+		return $items;
+	}
+
+	/**
+	 * @param string $id Gateway ID.
+	 * @param string $title Gateway title.
+	 * @return string
+	 */
+	private function payment_label( $id, $title ) {
+		if ( '' !== $title ) {
+			return $title;
+		}
+		return '' !== $id ? strtoupper( str_replace( '_', ' ', $id ) ) : __( 'Unknown', 'checkflow' );
+	}
+
+	/**
+	 * @param string $id Gateway ID.
+	 * @param string $title Gateway title.
+	 * @return string
+	 */
+	private function payment_class( $id, $title ) {
+		$haystack = strtolower( $id . ' ' . $title );
+		if ( false !== strpos( $haystack, 'bkash' ) ) {
+			return 'bkash';
+		}
+		if ( false !== strpos( $haystack, 'nagad' ) ) {
+			return 'nagad';
+		}
+		if ( false !== strpos( $haystack, 'cod' ) || false !== strpos( $haystack, 'cash' ) ) {
+			return 'cod';
+		}
+		return 'card';
+	}
+
+	/**
+	 * @param string $status Order status without wc- prefix.
+	 * @return string
+	 */
+	private function order_status_class( $status ) {
+		if ( in_array( $status, array( 'completed', 'processing' ), true ) ) {
+			return 'paid';
+		}
+		if ( in_array( $status, array( 'pending', 'on-hold' ), true ) ) {
+			return 'pend';
+		}
+		return 'fail';
+	}
+
+	/**
 	 * Save active checkout template.
 	 */
 	public function ajax_save_checkout_template() {

@@ -8,6 +8,10 @@
 	var fieldEditorDirty = false;
 	var draggedFieldRow = null;
 	var pointerFieldDrag = null;
+	var orderFilters = {
+		status: "all",
+		payment: "all",
+	};
 
 	function renderMiniChart() {
 		var days = window.checkflowAdmin && checkflowAdmin.chartDays ? checkflowAdmin.chartDays : [];
@@ -81,6 +85,383 @@
 		toast._cfTimer = window.setTimeout(function () {
 			toast.classList.remove("is-visible");
 		}, 2200);
+	}
+
+	function applyOrderFilters() {
+		var root = document.getElementById("checkflow-admin");
+		if (!root) {
+			return;
+		}
+
+		var pane = root.querySelector('[data-pane="orders"]');
+		if (!pane) {
+			return;
+		}
+
+		var input = pane.querySelector(".cf-orders-search-input");
+		var query = input ? input.value.trim().toLowerCase() : "";
+		var rows = Array.prototype.slice.call(pane.querySelectorAll("[data-order-row]"));
+		var visible = 0;
+
+		rows.forEach(function (row) {
+			var status = row.getAttribute("data-order-status") || "";
+			var payment = row.getAttribute("data-order-payment") || "";
+			var searchable = row.getAttribute("data-order-search") || row.textContent.toLowerCase();
+			var statusOk = orderFilters.status === "all" || status === orderFilters.status;
+			var paymentOk = orderFilters.payment === "all" || payment === orderFilters.payment;
+			var searchOk = !query || searchable.indexOf(query) !== -1;
+			var show = statusOk && paymentOk && searchOk;
+
+			row.classList.toggle("is-filtered", !show);
+			if (show) {
+				visible += 1;
+			}
+		});
+
+		var count = pane.querySelector("[data-orders-visible-count]");
+		if (count) {
+			count.textContent = String(visible);
+		}
+
+		var noResults = pane.querySelector(".cf-orders-no-results");
+		if (noResults) {
+			noResults.hidden = rows.length === 0 || visible !== 0;
+		}
+		updateOrderSelectionState();
+	}
+
+	function getOrderRows(includeHidden) {
+		var root = document.getElementById("checkflow-admin");
+		if (!root) {
+			return [];
+		}
+		var pane = root.querySelector('[data-pane="orders"]');
+		if (!pane) {
+			return [];
+		}
+		var rows = Array.prototype.slice.call(pane.querySelectorAll("[data-order-row]"));
+		if (includeHidden) {
+			return rows;
+		}
+		return rows.filter(function (row) {
+			return !row.classList.contains("is-filtered");
+		});
+	}
+
+	function getSelectedOrderRows() {
+		return getOrderRows(true).filter(function (row) {
+			var checkbox = row.querySelector("[data-order-select]");
+			return checkbox && checkbox.checked;
+		});
+	}
+
+	function updateOrderSelectionState() {
+		var root = document.getElementById("checkflow-admin");
+		if (!root) {
+			return;
+		}
+		var selected = getSelectedOrderRows();
+		var visibleRows = getOrderRows(false);
+		var bulkbar = root.querySelector("[data-orders-bulkbar]");
+		var count = root.querySelector("[data-orders-selected-count]");
+		var selectAll = root.querySelector("[data-order-select-all]");
+
+		getOrderRows(true).forEach(function (row) {
+			var checkbox = row.querySelector("[data-order-select]");
+			row.classList.toggle("is-selected", !!(checkbox && checkbox.checked));
+		});
+
+		if (bulkbar) {
+			bulkbar.hidden = selected.length === 0;
+		}
+		if (count) {
+			count.textContent = String(selected.length);
+		}
+		if (selectAll) {
+			var selectedVisible = visibleRows.filter(function (row) {
+				var checkbox = row.querySelector("[data-order-select]");
+				return checkbox && checkbox.checked;
+			}).length;
+			selectAll.checked = visibleRows.length > 0 && selectedVisible === visibleRows.length;
+			selectAll.indeterminate = selectedVisible > 0 && selectedVisible < visibleRows.length;
+		}
+	}
+
+	function parseOrderDetail(row) {
+		if (!row) {
+			return null;
+		}
+		try {
+			return JSON.parse(row.getAttribute("data-order-detail") || "{}");
+		} catch (e) {
+			return null;
+		}
+	}
+
+	function setText(selector, value) {
+		var el = document.querySelector(selector);
+		if (el) {
+			el.textContent = value || "";
+		}
+	}
+
+	function openOrderDrawer(row) {
+		var root = document.getElementById("checkflow-admin");
+		var detail = parseOrderDetail(row);
+		if (!root || !detail) {
+			return;
+		}
+		var drawer = root.querySelector(".cf-order-drawer");
+		var backdrop = root.querySelector(".cf-order-drawer-backdrop");
+		if (!drawer || !backdrop) {
+			return;
+		}
+		setText("[data-order-detail-id]", detail.id);
+		setText("[data-order-detail-status]", detail.status);
+		setText("[data-order-detail-amount]", detail.amount);
+		setText("[data-order-detail-customer]", detail.customer);
+		setText("[data-order-detail-email]", detail.email);
+		setText("[data-order-detail-phone]", detail.phone);
+		setText("[data-order-detail-address]", detail.address);
+		setText("[data-order-detail-payment]", detail.payment);
+		setText("[data-order-detail-courier]", detail.courier);
+		setText("[data-order-detail-date]", detail.date);
+
+		var edit = root.querySelector("[data-order-detail-edit]");
+		if (edit) {
+			edit.href = detail.editUrl || "#";
+		}
+
+		var itemsWrap = root.querySelector("[data-order-detail-items]");
+		if (itemsWrap) {
+			itemsWrap.innerHTML = "";
+			(detail.items || []).forEach(function (item) {
+				var line = document.createElement("div");
+				line.className = "cf-order-detail-item";
+				var name = document.createElement("strong");
+				name.textContent = item.name || "Item";
+				var qty = document.createElement("span");
+				qty.textContent = "Qty " + (item.qty || "1");
+				var total = document.createElement("span");
+				total.textContent = item.total || "";
+				line.appendChild(name);
+				line.appendChild(total);
+				line.appendChild(qty);
+				itemsWrap.appendChild(line);
+			});
+			if (!itemsWrap.children.length) {
+				var empty = document.createElement("span");
+				empty.textContent = "No line items found.";
+				itemsWrap.appendChild(empty);
+			}
+		}
+
+		root._cfActiveOrderDetail = detail;
+		root._cfPendingStatusDraft = "";
+		resetOrderWorkflowUi(root);
+		backdrop.hidden = false;
+		drawer.classList.add("is-open");
+		drawer.setAttribute("aria-hidden", "false");
+	}
+
+	function closeOrderDrawer() {
+		var root = document.getElementById("checkflow-admin");
+		if (!root) {
+			return;
+		}
+		var drawer = root.querySelector(".cf-order-drawer");
+		var backdrop = root.querySelector(".cf-order-drawer-backdrop");
+		if (drawer) {
+			drawer.classList.remove("is-open");
+			drawer.setAttribute("aria-hidden", "true");
+		}
+		if (backdrop) {
+			backdrop.hidden = true;
+		}
+	}
+
+	function resetOrderWorkflowUi(root) {
+		if (!root) {
+			return;
+		}
+		root.querySelectorAll("[data-order-status-draft]").forEach(function (button) {
+			button.classList.remove("is-active");
+		});
+		var confirm = root.querySelector("[data-order-status-confirm]");
+		if (confirm) {
+			confirm.hidden = true;
+		}
+		var noteType = root.querySelector("[data-order-note-type]");
+		var noteText = root.querySelector("[data-order-note-text]");
+		var notePreview = root.querySelector("[data-order-note-preview]");
+		if (noteType) {
+			noteType.value = "internal";
+		}
+		if (noteText) {
+			noteText.value = "";
+		}
+		if (notePreview) {
+			notePreview.hidden = true;
+			notePreview.textContent = "";
+		}
+	}
+
+	function prepareStatusDraft(button) {
+		var root = document.getElementById("checkflow-admin");
+		var detail = root && root._cfActiveOrderDetail ? root._cfActiveOrderDetail : null;
+		if (!root || !detail) {
+			showToast("Open an order first", "error");
+			return;
+		}
+		var next = button.getAttribute("data-order-status-draft") || "";
+		var label = button.textContent.trim();
+		root._cfPendingStatusDraft = next;
+		root.querySelectorAll("[data-order-status-draft]").forEach(function (item) {
+			item.classList.toggle("is-active", item === button);
+		});
+		var text = root.querySelector("[data-order-status-confirm-text]");
+		var confirm = root.querySelector("[data-order-status-confirm]");
+		if (text) {
+			text.textContent = detail.id + " will be prepared for: " + label + ". Final WooCommerce status update will be connected in the AJAX pass.";
+		}
+		if (confirm) {
+			confirm.hidden = false;
+		}
+	}
+
+	function cancelStatusDraft() {
+		var root = document.getElementById("checkflow-admin");
+		if (!root) {
+			return;
+		}
+		root._cfPendingStatusDraft = "";
+		root.querySelectorAll("[data-order-status-draft]").forEach(function (button) {
+			button.classList.remove("is-active");
+		});
+		var confirm = root.querySelector("[data-order-status-confirm]");
+		if (confirm) {
+			confirm.hidden = true;
+		}
+	}
+
+	function confirmStatusDraft() {
+		var root = document.getElementById("checkflow-admin");
+		var detail = root && root._cfActiveOrderDetail ? root._cfActiveOrderDetail : null;
+		var next = root ? root._cfPendingStatusDraft : "";
+		if (!detail || !next) {
+			showToast("Choose a status action first", "error");
+			return;
+		}
+		showToast(detail.id + " status draft prepared");
+		cancelStatusDraft();
+	}
+
+	function prepareOrderNoteDraft() {
+		var root = document.getElementById("checkflow-admin");
+		var detail = root && root._cfActiveOrderDetail ? root._cfActiveOrderDetail : null;
+		if (!root || !detail) {
+			showToast("Open an order first", "error");
+			return;
+		}
+		var type = root.querySelector("[data-order-note-type]");
+		var text = root.querySelector("[data-order-note-text]");
+		var preview = root.querySelector("[data-order-note-preview]");
+		var note = text ? text.value.trim() : "";
+		if (!note) {
+			showToast("Write a note first", "error");
+			return;
+		}
+		var noteType = type && type.value === "customer" ? "Customer note" : "Internal note";
+		if (preview) {
+			preview.textContent = noteType + " prepared for " + detail.id + ": " + note;
+			preview.hidden = false;
+		}
+		showToast(noteType + " draft prepared");
+	}
+
+	function clearOrderNoteDraft() {
+		var root = document.getElementById("checkflow-admin");
+		if (!root) {
+			return;
+		}
+		var text = root.querySelector("[data-order-note-text]");
+		var preview = root.querySelector("[data-order-note-preview]");
+		if (text) {
+			text.value = "";
+			text.focus();
+		}
+		if (preview) {
+			preview.hidden = true;
+			preview.textContent = "";
+		}
+	}
+
+	function selectedOrderDetails() {
+		return getSelectedOrderRows().map(parseOrderDetail).filter(Boolean);
+	}
+
+	function exportSelectedOrders() {
+		var orders = selectedOrderDetails();
+		if (!orders.length) {
+			showToast("Select orders first", "error");
+			return;
+		}
+		var headers = ["Order", "Customer", "Phone", "Email", "Payment", "Courier", "Amount", "Status", "Date"];
+		var lines = [headers.join(",")];
+		orders.forEach(function (order) {
+			var values = [order.id, order.customer, order.phone, order.email, order.payment, order.courier, order.amount, order.status, order.date];
+			lines.push(values.map(function (value) {
+				return '"' + String(value || "").replace(/"/g, '""') + '"';
+			}).join(","));
+		});
+		var blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+		var url = URL.createObjectURL(blob);
+		var a = document.createElement("a");
+		a.href = url;
+		a.download = "checkflow-orders.csv";
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+		showToast("Selected orders exported");
+	}
+
+	function handleOrderBulkAction(action) {
+		var count = selectedOrderDetails().length;
+		if (!count) {
+			showToast("Select orders first", "error");
+			return;
+		}
+		if (action === "export") {
+			exportSelectedOrders();
+			return;
+		}
+		if (action === "courier") {
+			showToast(count + " order courier queue prepared");
+			return;
+		}
+		if (action === "followup") {
+			showToast(count + " payment follow-up items prepared");
+		}
+	}
+
+	function copyOrderValue(type) {
+		var root = document.getElementById("checkflow-admin");
+		var detail = root && root._cfActiveOrderDetail ? root._cfActiveOrderDetail : null;
+		var value = detail ? detail[type] : "";
+		if (!value) {
+			showToast("Nothing to copy", "error");
+			return;
+		}
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(value).then(function () {
+				showToast(type === "phone" ? "Phone copied" : "Address copied");
+			}).catch(function () {
+				showToast("Could not copy", "error");
+			});
+		} else {
+			showToast(value);
+		}
 	}
 
 	function settingLabel(setting) {
@@ -1798,8 +2179,107 @@
 			this.value = "";
 		});
 
+		$(document).on("input", ".cf-orders-search-input", function () {
+			applyOrderFilters();
+		});
+
+		$(document).on("click", "[data-order-filter]", function () {
+			var group = this.getAttribute("data-order-filter") || "";
+			var value = this.getAttribute("data-filter-value") || "all";
+			if (!group) {
+				return;
+			}
+			orderFilters[group] = value;
+			var parent = this.closest ? this.closest(".cf-orders-filter-group") : null;
+			if (parent) {
+				parent.querySelectorAll('[data-order-filter="' + group + '"]').forEach(function (button) {
+					button.classList.toggle("is-active", button === this);
+				}, this);
+			}
+			applyOrderFilters();
+		});
+
+		$(document).on("change", "[data-order-select-all]", function () {
+			var checked = this.checked;
+			getOrderRows(false).forEach(function (row) {
+				var checkbox = row.querySelector("[data-order-select]");
+				if (checkbox) {
+					checkbox.checked = checked;
+				}
+			});
+			updateOrderSelectionState();
+		});
+
+		$(document).on("change", "[data-order-select]", function () {
+			updateOrderSelectionState();
+		});
+
+		$(document).on("click", "[data-order-row]", function (event) {
+			if (event.target.closest("a, button, input, label")) {
+				return;
+			}
+			openOrderDrawer(this);
+		});
+
+		$(document).on("click", "[data-order-drawer-close]", function () {
+			closeOrderDrawer();
+		});
+
+		$(document).on("keydown", function (event) {
+			if (event.key === "Escape") {
+				closeOrderDrawer();
+			}
+		});
+
+		$(document).on("click", "[data-order-bulk-action]", function () {
+			handleOrderBulkAction(this.getAttribute("data-order-bulk-action"));
+		});
+
+		$(document).on("click", "[data-order-clear-selection]", function () {
+			getSelectedOrderRows().forEach(function (row) {
+				var checkbox = row.querySelector("[data-order-select]");
+				if (checkbox) {
+					checkbox.checked = false;
+				}
+			});
+			updateOrderSelectionState();
+		});
+
+		$(document).on("click", "[data-copy-order-phone]", function () {
+			copyOrderValue("phone");
+		});
+
+		$(document).on("click", "[data-copy-order-address]", function () {
+			copyOrderValue("address");
+		});
+
+		$(document).on("click", "[data-order-single-action]", function () {
+			showToast("Courier queue prepared for this order");
+		});
+
+		$(document).on("click", "[data-order-status-draft]", function () {
+			prepareStatusDraft(this);
+		});
+
+		$(document).on("click", "[data-order-status-cancel]", function () {
+			cancelStatusDraft();
+		});
+
+		$(document).on("click", "[data-order-status-confirm-btn]", function () {
+			confirmStatusDraft();
+		});
+
+		$(document).on("click", "[data-order-note-draft]", function () {
+			prepareOrderNoteDraft();
+		});
+
+		$(document).on("click", "[data-order-note-clear]", function () {
+			clearOrderNoteDraft();
+		});
+
 		bindFieldDragEvents();
 		restorePresetUi();
+		applyOrderFilters();
 
 		window.addEventListener("beforeunload", function (event) {
 			if (!fieldEditorDirty) return;
