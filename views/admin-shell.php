@@ -53,6 +53,7 @@ $courier_settings  = $admin_instance->get_courier_settings();
 
 $str_keys       = $i18n->get_flat_keys_sorted();
 $quick_settings = $admin_instance->get_quick_settings();
+$admin_theme    = $admin_instance->get_admin_theme();
 $checkout_templates = $admin_instance->get_checkout_templates();
 $active_checkout_template = $admin_instance->get_checkout_template();
 $field_rows     = class_exists( 'CheckFlow_Field_Editor' ) ? CheckFlow_Field_Editor::instance()->get_admin_rows() : array();
@@ -105,7 +106,7 @@ $screen_titles  = array(
 );
 $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $active_pane ] : $screen_titles['dashboard'];
 ?>
-<div id="checkflow-admin" class="checkflow-root">
+<div id="checkflow-admin" class="checkflow-root<?php echo 'light' === $admin_theme ? ' is-light' : ''; ?>" data-admin-theme="<?php echo esc_attr( $admin_theme ); ?>">
 	<aside class="sb">
 		<div class="logo">
 			<div class="logo-row">
@@ -160,6 +161,10 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 					<div class="tab" data-period="30d"><?php echo esc_html( checkflow_str( 'tab.30d' ) ); ?></div>
 					<div class="tab" data-period="all"><?php echo esc_html( checkflow_str( 'tab.all' ) ); ?></div>
 				</div>
+				<button type="button" class="cf-theme-toggle" data-admin-theme-toggle aria-pressed="<?php echo 'light' === $admin_theme ? 'true' : 'false'; ?>" title="Toggle light theme">
+					<span class="cf-theme-toggle-icon"><?php echo 'light' === $admin_theme ? '☀' : '☾'; ?></span>
+					<span data-admin-theme-label><?php echo 'light' === $admin_theme ? 'Light' : 'Dark'; ?></span>
+				</button>
 				<div class="date-btn"><?php echo esc_html( checkflow_str( 'topbar.date_range' ) ); ?></div>
 				<button type="button" class="btn-p"><?php echo esc_html( checkflow_str( 'topbar.new_bump' ) ); ?></button>
 				<div class="avatar">R<div class="ndot"></div></div>
@@ -316,7 +321,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 											<td><a class="oid" href="<?php echo esc_url( $r['edit_url'] ); ?>"><?php echo esc_html( $r['id'] ); ?></a></td>
 											<td><span class="ocust"><?php echo esc_html( $r['customer'] ); ?></span></td>
 											<td><span class="gtag <?php echo esc_attr( $r['payment_class'] ); ?>"><?php echo esc_html( $r['payment'] ); ?></span></td>
-											<td><span class="ocourier<?php echo 'draft_ready' === $r['courier_status'] ? ' is-ready' : ''; ?>"><?php echo esc_html( $r['courier'] ); ?></span></td>
+											<td><span class="ocourier<?php echo in_array( $r['courier_status'], array( 'draft_ready', 'booked' ), true ) ? ' is-ready' : ''; ?>"><?php echo esc_html( $r['courier'] ); ?></span></td>
 											<td><span class="oamt"><?php echo esc_html( $r['amount'] ); ?></span></td>
 											<td><span class="stag <?php echo esc_attr( $r['status_class'] ); ?>"><?php echo esc_html( $r['status'] ); ?></span></td>
 										</tr>
@@ -482,7 +487,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 											<td><a class="oid" href="<?php echo esc_url( $r['edit_url'] ); ?>"><?php echo esc_html( $r['id'] ); ?></a></td>
 											<td><span class="ocust"><?php echo esc_html( $r['customer'] ); ?></span></td>
 											<td><span class="gtag <?php echo esc_attr( $r['payment_class'] ); ?>"><?php echo esc_html( $r['payment'] ); ?></span></td>
-											<td><span class="ocourier<?php echo 'draft_ready' === $r['courier_status'] ? ' is-ready' : ''; ?>"><?php echo esc_html( $r['courier'] ); ?></span></td>
+											<td><span class="ocourier<?php echo in_array( $r['courier_status'], array( 'draft_ready', 'booked' ), true ) ? ' is-ready' : ''; ?>"><?php echo esc_html( $r['courier'] ); ?></span></td>
 											<td><span class="oamt"><?php echo esc_html( $r['amount'] ); ?></span></td>
 											<td><span class="stag <?php echo esc_attr( $r['status_class'] ); ?>"><?php echo esc_html( $r['status'] ); ?></span></td>
 										</tr>
@@ -512,6 +517,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 						<div class="cf-order-detail-section"><small>Customer</small><strong data-order-detail-customer></strong><span data-order-detail-email></span><span data-order-detail-phone></span></div>
 						<div class="cf-order-detail-section"><small>Address</small><p data-order-detail-address></p></div>
 						<div class="cf-order-detail-grid"><div><small>Payment</small><strong data-order-detail-payment></strong></div><div><small>Courier</small><strong data-order-detail-courier></strong></div><div><small>Date</small><strong data-order-detail-date></strong></div></div>
+						<div class="cf-pathao-review" data-pathao-review hidden></div>
 						<div class="cf-order-detail-section"><small>Items</small><div class="cf-order-detail-items" data-order-detail-items></div></div>
 						<div class="cf-order-workflow">
 							<div class="cf-order-workflow-head"><small>Status workflow</small><span>Real WooCommerce update</span></div>
@@ -547,6 +553,8 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 						<button type="button" class="cf-btn-ghost" data-copy-order-phone>Copy phone</button>
 						<button type="button" class="cf-btn-ghost" data-copy-order-address>Copy address</button>
 						<button type="button" class="cf-btn-ghost" data-order-single-action="courier">Prepare courier</button>
+						<button type="button" class="cf-btn-ghost" data-review-pathao-booking>Review Pathao booking</button>
+						<button type="button" class="btn-p" data-book-pathao-order>Book Pathao live</button>
 					</div>
 				</aside>
 			</div>
@@ -589,12 +597,28 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 											<label><span>Enabled</span><input type="checkbox" data-courier-setting="<?php echo esc_attr( $enabled_key ); ?>" <?php checked( ! empty( $courier_settings[ $enabled_key ] ) ); ?> /></label>
 											<label><span>Mode</span><select data-courier-setting="<?php echo esc_attr( $mode_key ); ?>"><option value="sandbox" <?php selected( $courier_settings[ $mode_key ], 'sandbox' ); ?>>Sandbox</option><option value="live" <?php selected( $courier_settings[ $mode_key ], 'live' ); ?>>Live</option></select></label>
 										</div>
-										<label class="cf-courier-token"><span>API token / key</span><input type="password" data-courier-setting="<?php echo esc_attr( $token_key ); ?>" value="<?php echo esc_attr( $courier_settings[ $token_key ] ); ?>" placeholder="Saved locally for future API booking" /></label>
+										<?php if ( 'pathao' !== $provider_key ) : ?>
+											<label class="cf-courier-token"><span>API token / key</span><input type="password" data-courier-setting="<?php echo esc_attr( $token_key ); ?>" value="<?php echo esc_attr( $courier_settings[ $token_key ] ); ?>" placeholder="Future API token" /></label>
+										<?php endif; ?>
 									</div>
 								<?php endforeach; ?>
 							</div>
+							<div class="cf-pathao-settings">
+								<div class="cf-pathao-settings-head"><div><strong>Pathao API setup</strong><span>Review payload first, then book live from an order drawer.</span></div><span>OAuth + live booking</span></div>
+								<div class="cf-pathao-foundation">
+									<label><span>Base URL</span><input type="text" data-courier-setting="pathao_base_url" value="<?php echo esc_attr( $courier_settings['pathao_base_url'] ); ?>" placeholder="Auto by mode if blank" /></label>
+									<label><span>Client ID</span><input type="text" data-courier-setting="pathao_client_id" value="<?php echo esc_attr( $courier_settings['pathao_client_id'] ); ?>" /></label>
+									<label><span>Client secret</span><input type="password" data-courier-setting="pathao_client_secret" value="<?php echo esc_attr( $courier_settings['pathao_client_secret'] ); ?>" /></label>
+									<label><span>Username / email</span><input type="text" data-courier-setting="pathao_username" value="<?php echo esc_attr( $courier_settings['pathao_username'] ); ?>" /></label>
+									<label><span>Password</span><input type="password" data-courier-setting="pathao_password" value="<?php echo esc_attr( $courier_settings['pathao_password'] ); ?>" /></label>
+									<label><span>Store ID</span><input type="number" min="1" data-courier-setting="pathao_store_id" value="<?php echo esc_attr( $courier_settings['pathao_store_id'] ); ?>" /></label>
+									<label><span>Delivery type</span><input type="number" min="1" data-courier-setting="pathao_delivery_type" value="<?php echo esc_attr( $courier_settings['pathao_delivery_type'] ); ?>" /></label>
+									<label><span>Item type</span><input type="number" min="1" data-courier-setting="pathao_item_type" value="<?php echo esc_attr( $courier_settings['pathao_item_type'] ); ?>" /></label>
+									<label><span>Default weight</span><input type="number" min="0.1" step="0.1" data-courier-setting="pathao_item_weight" value="<?php echo esc_attr( $courier_settings['pathao_item_weight'] ); ?>" /></label>
+								</div>
+							</div>
 							<div class="cf-courier-save-row">
-								<span data-courier-save-status>Provider setup only. Prepare courier creates an order draft; no live API call yet.</span>
+								<span data-courier-save-status>Provider setup is stored locally. Live Pathao booking runs only from the order drawer button.</span>
 								<button type="button" class="btn-p" data-save-courier-settings>Save courier settings</button>
 							</div>
 						</div>
@@ -605,7 +629,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 							<div class="cf-action-row"><span>Order drawer prepare action</span><strong>Creates courier draft meta</strong></div>
 							<div class="cf-action-row"><span>Auto book after processing</span><div class="tgl" role="switch" aria-checked="false" tabindex="0"></div></div>
 							<div class="cf-action-row"><span>COD reconciliation</span><div class="tgl" role="switch" aria-checked="false" tabindex="0"></div></div>
-							<div class="cf-action-row"><span>Live API booking</span><strong>Next pass</strong></div>
+							<div class="cf-action-row"><span>Live API booking</span><strong>Pathao enabled</strong></div>
 						</div>
 					</div>
 				</div>

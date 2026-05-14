@@ -22,6 +22,8 @@ final class CheckFlow_Admin {
 
 	const COURIER_SETTINGS_OPTION = 'checkflow_courier_settings';
 
+	const ADMIN_THEME_META = 'checkflow_admin_theme';
+
 	/** @var self|null */
 	private static $instance;
 
@@ -119,6 +121,7 @@ final class CheckFlow_Admin {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'checkflow_admin' ),
 				'locale'  => $loc,
+				'adminTheme' => $this->get_admin_theme(),
 				'settings' => $this->get_quick_settings(),
 				'checkoutTemplate' => $this->get_checkout_template(),
 				'checkoutTemplates' => $this->get_checkout_templates(),
@@ -194,10 +197,38 @@ final class CheckFlow_Admin {
 		if ( 'admin.php' === $hook && isset( $_GET['page'] ) ) {
 			$page = sanitize_key( wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			if ( 0 === strpos( $page, 'checkflow' ) ) {
-				return $cls . ' checkflow-admin-screen checkflow-page-' . sanitize_html_class( $page );
+				return $cls . ' checkflow-admin-screen checkflow-admin-theme-' . sanitize_html_class( $this->get_admin_theme() ) . ' checkflow-page-' . sanitize_html_class( $page );
 			}
 		}
 		return $cls;
+	}
+
+	/**
+	 * Save the current admin UI theme for this user.
+	 */
+	public function ajax_save_admin_theme() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'checkflow' ) ),
+				403
+			);
+		}
+
+		$theme = isset( $_POST['theme'] ) ? sanitize_key( wp_unslash( $_POST['theme'] ) ) : 'dark';
+		if ( ! in_array( $theme, array( 'dark', 'light' ), true ) ) {
+			$theme = 'dark';
+		}
+
+		update_user_meta( get_current_user_id(), self::ADMIN_THEME_META, $theme );
+
+		wp_send_json_success(
+			array(
+				'message' => __( 'Admin theme saved.', 'checkflow' ),
+				'theme'   => $theme,
+			)
+		);
 	}
 
 	/**
@@ -481,6 +512,11 @@ final class CheckFlow_Admin {
 				$settings[ $token_key ] = sanitize_text_field( wp_unslash( $_POST[ $token_key ] ) );
 			}
 		}
+		foreach ( $this->get_pathao_setting_keys() as $key ) {
+			if ( isset( $_POST[ $key ] ) ) {
+				$settings[ $key ] = sanitize_text_field( wp_unslash( $_POST[ $key ] ) );
+			}
+		}
 		$settings['default_provider'] = isset( $_POST['default_provider'] ) ? sanitize_key( wp_unslash( $_POST['default_provider'] ) ) : 'pathao';
 		if ( ! isset( $this->get_courier_providers()[ $settings['default_provider'] ] ) ) {
 			$settings['default_provider'] = 'pathao';
@@ -558,6 +594,157 @@ final class CheckFlow_Admin {
 	}
 
 	/**
+	 * Build and validate the Pathao booking payload without calling Pathao yet.
+	 */
+	public function ajax_review_pathao_booking() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'checkflow' ) ),
+				403
+			);
+		}
+
+		if ( ! function_exists( 'wc_get_order' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'WooCommerce is not available.', 'checkflow' ) ),
+				400
+			);
+		}
+
+		$order_id = isset( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : 0;
+		$order    = $order_id ? wc_get_order( $order_id ) : false;
+		if ( ! $order instanceof WC_Order ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Invalid Pathao review request.', 'checkflow' ) ),
+				400
+			);
+		}
+
+		$settings = $this->get_courier_settings();
+		$payload  = $this->build_pathao_payload( $order, $settings );
+		$missing  = $this->validate_pathao_payload( $payload, $settings );
+
+		wp_send_json_success(
+			array(
+				'message' => empty( $missing ) ? __( 'Pathao booking payload is ready for API booking.', 'checkflow' ) : __( 'Pathao booking payload needs attention.', 'checkflow' ),
+				'payload' => $payload,
+				'missing' => $missing,
+				'mode'    => $settings['pathao_mode'],
+				'baseUrl' => $this->pathao_base_url( $settings ),
+			)
+		);
+	}
+
+	/**
+	 * Book a Pathao order through the configured merchant API.
+	 */
+	public function ajax_book_pathao_order() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'checkflow' ) ),
+				403
+			);
+		}
+
+		if ( ! function_exists( 'wc_get_order' ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'WooCommerce is not available.', 'checkflow' ) ),
+				400
+			);
+		}
+
+		$order_id = isset( $_POST['order_id'] ) ? absint( wp_unslash( $_POST['order_id'] ) ) : 0;
+		$order    = $order_id ? wc_get_order( $order_id ) : false;
+		if ( ! $order instanceof WC_Order ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Invalid Pathao booking request.', 'checkflow' ) ),
+				400
+			);
+		}
+
+		$settings = $this->get_courier_settings();
+		if ( empty( $settings['pathao_enabled'] ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Enable Pathao before live booking.', 'checkflow' ) ),
+				400
+			);
+		}
+
+		$existing_consignment = (string) $order->get_meta( '_checkflow_pathao_consignment_id', true );
+		if ( '' !== $existing_consignment ) {
+			wp_send_json_success(
+				array(
+					'message'        => sprintf( __( 'Pathao booking already exists: %s.', 'checkflow' ), $existing_consignment ),
+					'consignment_id' => $existing_consignment,
+					'order'          => $this->format_order_row( $order ),
+				)
+			);
+		}
+
+		$payload = $this->build_pathao_payload( $order, $settings );
+		$missing = $this->validate_pathao_payload( $payload, $settings );
+		if ( ! empty( $missing ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Pathao booking needs required information first.', 'checkflow' ),
+					'missing' => $missing,
+					'payload' => $payload,
+				),
+				400
+			);
+		}
+
+		$token_result = $this->pathao_request_access_token( $settings );
+		if ( is_wp_error( $token_result ) ) {
+			wp_send_json_error(
+				array( 'message' => $token_result->get_error_message() ),
+				400
+			);
+		}
+
+		$booking_result = $this->pathao_create_order( $payload, $token_result['access_token'], $settings );
+		if ( is_wp_error( $booking_result ) ) {
+			wp_send_json_error(
+				array( 'message' => $booking_result->get_error_message() ),
+				400
+			);
+		}
+
+		$consignment_id = $this->pathao_response_value( $booking_result, 'consignment_id' );
+		$order_status   = $this->pathao_response_value( $booking_result, 'order_status' );
+		if ( '' === $consignment_id ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Pathao responded without a consignment ID. Booking was not stored.', 'checkflow' ) ),
+				400
+			);
+		}
+
+		$order->update_meta_data( '_checkflow_courier_provider', 'pathao' );
+		$order->update_meta_data( '_checkflow_courier_status', 'booked' );
+		$order->update_meta_data( '_checkflow_courier', sprintf( 'Booked - Pathao %s', $consignment_id ) );
+		$order->update_meta_data( '_checkflow_pathao_consignment_id', $consignment_id );
+		$order->update_meta_data( '_checkflow_pathao_order_status', $order_status );
+		$order->update_meta_data( '_checkflow_pathao_payload', wp_json_encode( $payload ) );
+		$order->update_meta_data( '_checkflow_pathao_response', wp_json_encode( $booking_result ) );
+		$order->add_order_note( sprintf( __( 'CheckFlow booked Pathao consignment %s.', 'checkflow' ), $consignment_id ), false, true );
+		$order->save();
+
+		wp_send_json_success(
+			array(
+				'message'        => sprintf( __( 'Pathao booking created: %s.', 'checkflow' ), $consignment_id ),
+				'consignment_id' => $consignment_id,
+				'pathao_status'  => $order_status,
+				'response'       => $booking_result,
+				'order'          => $this->format_order_row( $order ),
+			)
+		);
+	}
+
+	/**
 	 * @return array<string,array<string,string>>
 	 */
 	public function get_courier_providers() {
@@ -577,6 +764,15 @@ final class CheckFlow_Admin {
 			'pathao_enabled'    => true,
 			'pathao_mode'       => 'sandbox',
 			'pathao_token'      => '',
+			'pathao_base_url'   => '',
+			'pathao_client_id'  => '',
+			'pathao_client_secret' => '',
+			'pathao_username'   => '',
+			'pathao_password'   => '',
+			'pathao_store_id'   => '',
+			'pathao_delivery_type' => '48',
+			'pathao_item_type'  => '2',
+			'pathao_item_weight' => '0.5',
 			'redx_enabled'      => false,
 			'redx_mode'         => 'sandbox',
 			'redx_token'        => '',
@@ -586,6 +782,225 @@ final class CheckFlow_Admin {
 		);
 		$saved = get_option( self::COURIER_SETTINGS_OPTION, array() );
 		return wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+	}
+
+	/**
+	 * @return array<int,string>
+	 */
+	private function get_pathao_setting_keys() {
+		return array(
+			'pathao_base_url',
+			'pathao_client_id',
+			'pathao_client_secret',
+			'pathao_username',
+			'pathao_password',
+			'pathao_store_id',
+			'pathao_delivery_type',
+			'pathao_item_type',
+			'pathao_item_weight',
+		);
+	}
+
+	/**
+	 * @param WC_Order $order Order object.
+	 * @param array<string,mixed> $settings Courier settings.
+	 * @return array<string,mixed>
+	 */
+	private function build_pathao_payload( $order, $settings ) {
+		$delivery_type = absint( $settings['pathao_delivery_type'] );
+		$item_type     = absint( $settings['pathao_item_type'] );
+		$item_weight   = (float) $settings['pathao_item_weight'];
+		$address       = $this->order_address( $order );
+		$amount        = in_array( $order->get_payment_method(), array( 'cod' ), true ) ? (int) round( (float) $order->get_total() ) : 0;
+
+		return array(
+			'store_id'            => absint( $settings['pathao_store_id'] ),
+			'merchant_order_id'   => (string) $order->get_order_number(),
+			'recipient_name'      => $this->order_customer_name( $order ),
+			'recipient_phone'     => (string) $order->get_billing_phone(),
+			'recipient_address'   => $address,
+			'delivery_type'       => $delivery_type ? $delivery_type : 48,
+			'item_type'           => $item_type ? $item_type : 2,
+			'item_quantity'       => max( 1, $order->get_item_count() ),
+			'item_weight'         => $item_weight > 0 ? $item_weight : 0.5,
+			'amount_to_collect'   => $amount,
+			'special_instruction' => sprintf( 'WooCommerce order %s via CheckFlow', $order->get_order_number() ),
+			'item_description'    => $this->pathao_item_description( $order ),
+		);
+	}
+
+	/**
+	 * @param array<string,mixed> $payload Pathao payload.
+	 * @param array<string,mixed> $settings Courier settings.
+	 * @return array<int,string>
+	 */
+	private function validate_pathao_payload( $payload, $settings ) {
+		$missing = array();
+		$required_settings = array(
+			'pathao_client_id'     => __( 'Pathao client ID', 'checkflow' ),
+			'pathao_client_secret' => __( 'Pathao client secret', 'checkflow' ),
+			'pathao_username'      => __( 'Pathao username/email', 'checkflow' ),
+			'pathao_password'      => __( 'Pathao password', 'checkflow' ),
+			'pathao_store_id'      => __( 'Pathao store ID', 'checkflow' ),
+		);
+		foreach ( $required_settings as $key => $label ) {
+			if ( empty( $settings[ $key ] ) ) {
+				$missing[] = $label;
+			}
+		}
+
+		$required_payload = array(
+			'recipient_name'    => __( 'recipient name', 'checkflow' ),
+			'recipient_phone'   => __( 'recipient phone', 'checkflow' ),
+			'recipient_address' => __( 'recipient address', 'checkflow' ),
+		);
+		foreach ( $required_payload as $key => $label ) {
+			if ( empty( $payload[ $key ] ) ) {
+				$missing[] = $label;
+			}
+		}
+
+		return $missing;
+	}
+
+	/**
+	 * @param array<string,mixed> $settings Courier settings.
+	 * @return string
+	 */
+	private function pathao_base_url( $settings ) {
+		if ( ! empty( $settings['pathao_base_url'] ) ) {
+			return esc_url_raw( $settings['pathao_base_url'] );
+		}
+		return 'live' === $settings['pathao_mode'] ? 'https://api-hermes.pathao.com' : 'https://hermes-api.p-stageenv.xyz';
+	}
+
+	/**
+	 * @param array<string,mixed> $settings Courier settings.
+	 * @return array<string,string>|WP_Error
+	 */
+	private function pathao_request_access_token( $settings ) {
+		$response = wp_remote_post(
+			trailingslashit( $this->pathao_base_url( $settings ) ) . 'aladdin/api/v1/issue-token',
+			array(
+				'timeout' => 30,
+				'headers' => array(
+					'Accept'       => 'application/json',
+					'Content-Type' => 'application/json',
+				),
+				'body'    => wp_json_encode(
+					array(
+						'client_id'     => (string) $settings['pathao_client_id'],
+						'client_secret' => (string) $settings['pathao_client_secret'],
+						'username'      => (string) $settings['pathao_username'],
+						'password'      => (string) $settings['pathao_password'],
+						'grant_type'    => 'password',
+					)
+				),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new WP_Error( 'checkflow_pathao_token_failed', sprintf( __( 'Pathao token request failed: %s', 'checkflow' ), $response->get_error_message() ) );
+		}
+
+		$body = $this->pathao_decode_response( $response );
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		$token = $this->pathao_response_value( $body, 'access_token' );
+		if ( $code < 200 || $code >= 300 || '' === $token ) {
+			return new WP_Error( 'checkflow_pathao_token_rejected', $this->pathao_api_error_message( $response, $body, __( 'Pathao token request was rejected.', 'checkflow' ) ) );
+		}
+
+		return array( 'access_token' => $token );
+	}
+
+	/**
+	 * @param array<string,mixed> $payload Booking payload.
+	 * @param string              $access_token Bearer token.
+	 * @param array<string,mixed> $settings Courier settings.
+	 * @return array<string,mixed>|WP_Error
+	 */
+	private function pathao_create_order( $payload, $access_token, $settings ) {
+		$response = wp_remote_post(
+			trailingslashit( $this->pathao_base_url( $settings ) ) . 'aladdin/api/v1/orders',
+			array(
+				'timeout' => 30,
+				'headers' => array(
+					'Accept'        => 'application/json',
+					'Authorization' => 'Bearer ' . $access_token,
+					'Content-Type'  => 'application/json',
+				),
+				'body'    => wp_json_encode( $payload ),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new WP_Error( 'checkflow_pathao_order_failed', sprintf( __( 'Pathao booking request failed: %s', 'checkflow' ), $response->get_error_message() ) );
+		}
+
+		$body = $this->pathao_decode_response( $response );
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		if ( $code < 200 || $code >= 300 ) {
+			return new WP_Error( 'checkflow_pathao_order_rejected', $this->pathao_api_error_message( $response, $body, __( 'Pathao booking was rejected.', 'checkflow' ) ) );
+		}
+
+		return is_array( $body ) ? $body : array();
+	}
+
+	/**
+	 * @param array<string,mixed>|mixed $body Response body.
+	 * @param string                    $key Key to find.
+	 * @return string
+	 */
+	private function pathao_response_value( $body, $key ) {
+		if ( ! is_array( $body ) ) {
+			return '';
+		}
+		if ( isset( $body[ $key ] ) && ! is_array( $body[ $key ] ) ) {
+			return sanitize_text_field( (string) $body[ $key ] );
+		}
+		if ( isset( $body['data'] ) && is_array( $body['data'] ) && isset( $body['data'][ $key ] ) && ! is_array( $body['data'][ $key ] ) ) {
+			return sanitize_text_field( (string) $body['data'][ $key ] );
+		}
+		return '';
+	}
+
+	/**
+	 * @param array<string,mixed>|WP_Error $response HTTP response.
+	 * @return array<string,mixed>
+	 */
+	private function pathao_decode_response( $response ) {
+		$raw = wp_remote_retrieve_body( $response );
+		$decoded = json_decode( $raw, true );
+		return is_array( $decoded ) ? $decoded : array( 'raw' => $raw );
+	}
+
+	/**
+	 * @param array<string,mixed>|WP_Error $response HTTP response.
+	 * @param array<string,mixed>          $body Decoded body.
+	 * @param string                       $fallback Fallback message.
+	 * @return string
+	 */
+	private function pathao_api_error_message( $response, $body, $fallback ) {
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		foreach ( array( 'message', 'error', 'error_description' ) as $key ) {
+			$value = $this->pathao_response_value( $body, $key );
+			if ( '' !== $value ) {
+				return sprintf( '%s (%s)', $value, $code );
+			}
+		}
+		return sprintf( '%s (%s)', $fallback, $code );
+	}
+
+	/**
+	 * @param WC_Order $order Order object.
+	 * @return string
+	 */
+	private function pathao_item_description( $order ) {
+		$names = array();
+		foreach ( $order->get_items() as $item ) {
+			$names[] = $item->get_name();
+		}
+		return sanitize_text_field( implode( ', ', array_slice( $names, 0, 4 ) ) );
 	}
 
 	/**
@@ -825,6 +1240,14 @@ final class CheckFlow_Admin {
 		}
 
 		return $settings;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function get_admin_theme() {
+		$theme = sanitize_key( (string) get_user_meta( get_current_user_id(), self::ADMIN_THEME_META, true ) );
+		return in_array( $theme, array( 'dark', 'light' ), true ) ? $theme : 'dark';
 	}
 
 	/**

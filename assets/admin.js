@@ -87,6 +87,73 @@
 		}, 2200);
 	}
 
+	function applyAdminTheme(theme) {
+		var root = document.getElementById("checkflow-admin");
+		var next = theme === "light" ? "light" : "dark";
+		var button = document.querySelector("[data-admin-theme-toggle]");
+		var label = document.querySelector("[data-admin-theme-label]");
+		var icon = document.querySelector(".cf-theme-toggle-icon");
+		if (root) {
+			root.classList.toggle("is-light", next === "light");
+			root.setAttribute("data-admin-theme", next);
+		}
+		document.body.classList.toggle("checkflow-admin-theme-light", next === "light");
+		document.body.classList.toggle("checkflow-admin-theme-dark", next !== "light");
+		if (button) {
+			button.setAttribute("aria-pressed", next === "light" ? "true" : "false");
+		}
+		if (label) {
+			label.textContent = next === "light" ? "Light" : "Dark";
+		}
+		if (icon) {
+			icon.textContent = next === "light" ? "☀" : "☾";
+		}
+		if (window.checkflowAdmin) {
+			checkflowAdmin.adminTheme = next;
+		}
+	}
+
+	function saveAdminTheme(theme, buttonEl) {
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl) {
+			applyAdminTheme(theme);
+			return;
+		}
+		var previous = window.checkflowAdmin && checkflowAdmin.adminTheme ? checkflowAdmin.adminTheme : "dark";
+		applyAdminTheme(theme);
+		if (buttonEl) {
+			buttonEl.disabled = true;
+		}
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_save_admin_theme",
+				nonce: checkflowAdmin.nonce,
+				theme: theme,
+			},
+		})
+			.done(function (res) {
+				if (!res || !res.success) {
+					applyAdminTheme(previous);
+					showToast("Could not save admin theme", "error");
+					return;
+				}
+				applyAdminTheme(res.data && res.data.theme ? res.data.theme : theme);
+				showToast(theme === "light" ? "Light theme enabled" : "Dark theme enabled");
+			})
+			.fail(function () {
+				applyAdminTheme(previous);
+				showToast("Could not save admin theme", "error");
+			})
+			.always(function () {
+				if (buttonEl) {
+					buttonEl.disabled = false;
+				}
+			});
+	}
+
 	function applyOrderFilters() {
 		var root = document.getElementById("checkflow-admin");
 		if (!root) {
@@ -318,6 +385,47 @@
 		activity.hidden = !message;
 	}
 
+	function clearPathaoReview() {
+		var box = document.querySelector("[data-pathao-review]");
+		if (box) {
+			box.hidden = true;
+			box.innerHTML = "";
+		}
+	}
+
+	function renderPathaoReview(data) {
+		var box = document.querySelector("[data-pathao-review]");
+		if (!box) {
+			return;
+		}
+		box.innerHTML = "";
+		var title = document.createElement("strong");
+		title.textContent = data && data.missing && data.missing.length ? "Pathao booking needs attention" : "Pathao booking payload ready";
+		box.appendChild(title);
+
+		var meta = document.createElement("div");
+		meta.textContent = "Mode: " + ((data && data.mode) || "sandbox") + " | Base URL: " + ((data && data.baseUrl) || "auto");
+		box.appendChild(meta);
+
+		if (data && data.payload) {
+			var payload = document.createElement("div");
+			payload.textContent = "Order " + (data.payload.merchant_order_id || "") + " -> " + (data.payload.recipient_name || "Recipient") + ", collect " + (data.payload.amount_to_collect || 0);
+			box.appendChild(payload);
+		}
+
+		if (data && data.missing && data.missing.length) {
+			var ul = document.createElement("ul");
+			data.missing.forEach(function (item) {
+				var li = document.createElement("li");
+				li.textContent = item;
+				ul.appendChild(li);
+			});
+			box.appendChild(ul);
+		}
+
+		box.hidden = false;
+	}
+
 	function orderDetailSearchText(detail) {
 		return [detail.id, detail.customer, detail.payment, detail.courier, detail.amount, detail.status, detail.date].join(" ").toLowerCase();
 	}
@@ -359,7 +467,7 @@
 		}
 		if (courier) {
 			courier.textContent = detail.courier || "";
-			courier.classList.toggle("is-ready", detail.courierStatus === "draft_ready" || String(detail.courier || "").toLowerCase().indexOf("draft ready") !== -1);
+			courier.classList.toggle("is-ready", detail.courierStatus === "draft_ready" || detail.courierStatus === "booked" || String(detail.courier || "").toLowerCase().indexOf("draft ready") !== -1 || String(detail.courier || "").toLowerCase().indexOf("booked") !== -1);
 		}
 		row.classList.remove("is-updated");
 		row.offsetHeight;
@@ -392,10 +500,14 @@
 
 	function updateCourierAction(detail) {
 		var button = document.querySelector('[data-order-single-action="courier"]');
-		if (!button) {
-			return;
+		var pathaoButton = document.querySelector("[data-book-pathao-order]");
+		if (button) {
+			button.textContent = detail && detail.courierStatus === "draft_ready" ? "Refresh courier draft" : "Prepare courier";
 		}
-		button.textContent = detail && detail.courierStatus === "draft_ready" ? "Refresh courier draft" : "Prepare courier";
+		if (pathaoButton) {
+			pathaoButton.textContent = detail && detail.courierStatus === "booked" ? "Pathao booked" : "Book Pathao live";
+			pathaoButton.disabled = !!(detail && detail.courierStatus === "booked");
+		}
 	}
 
 	function resetOrderWorkflowUi(root) {
@@ -405,6 +517,7 @@
 		root.querySelectorAll("[data-order-status-draft]").forEach(function (button) {
 			button.classList.remove("is-active");
 		});
+		clearPathaoReview();
 		var confirm = root.querySelector("[data-order-status-confirm]");
 		if (confirm) {
 			confirm.hidden = true;
@@ -686,7 +799,7 @@
 					}
 					var savedSettings = (res.data && res.data.settings) || data;
 					if (status) {
-						status.textContent = (res.data.message || "Courier settings saved.") + " Default: " + (savedSettings.default_provider || "pathao") + ". No live API call yet.";
+						status.textContent = (res.data.message || "Courier settings saved.") + " Default: " + (savedSettings.default_provider || "pathao") + ". Live booking runs only from an order drawer.";
 					}
 					showToast(res.data.message || "Courier settings saved");
 					return;
@@ -742,7 +855,7 @@
 				if (res && res.success && res.data && res.data.order) {
 					var updated = normalizeOrderDetail(res.data.order);
 					refreshOpenOrderDetail(updated);
-					setOrderActivity((res.data.message || "Courier draft ready") + " No live courier API call was made.");
+					setOrderActivity((res.data.message || "Courier draft ready") + " Review the Pathao payload, then use Book Pathao live when ready.");
 					showToast(res.data.message || "Courier draft ready");
 					return;
 				}
@@ -756,6 +869,118 @@
 				if (button) {
 					button.disabled = false;
 				}
+			});
+	}
+
+	function reviewPathaoBooking(buttonEl) {
+		var root = document.getElementById("checkflow-admin");
+		var detail = root && root._cfActiveOrderDetail ? root._cfActiveOrderDetail : null;
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!detail || !detail.orderId) {
+			showToast("Open an order first", "error");
+			return;
+		}
+		if (!ajaxUrl) {
+			showToast("Could not review Pathao booking", "error");
+			return;
+		}
+		var button = buttonEl || document.querySelector("[data-review-pathao-booking]");
+		if (button) {
+			button.disabled = true;
+		}
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_review_pathao_booking",
+				nonce: checkflowAdmin.nonce,
+				order_id: detail.orderId,
+			},
+		})
+			.done(function (res) {
+				if (res && res.success) {
+					renderPathaoReview(res.data || {});
+					showToast(res.data.message || "Pathao booking reviewed");
+					return;
+				}
+				showToast((res && res.data && res.data.message) || "Could not review Pathao booking", "error");
+			})
+			.fail(function (xhr) {
+				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not review Pathao booking";
+				showToast(message, "error");
+			})
+			.always(function () {
+				if (button) {
+					button.disabled = false;
+				}
+			});
+	}
+
+	function bookPathaoOrder(buttonEl) {
+		var root = document.getElementById("checkflow-admin");
+		var detail = root && root._cfActiveOrderDetail ? root._cfActiveOrderDetail : null;
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!detail || !detail.orderId) {
+			showToast("Open an order first", "error");
+			return;
+		}
+		if (!ajaxUrl) {
+			showToast("Could not book Pathao order", "error");
+			return;
+		}
+		if (detail.courierStatus === "booked") {
+			showToast("Pathao booking already exists");
+			return;
+		}
+		if (!window.confirm("Create a live Pathao booking for " + (detail.id || "this order") + "?")) {
+			return;
+		}
+		var button = buttonEl || document.querySelector("[data-book-pathao-order]");
+		if (button) {
+			button.disabled = true;
+			button.textContent = "Booking...";
+		}
+		setOrderActivity("Contacting Pathao API...");
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_book_pathao_order",
+				nonce: checkflowAdmin.nonce,
+				order_id: detail.orderId,
+			},
+		})
+			.done(function (res) {
+				if (res && res.success && res.data && res.data.order) {
+					var updated = normalizeOrderDetail(res.data.order);
+					refreshOpenOrderDetail(updated);
+					setOrderActivity(res.data.message || "Pathao booking created");
+					renderPathaoReview({
+						message: res.data.message || "Pathao booking created",
+						mode: ((window.checkflowAdmin && checkflowAdmin.courierSettings && checkflowAdmin.courierSettings.pathao_mode) || "sandbox"),
+						baseUrl: ((window.checkflowAdmin && checkflowAdmin.courierSettings && checkflowAdmin.courierSettings.pathao_base_url) || "auto"),
+						payload: { merchant_order_id: updated.id, recipient_name: updated.customer, amount_to_collect: updated.amount },
+						missing: [],
+					});
+					showToast(res.data.message || "Pathao booking created");
+					return;
+				}
+				showToast((res && res.data && res.data.message) || "Could not book Pathao order", "error");
+			})
+			.fail(function (xhr) {
+				var data = xhr && xhr.responseJSON ? xhr.responseJSON.data : null;
+				if (data && data.missing) {
+					renderPathaoReview(data);
+				}
+				showToast((data && data.message) || "Could not book Pathao order", "error");
+			})
+			.always(function () {
+				if (button) {
+					button.disabled = false;
+				}
+				updateCourierAction(root && root._cfActiveOrderDetail ? root._cfActiveOrderDetail : detail);
 			});
 	}
 
@@ -2573,6 +2798,19 @@
 			}
 		});
 
+		$(document).on("click", "[data-review-pathao-booking]", function () {
+			reviewPathaoBooking(this);
+		});
+
+		$(document).on("click", "[data-book-pathao-order]", function () {
+			bookPathaoOrder(this);
+		});
+
+		$(document).on("click", "[data-admin-theme-toggle]", function () {
+			var current = window.checkflowAdmin && checkflowAdmin.adminTheme === "light" ? "light" : "dark";
+			saveAdminTheme(current === "light" ? "dark" : "light", this);
+		});
+
 		$(document).on("click", "[data-save-courier-settings]", function () {
 			saveCourierSettings(this);
 		});
@@ -2609,6 +2847,7 @@
 
 		bindFieldDragEvents();
 		restorePresetUi();
+		applyAdminTheme((window.checkflowAdmin && checkflowAdmin.adminTheme) || "dark");
 		applyOrderFilters();
 
 		window.addEventListener("beforeunload", function (event) {

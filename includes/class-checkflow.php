@@ -55,12 +55,15 @@ final class CheckFlow {
 		$this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_assets' );
 		$this->loader->add_filter( 'admin_body_class', $admin, 'body_class' );
 		$this->loader->add_action( 'wp_ajax_checkflow_toggle_setting', $admin, 'ajax_toggle_setting' );
+		$this->loader->add_action( 'wp_ajax_checkflow_save_admin_theme', $admin, 'ajax_save_admin_theme' );
 		$this->loader->add_action( 'wp_ajax_checkflow_get_stats', $admin, 'ajax_get_stats' );
 		$this->loader->add_action( 'wp_ajax_checkflow_save_checkout_template', $admin, 'ajax_save_checkout_template' );
 		$this->loader->add_action( 'wp_ajax_checkflow_update_order_status', $admin, 'ajax_update_order_status' );
 		$this->loader->add_action( 'wp_ajax_checkflow_add_order_note', $admin, 'ajax_add_order_note' );
 		$this->loader->add_action( 'wp_ajax_checkflow_save_courier_settings', $admin, 'ajax_save_courier_settings' );
 		$this->loader->add_action( 'wp_ajax_checkflow_prepare_courier', $admin, 'ajax_prepare_courier' );
+		$this->loader->add_action( 'wp_ajax_checkflow_review_pathao_booking', $admin, 'ajax_review_pathao_booking' );
+		$this->loader->add_action( 'wp_ajax_checkflow_book_pathao_order', $admin, 'ajax_book_pathao_order' );
 		$this->loader->add_action( 'wp_ajax_checkflow_save_checkout_fields', $field_editor, 'ajax_save_fields' );
 		$this->loader->add_action( 'wp_ajax_checkflow_reset_checkout_fields', $field_editor, 'ajax_reset_fields' );
 		$this->loader->add_action( 'init', $field_editor, 'register_block_checkout_fields', 20 );
