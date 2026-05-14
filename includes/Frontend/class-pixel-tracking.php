@@ -58,6 +58,7 @@ final class CheckFlow_Pixel_Tracking {
 				'metaPixelId'   => (string) $settings['meta_pixel_id'],
 				'debug'         => ! empty( $settings['debug_mode'] ),
 				'providerState' => $this->provider_state( $settings ),
+				'enabledEvents' => $this->enabled_events( $settings ),
 				'events'        => $this->get_page_events(),
 			)
 		);
@@ -78,6 +79,9 @@ final class CheckFlow_Pixel_Tracking {
 		$name    = isset( $_POST['event_name'] ) ? sanitize_text_field( wp_unslash( $_POST['event_name'] ) ) : '';
 		if ( ! in_array( $name, $allowed, true ) ) {
 			wp_send_json_error( array( 'message' => __( 'Unknown event.', 'checkflow' ) ), 400 );
+		}
+		if ( empty( $settings[ 'event_' . sanitize_key( $name ) ] ) ) {
+			wp_send_json_success( array( 'logged' => false, 'disabled' => true, 'event_name' => $name ) );
 		}
 
 		$event_id = isset( $_POST['event_id'] ) ? sanitize_text_field( wp_unslash( $_POST['event_id'] ) ) : '';
@@ -264,6 +268,18 @@ final class CheckFlow_Pixel_Tracking {
 				'configured' => ! empty( $settings['tiktok_pixel_id'] ) || ! empty( $settings['tiktok_api_token'] ),
 			),
 		);
+	}
+
+	/**
+	 * @param array<string,mixed> $settings Pixel settings.
+	 * @return array<string,bool>
+	 */
+	private function enabled_events( $settings ) {
+		$events = array();
+		foreach ( array( 'PageView', 'ViewContent', 'AddToCart', 'InitiateCheckout', 'Purchase' ) as $event_name ) {
+			$events[ $event_name ] = ! empty( $settings[ 'event_' . sanitize_key( $event_name ) ] );
+		}
+		return $events;
 	}
 
 	/**

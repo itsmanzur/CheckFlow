@@ -329,14 +329,119 @@ final class CheckFlow_Admin {
 			'tiktok_enabled'          => isset( $_POST['tiktok_enabled'] ) ? (bool) absint( wp_unslash( $_POST['tiktok_enabled'] ) ) : false,
 			'tiktok_pixel_id'         => isset( $_POST['tiktok_pixel_id'] ) ? sanitize_text_field( wp_unslash( $_POST['tiktok_pixel_id'] ) ) : '',
 			'tiktok_api_token'        => isset( $_POST['tiktok_api_token'] ) ? sanitize_text_field( wp_unslash( $_POST['tiktok_api_token'] ) ) : '',
+			'retention_days'          => isset( $_POST['retention_days'] ) ? max( 1, min( 365, absint( wp_unslash( $_POST['retention_days'] ) ) ) ) : 30,
 		);
+		foreach ( $this->get_pixel_event_names() as $event_name ) {
+			$key = 'event_' . sanitize_key( $event_name );
+			$settings[ $key ] = isset( $_POST[ $key ] ) ? (bool) absint( wp_unslash( $_POST[ $key ] ) ) : false;
+		}
 
 		update_option( self::PIXEL_SETTINGS_OPTION, $settings, false );
+		$this->prune_pixel_events( $settings['retention_days'] );
 
 		wp_send_json_success(
 			array(
 				'message'  => __( 'Pixel settings saved.', 'checkflow' ),
 				'settings' => $settings,
+			)
+		);
+	}
+
+	/**
+	 * Add one admin-generated test event to the local log.
+	 */
+	public function ajax_test_pixel_event() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'checkflow' ) ), 403 );
+		}
+
+		$event_name = isset( $_POST['event_name'] ) ? sanitize_text_field( wp_unslash( $_POST['event_name'] ) ) : 'PageView';
+		if ( ! in_array( $event_name, $this->get_pixel_event_names(), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unknown event.', 'checkflow' ) ), 400 );
+		}
+
+		$event_id = 'cf_admin_test_' . strtolower( $event_name ) . '_' . wp_generate_password( 8, false, false );
+		$logged   = $this->insert_pixel_event(
+			$event_name,
+			$event_id,
+			admin_url( 'admin.php?page=checkflow-pixel' ),
+			array(
+				'source' => 'admin_test',
+				'user'   => get_current_user_id(),
+			)
+		);
+
+		if ( ! $logged ) {
+			wp_send_json_error( array( 'message' => __( 'Could not create test event.', 'checkflow' ) ), 500 );
+		}
+
+		wp_send_json_success(
+			array(
+				'message'  => sprintf( __( '%s test event logged.', 'checkflow' ), $event_name ),
+				'event_id' => $event_id,
+			)
+		);
+	}
+
+	/**
+	 * Clear local tracking events.
+	 */
+	public function ajax_clear_pixel_log() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'checkflow' ) ), 403 );
+		}
+
+		global $wpdb;
+		$table = $this->ensure_pixel_event_table();
+		$scope = isset( $_POST['scope'] ) ? sanitize_key( wp_unslash( $_POST['scope'] ) ) : 'expired';
+		if ( 'all' === $scope ) {
+			$wpdb->query( "TRUNCATE TABLE {$table}" );
+			wp_send_json_success( array( 'message' => __( 'All local events cleared.', 'checkflow' ) ) );
+		}
+
+		$settings = $this->get_pixel_settings();
+		$deleted  = $this->prune_pixel_events( $settings['retention_days'] );
+		wp_send_json_success(
+			array(
+				'message' => sprintf( __( '%d expired local events cleared.', 'checkflow' ), $deleted ),
+			)
+		);
+	}
+
+	/**
+	 * Export recent local tracking events as CSV text.
+	 */
+	public function ajax_export_pixel_log() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'checkflow' ) ), 403 );
+		}
+
+		global $wpdb;
+		$table = $this->ensure_pixel_event_table();
+		$rows  = $wpdb->get_results(
+			"SELECT event_name, event_id, page_url, context, provider_state, created_at FROM {$table} ORDER BY id DESC LIMIT 1000",
+			ARRAY_A
+		);
+
+		$fh = fopen( 'php://temp', 'r+' );
+		fputcsv( $fh, array( 'event_name', 'event_id', 'page_url', 'context', 'provider_state', 'created_at' ) );
+		foreach ( is_array( $rows ) ? $rows : array() as $row ) {
+			fputcsv( $fh, $row );
+		}
+		rewind( $fh );
+		$csv = stream_get_contents( $fh );
+		fclose( $fh );
+
+		wp_send_json_success(
+			array(
+				'filename' => 'checkflow-events-' . gmdate( 'Y-m-d-His' ) . '.csv',
+				'csv'      => $csv,
 			)
 		);
 	}
@@ -1304,18 +1409,34 @@ final class CheckFlow_Admin {
 			'tiktok_enabled'          => false,
 			'tiktok_pixel_id'         => '',
 			'tiktok_api_token'        => '',
+			'retention_days'          => 30,
 		);
+		foreach ( $this->get_pixel_event_names() as $event_name ) {
+			$defaults[ 'event_' . sanitize_key( $event_name ) ] = true;
+		}
 		$saved = get_option( self::PIXEL_SETTINGS_OPTION, array() );
 		$settings = wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
 		foreach ( array( 'local_enabled', 'meta_enabled', 'debug_mode', 'google_enabled', 'tiktok_enabled' ) as $key ) {
 			$settings[ $key ] = (bool) $settings[ $key ];
 		}
+		foreach ( $this->get_pixel_event_names() as $event_name ) {
+			$key = 'event_' . sanitize_key( $event_name );
+			$settings[ $key ] = (bool) $settings[ $key ];
+		}
+		$settings['retention_days']          = max( 1, min( 365, absint( $settings['retention_days'] ) ) );
 		$settings['meta_pixel_id']           = preg_replace( '/[^0-9]/', '', (string) $settings['meta_pixel_id'] );
 		$settings['google_measurement_id']   = sanitize_text_field( (string) $settings['google_measurement_id'] );
 		$settings['google_conversion_label'] = sanitize_text_field( (string) $settings['google_conversion_label'] );
 		$settings['tiktok_pixel_id']         = sanitize_text_field( (string) $settings['tiktok_pixel_id'] );
 		$settings['tiktok_api_token']        = sanitize_text_field( (string) $settings['tiktok_api_token'] );
 		return $settings;
+	}
+
+	/**
+	 * @return array<int,string>
+	 */
+	public function get_pixel_event_names() {
+		return array( 'PageView', 'ViewContent', 'AddToCart', 'InitiateCheckout', 'Purchase' );
 	}
 
 	/**
@@ -1425,6 +1546,69 @@ final class CheckFlow_Admin {
 			return sprintf( '%d item(s)', absint( $context['num_items'] ) );
 		}
 		return __( 'Browser event', 'checkflow' );
+	}
+
+	/**
+	 * @return string
+	 */
+	private function ensure_pixel_event_table() {
+		global $wpdb;
+
+		$table = CheckFlow_Activator::event_log_table_name();
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+			CheckFlow_Activator::create_event_log_table();
+		}
+		return $table;
+	}
+
+	/**
+	 * @param string              $event_name Event name.
+	 * @param string              $event_id Event ID.
+	 * @param string              $page_url Page URL.
+	 * @param array<string,mixed> $context Event context.
+	 * @return bool
+	 */
+	private function insert_pixel_event( $event_name, $event_id, $page_url, $context ) {
+		global $wpdb;
+
+		$table    = $this->ensure_pixel_event_table();
+		$settings = $this->get_pixel_settings();
+		$state    = array(
+			'checkflow' => array( 'enabled' => ! empty( $settings['local_enabled'] ), 'configured' => true ),
+			'meta'      => array( 'enabled' => ! empty( $settings['meta_enabled'] ), 'configured' => ! empty( $settings['meta_pixel_id'] ) ),
+			'google'    => array( 'enabled' => ! empty( $settings['google_enabled'] ), 'configured' => ! empty( $settings['google_measurement_id'] ) && ! empty( $settings['google_conversion_label'] ) ),
+			'tiktok'    => array( 'enabled' => ! empty( $settings['tiktok_enabled'] ), 'configured' => ! empty( $settings['tiktok_pixel_id'] ) || ! empty( $settings['tiktok_api_token'] ) ),
+		);
+
+		return (bool) $wpdb->insert(
+			$table,
+			array(
+				'event_name'     => $event_name,
+				'event_id'       => substr( sanitize_text_field( $event_id ), 0, 100 ),
+				'page_url'       => esc_url_raw( $page_url ),
+				'context'        => wp_json_encode( $context ),
+				'provider_state' => wp_json_encode( $state ),
+				'created_at'     => current_time( 'mysql' ),
+			),
+			array( '%s', '%s', '%s', '%s', '%s', '%s' )
+		);
+	}
+
+	/**
+	 * @param int $retention_days Days to keep.
+	 * @return int
+	 */
+	private function prune_pixel_events( $retention_days ) {
+		global $wpdb;
+
+		$table = $this->ensure_pixel_event_table();
+		$days  = max( 1, min( 365, absint( $retention_days ) ) );
+		return (int) $wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$table} WHERE created_at < %s",
+				gmdate( 'Y-m-d H:i:s', time() - ( $days * DAY_IN_SECONDS ) )
+			)
+		);
 	}
 
 	/**

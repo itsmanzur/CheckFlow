@@ -60,6 +60,9 @@ final class CheckFlow {
 		$this->loader->add_action( 'wp_ajax_checkflow_save_admin_theme', $admin, 'ajax_save_admin_theme' );
 		$this->loader->add_action( 'wp_ajax_checkflow_get_stats', $admin, 'ajax_get_stats' );
 		$this->loader->add_action( 'wp_ajax_checkflow_save_pixel_settings', $admin, 'ajax_save_pixel_settings' );
+		$this->loader->add_action( 'wp_ajax_checkflow_test_pixel_event', $admin, 'ajax_test_pixel_event' );
+		$this->loader->add_action( 'wp_ajax_checkflow_clear_pixel_log', $admin, 'ajax_clear_pixel_log' );
+		$this->loader->add_action( 'wp_ajax_checkflow_export_pixel_log', $admin, 'ajax_export_pixel_log' );
 		$this->loader->add_action( 'wp_ajax_checkflow_save_checkout_template', $admin, 'ajax_save_checkout_template' );
 		$this->loader->add_action( 'wp_ajax_checkflow_update_order_status', $admin, 'ajax_update_order_status' );
 		$this->loader->add_action( 'wp_ajax_checkflow_add_order_note', $admin, 'ajax_add_order_note' );

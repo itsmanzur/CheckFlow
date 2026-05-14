@@ -847,6 +847,136 @@
 			});
 	}
 
+	function setPixelAdvancedStatus(message, type) {
+		var status = document.querySelector("[data-pixel-advanced-status]");
+		if (!status) {
+			return;
+		}
+		status.textContent = message;
+		status.classList.toggle("is-error", type === "error");
+	}
+
+	function sendPixelTestEvent(buttonEl) {
+		var ajaxUrl = getAdminAjaxUrl();
+		var select = document.querySelector("[data-pixel-test-event]");
+		if (!ajaxUrl || !select) {
+			return;
+		}
+		var button = buttonEl;
+		if (button) {
+			button.disabled = true;
+		}
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_test_pixel_event",
+				nonce: checkflowAdmin.nonce,
+				event_name: select.value,
+			},
+		})
+			.done(function (res) {
+				if (res && res.success) {
+					setPixelAdvancedStatus(res.data.message || "Test event logged.");
+					showToast(res.data.message || "Test event logged");
+					return;
+				}
+				var message = (res && res.data && res.data.message) || "Could not log test event";
+				setPixelAdvancedStatus(message, "error");
+				showToast(message, "error");
+			})
+			.fail(function (xhr) {
+				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not log test event";
+				setPixelAdvancedStatus(message, "error");
+				showToast(message, "error");
+			})
+			.always(function () {
+				if (button) {
+					button.disabled = false;
+				}
+			});
+	}
+
+	function clearPixelLog(buttonEl) {
+		var ajaxUrl = getAdminAjaxUrl();
+		var scope = buttonEl ? buttonEl.getAttribute("data-clear-pixel-log") : "expired";
+		if (!ajaxUrl) {
+			return;
+		}
+		if (scope === "all" && !window.confirm("Clear all CheckFlow local event logs? This cannot be undone.")) {
+			return;
+		}
+		if (buttonEl) {
+			buttonEl.disabled = true;
+		}
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_clear_pixel_log",
+				nonce: checkflowAdmin.nonce,
+				scope: scope,
+			},
+		})
+			.done(function (res) {
+				var message = res && res.success ? res.data.message : (res && res.data && res.data.message) || "Could not clear logs";
+				setPixelAdvancedStatus(message, res && res.success ? "" : "error");
+				showToast(message, res && res.success ? "" : "error");
+			})
+			.fail(function (xhr) {
+				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not clear logs";
+				setPixelAdvancedStatus(message, "error");
+				showToast(message, "error");
+			})
+			.always(function () {
+				if (buttonEl) {
+					buttonEl.disabled = false;
+				}
+			});
+	}
+
+	function exportPixelLog(buttonEl) {
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl) {
+			return;
+		}
+		if (buttonEl) {
+			buttonEl.disabled = true;
+		}
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: {
+				action: "checkflow_export_pixel_log",
+				nonce: checkflowAdmin.nonce,
+			},
+		})
+			.done(function (res) {
+				if (res && res.success) {
+					downloadTextFile(res.data.filename || "checkflow-events.csv", res.data.csv || "");
+					setPixelAdvancedStatus("CSV export prepared.");
+					showToast("Pixel log exported");
+					return;
+				}
+				var message = (res && res.data && res.data.message) || "Could not export logs";
+				setPixelAdvancedStatus(message, "error");
+				showToast(message, "error");
+			})
+			.fail(function (xhr) {
+				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not export logs";
+				setPixelAdvancedStatus(message, "error");
+				showToast(message, "error");
+			})
+			.always(function () {
+				if (buttonEl) {
+					buttonEl.disabled = false;
+				}
+			});
+	}
+
 	function setupPixelInsights() {
 		var root = document.getElementById("checkflow-admin");
 		if (!root) {
@@ -934,6 +1064,12 @@
 			}
 			panel.classList.toggle("is-open");
 			this.textContent = panel.classList.contains("is-open") ? "Hide chart" : "Show chart";
+		});
+		$(document).on("click", "[data-pixel-advanced-toggle]", function () {
+			var panel = this.closest(".cf-pixel-advanced");
+			if (panel) {
+				panel.classList.toggle("is-open");
+			}
 		});
 		setFilter("all");
 	}
@@ -2982,6 +3118,18 @@
 
 		$(document).on("click", "[data-save-pixel-settings]", function () {
 			savePixelSettings(this);
+		});
+
+		$(document).on("click", "[data-test-pixel-event]", function () {
+			sendPixelTestEvent(this);
+		});
+
+		$(document).on("click", "[data-export-pixel-log]", function () {
+			exportPixelLog(this);
+		});
+
+		$(document).on("click", "[data-clear-pixel-log]", function () {
+			clearPixelLog(this);
 		});
 
 		$(document).on("change", "[data-courier-default]", function () {

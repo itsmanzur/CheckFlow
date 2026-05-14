@@ -53,6 +53,40 @@ $courier_settings  = $admin_instance->get_courier_settings();
 $pixel_settings    = $admin_instance->get_pixel_settings();
 $pixel_events      = $admin_instance->get_recent_pixel_events( 8 );
 $pixel_analytics   = $admin_instance->get_pixel_event_analytics();
+$pixel_provider_status = array(
+	'local'  => array(
+		'label' => ! empty( $pixel_settings['local_enabled'] ) ? 'Ready' : 'Disabled',
+		'items' => array(
+			'WordPress local log table' => true,
+			'Browser AJAX endpoint'     => true,
+			! empty( $pixel_settings['local_enabled'] ) ? 'Local event capture on' : 'Local event capture off' => ! empty( $pixel_settings['local_enabled'] ),
+		),
+	),
+	'meta'   => array(
+		'label' => empty( $pixel_settings['meta_enabled'] ) ? 'Disabled' : ( ! empty( $pixel_settings['meta_pixel_id'] ) ? 'Ready' : 'Needs Pixel ID' ),
+		'items' => array(
+			! empty( $pixel_settings['meta_enabled'] ) ? 'Provider enabled' : 'Provider disabled' => ! empty( $pixel_settings['meta_enabled'] ),
+			! empty( $pixel_settings['meta_pixel_id'] ) ? 'Pixel ID saved' : 'Pixel ID missing' => ! empty( $pixel_settings['meta_pixel_id'] ),
+			! empty( $pixel_settings['meta_enabled'] ) && ! empty( $pixel_settings['meta_pixel_id'] ) ? 'Browser fire ready' : 'Browser fire paused' => ! empty( $pixel_settings['meta_enabled'] ) && ! empty( $pixel_settings['meta_pixel_id'] ),
+		),
+	),
+	'google' => array(
+		'label' => empty( $pixel_settings['google_enabled'] ) ? 'Disabled' : ( ( ! empty( $pixel_settings['google_measurement_id'] ) && ! empty( $pixel_settings['google_conversion_label'] ) ) ? 'Saved' : 'Needs IDs' ),
+		'items' => array(
+			! empty( $pixel_settings['google_enabled'] ) ? 'Provider enabled' : 'Provider disabled' => ! empty( $pixel_settings['google_enabled'] ),
+			! empty( $pixel_settings['google_measurement_id'] ) ? 'Measurement ID saved' : 'Measurement ID missing' => ! empty( $pixel_settings['google_measurement_id'] ),
+			! empty( $pixel_settings['google_conversion_label'] ) ? 'Conversion label saved' : 'Conversion label missing' => ! empty( $pixel_settings['google_conversion_label'] ),
+		),
+	),
+	'tiktok' => array(
+		'label' => empty( $pixel_settings['tiktok_enabled'] ) ? 'Disabled' : ( ( ! empty( $pixel_settings['tiktok_pixel_id'] ) || ! empty( $pixel_settings['tiktok_api_token'] ) ) ? 'Saved' : 'Needs ID/token' ),
+		'items' => array(
+			! empty( $pixel_settings['tiktok_enabled'] ) ? 'Provider enabled' : 'Provider disabled' => ! empty( $pixel_settings['tiktok_enabled'] ),
+			! empty( $pixel_settings['tiktok_pixel_id'] ) ? 'Pixel ID saved' : 'Pixel ID missing' => ! empty( $pixel_settings['tiktok_pixel_id'] ),
+			! empty( $pixel_settings['tiktok_api_token'] ) ? 'API token saved' : 'API token optional' => ! empty( $pixel_settings['tiktok_api_token'] ),
+		),
+	),
+);
 
 $str_keys       = $i18n->get_flat_keys_sorted();
 $quick_settings = $admin_instance->get_quick_settings();
@@ -569,33 +603,40 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 						<div class="pb">
 							<div class="cf-pixel-provider-grid">
 								<div class="cf-pixel-card is-local is-open">
-									<div class="cf-pixel-card-head" data-pixel-provider-toggle role="button" tabindex="0"><div><strong>CheckFlow Local</strong><span>Own first-party event log inside WordPress.</span></div><em><?php echo ! empty( $pixel_settings['local_enabled'] ) ? 'Enabled' : 'Disabled'; ?></em></div>
+									<div class="cf-pixel-card-head" data-pixel-provider-toggle role="button" tabindex="0"><div><strong>CheckFlow Local</strong><span>Own first-party event log inside WordPress.</span></div><em><?php echo esc_html( $pixel_provider_status['local']['label'] ); ?></em></div>
 									<label class="cf-field-switch"><span>Log local events</span><input type="checkbox" data-pixel-setting="local_enabled" <?php checked( ! empty( $pixel_settings['local_enabled'] ) ); ?> /></label>
 									<p>Stores PageView, ViewContent, AddToCart, InitiateCheckout, and Purchase with event IDs for future CAPI dedupe.</p>
+									<div class="cf-pixel-readiness"><?php foreach ( $pixel_provider_status['local']['items'] as $item => $ready ) : ?><span class="<?php echo $ready ? 'is-ready' : 'is-missing'; ?>"><?php echo esc_html( $item ); ?></span><?php endforeach; ?></div>
 								</div>
 								<div class="cf-pixel-card">
-									<div class="cf-pixel-card-head" data-pixel-provider-toggle role="button" tabindex="0"><div><strong>Meta Pixel</strong><span>Browser pixel foundation. Real CAPI test later.</span></div><em><?php echo ! empty( $pixel_settings['meta_pixel_id'] ) ? 'Configured' : 'Not set'; ?></em></div>
+									<div class="cf-pixel-card-head" data-pixel-provider-toggle role="button" tabindex="0"><div><strong>Meta Pixel</strong><span>Browser pixel foundation. Real CAPI test later.</span></div><em><?php echo esc_html( $pixel_provider_status['meta']['label'] ); ?></em></div>
 									<div class="cf-pixel-card-fields">
 										<label class="cf-field-switch"><span>Enable Meta Pixel</span><input type="checkbox" data-pixel-setting="meta_enabled" <?php checked( ! empty( $pixel_settings['meta_enabled'] ) ); ?> /></label>
 										<label><span>Pixel ID</span><input type="text" inputmode="numeric" data-pixel-setting="meta_pixel_id" value="<?php echo esc_attr( $pixel_settings['meta_pixel_id'] ); ?>" placeholder="123456789012345" /></label>
 										<label class="cf-field-switch"><span>Debug console log</span><input type="checkbox" data-pixel-setting="debug_mode" <?php checked( ! empty( $pixel_settings['debug_mode'] ) ); ?> /></label>
 									</div>
+									<div class="cf-pixel-readiness"><?php foreach ( $pixel_provider_status['meta']['items'] as $item => $ready ) : ?><span class="<?php echo $ready ? 'is-ready' : 'is-missing'; ?>"><?php echo esc_html( $item ); ?></span><?php endforeach; ?></div>
+									<p class="cf-pixel-help">Paste the numeric Meta Pixel ID from Events Manager. CAPI/server dedupe will use CheckFlow event IDs in a later pass.</p>
 								</div>
 								<div class="cf-pixel-card">
-									<div class="cf-pixel-card-head" data-pixel-provider-toggle role="button" tabindex="0"><div><strong>Google Ads / GA4</strong><span>Save IDs now; event firing comes in final real test pass.</span></div><em><?php echo ( ! empty( $pixel_settings['google_measurement_id'] ) && ! empty( $pixel_settings['google_conversion_label'] ) ) ? 'Configured' : 'Not set'; ?></em></div>
+									<div class="cf-pixel-card-head" data-pixel-provider-toggle role="button" tabindex="0"><div><strong>Google Ads / GA4</strong><span>Save IDs now; event firing comes in final real test pass.</span></div><em><?php echo esc_html( $pixel_provider_status['google']['label'] ); ?></em></div>
 									<div class="cf-pixel-card-fields">
 										<label class="cf-field-switch"><span>Enable Google</span><input type="checkbox" data-pixel-setting="google_enabled" <?php checked( ! empty( $pixel_settings['google_enabled'] ) ); ?> /></label>
 										<label><span>Measurement / Conversion ID</span><input type="text" data-pixel-setting="google_measurement_id" value="<?php echo esc_attr( $pixel_settings['google_measurement_id'] ); ?>" placeholder="G-XXXX or AW-XXXX" /></label>
 										<label><span>Conversion label</span><input type="text" data-pixel-setting="google_conversion_label" value="<?php echo esc_attr( $pixel_settings['google_conversion_label'] ); ?>" placeholder="Purchase label" /></label>
 									</div>
+									<div class="cf-pixel-readiness"><?php foreach ( $pixel_provider_status['google']['items'] as $item => $ready ) : ?><span class="<?php echo $ready ? 'is-ready' : 'is-missing'; ?>"><?php echo esc_html( $item ); ?></span><?php endforeach; ?></div>
+									<p class="cf-pixel-help">Use GA4 Measurement ID or Google Ads Conversion ID. The label is required for purchase conversion mapping.</p>
 								</div>
 								<div class="cf-pixel-card">
-									<div class="cf-pixel-card-head" data-pixel-provider-toggle role="button" tabindex="0"><div><strong>TikTok Events</strong><span>Pixel/API placeholders ready. Live firing later.</span></div><em><?php echo ( ! empty( $pixel_settings['tiktok_pixel_id'] ) || ! empty( $pixel_settings['tiktok_api_token'] ) ) ? 'Configured' : 'Not set'; ?></em></div>
+									<div class="cf-pixel-card-head" data-pixel-provider-toggle role="button" tabindex="0"><div><strong>TikTok Events</strong><span>Pixel/API placeholders ready. Live firing later.</span></div><em><?php echo esc_html( $pixel_provider_status['tiktok']['label'] ); ?></em></div>
 									<div class="cf-pixel-card-fields">
 										<label class="cf-field-switch"><span>Enable TikTok</span><input type="checkbox" data-pixel-setting="tiktok_enabled" <?php checked( ! empty( $pixel_settings['tiktok_enabled'] ) ); ?> /></label>
 										<label><span>Pixel ID</span><input type="text" data-pixel-setting="tiktok_pixel_id" value="<?php echo esc_attr( $pixel_settings['tiktok_pixel_id'] ); ?>" placeholder="TikTok Pixel ID" /></label>
 										<label><span>API token</span><input type="password" data-pixel-setting="tiktok_api_token" value="<?php echo esc_attr( $pixel_settings['tiktok_api_token'] ); ?>" placeholder="Saved locally for future API pass" /></label>
 									</div>
+									<div class="cf-pixel-readiness"><?php foreach ( $pixel_provider_status['tiktok']['items'] as $item => $ready ) : ?><span class="<?php echo $ready ? 'is-ready' : 'is-missing'; ?>"><?php echo esc_html( $item ); ?></span><?php endforeach; ?></div>
+									<p class="cf-pixel-help">Pixel ID covers browser setup. API token is saved for the future Events API pass.</p>
 								</div>
 							</div>
 							<div class="cf-pixel-actions">
@@ -634,6 +675,32 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 									<?php endif; ?>
 								</div>
 								<div class="cf-pixel-chart-status" data-pixel-chart-status>Showing all recent local events.</div>
+							</div>
+							<div class="cf-pixel-advanced">
+								<button type="button" class="cf-pixel-advanced-toggle" data-pixel-advanced-toggle>
+									<span>Advanced tracking settings</span>
+									<em>Event controls, retention, export, test</em>
+								</button>
+								<div class="cf-pixel-advanced-body">
+									<div class="cf-pixel-event-controls">
+										<?php foreach ( $admin_instance->get_pixel_event_names() as $event_name ) : ?>
+											<?php $event_key = 'event_' . sanitize_key( $event_name ); ?>
+											<label class="cf-field-switch">
+												<span><?php echo esc_html( $event_name ); ?></span>
+												<input type="checkbox" data-pixel-setting="<?php echo esc_attr( $event_key ); ?>" <?php checked( ! empty( $pixel_settings[ $event_key ] ) ); ?> />
+											</label>
+										<?php endforeach; ?>
+									</div>
+									<div class="cf-pixel-advanced-grid">
+										<label><span>Retention days</span><input type="number" min="1" max="365" data-pixel-setting="retention_days" value="<?php echo esc_attr( (string) $pixel_settings['retention_days'] ); ?>" /></label>
+										<label><span>Test event</span><select data-pixel-test-event><?php foreach ( $admin_instance->get_pixel_event_names() as $event_name ) : ?><option value="<?php echo esc_attr( $event_name ); ?>"><?php echo esc_html( $event_name ); ?></option><?php endforeach; ?></select></label>
+										<button type="button" class="cf-btn-ghost" data-test-pixel-event>Send test event</button>
+										<button type="button" class="cf-btn-ghost" data-export-pixel-log>Export CSV</button>
+										<button type="button" class="cf-btn-ghost" data-clear-pixel-log="expired">Clear expired</button>
+										<button type="button" class="cf-btn-danger" data-clear-pixel-log="all">Clear all logs</button>
+									</div>
+									<div class="cf-pixel-advanced-status" data-pixel-advanced-status>Changes apply after saving tracking settings.</div>
+								</div>
 							</div>
 							<div class="cf-pixel-settings">
 								<label class="cf-field-switch"><span>Enable Meta Pixel</span><input type="checkbox" data-pixel-setting="meta_enabled" <?php checked( ! empty( $pixel_settings['meta_enabled'] ) ); ?> /></label>

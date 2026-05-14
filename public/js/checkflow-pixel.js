@@ -40,6 +40,10 @@
 		if (!name) {
 			return;
 		}
+		if (checkflowPixel.enabledEvents && checkflowPixel.enabledEvents[name] === false) {
+			log("[CheckFlow Pixel] disabled event skipped", name);
+			return;
+		}
 		var key = name + ":" + (id || "");
 		if (id && fired[key]) {
 			return;
