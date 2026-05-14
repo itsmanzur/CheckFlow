@@ -568,6 +568,99 @@ body.checkflow-admin-screen.checkflow-admin-theme-light #wpbody-content {
 	font-style: normal;
 }
 
+#checkflow-admin.checkflow-root .cf-bump-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+	gap: 14px;
+}
+#checkflow-admin.checkflow-root .cf-bump-form,
+#checkflow-admin.checkflow-root .cf-bump-rules-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+}
+#checkflow-admin.checkflow-root .cf-bump-form label,
+#checkflow-admin.checkflow-root .cf-bump-rules-grid label {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	color: var(--tx3);
+	font-size: 10px;
+	font-weight: 800;
+	letter-spacing: 0.4px;
+	text-transform: uppercase;
+}
+#checkflow-admin.checkflow-root .cf-bump-form .cf-field-switch {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 42px;
+	padding: 10px 12px;
+	background: var(--s2);
+	border: 1px solid var(--bd);
+	border-radius: 8px;
+}
+#checkflow-admin.checkflow-root .cf-bump-form input,
+#checkflow-admin.checkflow-root .cf-bump-form select,
+#checkflow-admin.checkflow-root .cf-bump-rules-grid input,
+#checkflow-admin.checkflow-root .cf-bump-rules-grid select {
+	width: 100%;
+	min-height: 42px;
+	border: 1px solid var(--bd);
+	border-radius: 8px;
+	background: var(--s2);
+	color: var(--tx);
+	padding: 0 12px;
+	font-size: 12px;
+	font-weight: 700;
+}
+#checkflow-admin.checkflow-root .cf-bump-form input:focus,
+#checkflow-admin.checkflow-root .cf-bump-form select:focus,
+#checkflow-admin.checkflow-root .cf-bump-rules-grid input:focus,
+#checkflow-admin.checkflow-root .cf-bump-rules-grid select:focus {
+	border-color: var(--pr);
+	box-shadow: 0 0 0 3px var(--pr-d);
+	outline: none;
+}
+#checkflow-admin.checkflow-root .cf-bump-preview {
+	margin-top: 14px;
+	padding: 14px;
+	border: 1px solid var(--pr-g);
+	border-radius: 12px;
+	background: linear-gradient(135deg, var(--pr-d), transparent);
+	display: grid;
+	gap: 5px;
+}
+#checkflow-admin.checkflow-root .cf-bump-preview span {
+	width: max-content;
+	padding: 4px 8px;
+	border-radius: 999px;
+	background: var(--or-d);
+	color: var(--or);
+	font-size: 10px;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-bump-preview strong {
+	color: var(--tx);
+	font-size: 15px;
+}
+#checkflow-admin.checkflow-root .cf-bump-preview em,
+#checkflow-admin.checkflow-root .cf-bump-preview small,
+#checkflow-admin.checkflow-root .cf-bump-save-row div {
+	color: var(--tx2);
+	font-size: 12px;
+	font-style: normal;
+}
+#checkflow-admin.checkflow-root .cf-bump-save-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-top: 16px;
+	padding-top: 14px;
+	border-top: 1px solid var(--bd);
+}
+
 #checkflow-admin.checkflow-root .g2 {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
@@ -3740,7 +3833,11 @@ html.cf-field-dragging body {
 #checkflow-admin.checkflow-root.is-light .cf-order-note-box textarea,
 #checkflow-admin.checkflow-root.is-light .cf-courier-provider select,
 #checkflow-admin.checkflow-root.is-light .cf-courier-provider input[type="password"],
-#checkflow-admin.checkflow-root.is-light .cf-pathao-settings input {
+#checkflow-admin.checkflow-root.is-light .cf-pathao-settings input,
+#checkflow-admin.checkflow-root.is-light .cf-bump-form input,
+#checkflow-admin.checkflow-root.is-light .cf-bump-form select,
+#checkflow-admin.checkflow-root.is-light .cf-bump-rules-grid input,
+#checkflow-admin.checkflow-root.is-light .cf-bump-rules-grid select {
 	background: #ffffff;
 	color: var(--tx);
 	border-color: rgba(15, 23, 42, 0.14);
@@ -3777,6 +3874,8 @@ html.cf-field-dragging body {
 #checkflow-admin.checkflow-root.is-light .cf-template-auto-pair,
 #checkflow-admin.checkflow-root.is-light .cf-pathao-settings,
 #checkflow-admin.checkflow-root.is-light .cf-courier-provider,
+#checkflow-admin.checkflow-root.is-light .cf-bump-form .cf-field-switch,
+#checkflow-admin.checkflow-root.is-light .cf-bump-preview,
 #checkflow-admin.checkflow-root.is-light .cf-mini-card,
 #checkflow-admin.checkflow-root.is-light .cf-module-list > div,
 #checkflow-admin.checkflow-root.is-light .cf-builder-row,
@@ -3927,6 +4026,11 @@ html.cf-field-dragging body {
 	#checkflow-admin.checkflow-root .cf-pathao-foundation {
 		grid-template-columns: 1fr;
 	}
+	#checkflow-admin.checkflow-root .cf-bump-layout,
+	#checkflow-admin.checkflow-root .cf-bump-form,
+	#checkflow-admin.checkflow-root .cf-bump-rules-grid {
+		grid-template-columns: 1fr;
+	}
 	#checkflow-admin.checkflow-root .g2,
 	#checkflow-admin.checkflow-root .g3 {
 		grid-template-columns: 1fr;
@@ -3982,8 +4086,14 @@ html.cf-field-dragging body {
 	#checkflow-admin.checkflow-root .cf-pixel-chart-row,
 	#checkflow-admin.checkflow-root .cf-pixel-event-list button,
 	#checkflow-admin.checkflow-root .cf-pixel-event-controls,
-	#checkflow-admin.checkflow-root .cf-pixel-advanced-grid {
+	#checkflow-admin.checkflow-root .cf-pixel-advanced-grid,
+	#checkflow-admin.checkflow-root .cf-bump-form,
+	#checkflow-admin.checkflow-root .cf-bump-rules-grid {
 		grid-template-columns: 1fr;
+	}
+	#checkflow-admin.checkflow-root .cf-bump-save-row {
+		align-items: stretch;
+		flex-direction: column;
 	}
 	#checkflow-admin.checkflow-root .cf-pixel-event-list button span {
 		text-align: left;

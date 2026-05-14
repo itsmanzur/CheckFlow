@@ -51,6 +51,8 @@ $order_metrics  = $admin_instance->get_order_metrics();
 $dashboard_analytics = $admin_instance->get_dashboard_analytics( '7d' );
 $courier_providers = $admin_instance->get_courier_providers();
 $courier_settings  = $admin_instance->get_courier_settings();
+$order_bump_settings = $admin_instance->get_order_bump_settings();
+$order_bump_products = $admin_instance->get_order_bump_product_choices();
 $pixel_settings    = $admin_instance->get_pixel_settings();
 $pixel_events      = $admin_instance->get_recent_pixel_events( 8 );
 $pixel_analytics   = $admin_instance->get_pixel_event_analytics();
@@ -1126,7 +1128,52 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 			</div>
 
 			<div class="cf-pane<?php echo esc_attr( $screen_class( 'order_bump' ) ); ?>" data-pane="order_bump">
-				<div class="g2">
+				<div class="cf-bump-layout">
+					<div class="panel">
+						<div class="ph"><div class="pt">Order Bump offer</div><div class="pa">Rules ready</div></div>
+						<div class="pb">
+							<div class="cf-bump-form">
+								<label class="cf-field-switch"><span>Enable offer</span><input type="checkbox" data-bump-setting="enabled" <?php checked( ! empty( $order_bump_settings['enabled'] ) ); ?> /></label>
+								<label><span>Bump product ID</span><input type="number" min="0" data-bump-setting="product_id" list="cf-bump-products" value="<?php echo esc_attr( (string) $order_bump_settings['product_id'] ); ?>" placeholder="Product ID" /></label>
+								<datalist id="cf-bump-products">
+									<?php foreach ( $order_bump_products as $choice ) : ?>
+										<option value="<?php echo esc_attr( $choice['id'] ); ?>"><?php echo esc_html( $choice['label'] ); ?></option>
+									<?php endforeach; ?>
+								</datalist>
+								<label><span>Offer title</span><input type="text" data-bump-setting="title" value="<?php echo esc_attr( $order_bump_settings['title'] ); ?>" /></label>
+								<label><span>Offer description</span><input type="text" data-bump-setting="description" value="<?php echo esc_attr( $order_bump_settings['description'] ); ?>" /></label>
+								<label><span>Badge</span><input type="text" data-bump-setting="badge" value="<?php echo esc_attr( $order_bump_settings['badge'] ); ?>" /></label>
+								<label><span>Placement</span><select data-bump-setting="placement"><option value="after_summary" <?php selected( $order_bump_settings['placement'], 'after_summary' ); ?>>After order summary</option><option value="before_payment" <?php selected( $order_bump_settings['placement'], 'before_payment' ); ?>>Before payment</option><option value="after_payment" <?php selected( $order_bump_settings['placement'], 'after_payment' ); ?>>After payment</option></select></label>
+							</div>
+							<div class="cf-bump-preview">
+								<span><?php echo esc_html( $order_bump_settings['badge'] ); ?></span>
+								<strong><?php echo esc_html( $order_bump_settings['title'] ); ?></strong>
+								<em><?php echo esc_html( $order_bump_settings['description'] ); ?></em>
+								<small>Frontend card updates after save and checkout refresh.</small>
+							</div>
+						</div>
+					</div>
+					<div class="panel">
+						<div class="ph"><div class="pt">Display rules</div><div class="pa">Smart targeting</div></div>
+						<div class="pb">
+							<div class="cf-bump-rules-grid">
+								<label><span>Minimum cart total</span><input type="number" step="0.01" min="0" data-bump-setting="min_total" value="<?php echo esc_attr( $order_bump_settings['min_total'] ); ?>" placeholder="No minimum" /></label>
+								<label><span>Maximum cart total</span><input type="number" step="0.01" min="0" data-bump-setting="max_total" value="<?php echo esc_attr( $order_bump_settings['max_total'] ); ?>" placeholder="No maximum" /></label>
+								<label><span>Require products</span><input type="text" data-bump-setting="include_products" value="<?php echo esc_attr( $order_bump_settings['include_products'] ); ?>" placeholder="IDs: 12,34" /></label>
+								<label><span>Exclude products</span><input type="text" data-bump-setting="exclude_products" value="<?php echo esc_attr( $order_bump_settings['exclude_products'] ); ?>" placeholder="IDs: 56,78" /></label>
+								<label><span>Require categories</span><input type="text" data-bump-setting="include_categories" value="<?php echo esc_attr( $order_bump_settings['include_categories'] ); ?>" placeholder="Category IDs" /></label>
+								<label><span>Countries</span><input type="text" data-bump-setting="countries" value="<?php echo esc_attr( $order_bump_settings['countries'] ); ?>" placeholder="BD,US" /></label>
+								<label><span>Payment methods</span><input type="text" data-bump-setting="payment_methods" value="<?php echo esc_attr( $order_bump_settings['payment_methods'] ); ?>" placeholder="cod,bacs" /></label>
+								<label><span>Customer</span><select data-bump-setting="customer_rule"><option value="all" <?php selected( $order_bump_settings['customer_rule'], 'all' ); ?>>All customers</option><option value="guest" <?php selected( $order_bump_settings['customer_rule'], 'guest' ); ?>>Guest only</option><option value="logged_in" <?php selected( $order_bump_settings['customer_rule'], 'logged_in' ); ?>>Logged-in only</option></select></label>
+							</div>
+							<div class="cf-bump-save-row">
+								<div data-bump-save-status>Rules save to WordPress and apply on checkout refresh.</div>
+								<button type="button" class="btn-p" data-save-order-bump>Save bump</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="g2 cf-hidden-legacy-bump" hidden>
 					<div class="panel"><div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'bump_perf.title' ) ); ?></div><div class="pa">New bump</div></div><div class="pb"><div class="blist"><div class="brow"><div class="bimg">👕</div><div class="binf"><div class="bn"><?php echo esc_html( checkflow_str( 'bump.b1_name' ) ); ?></div><div class="bm"><?php echo esc_html( checkflow_str( 'bump.b1_meta' ) ); ?></div></div><div class="brt"><div class="bpct">38%</div><div class="brlbl"><?php echo esc_html( checkflow_str( 'bump.rate_lbl' ) ); ?></div></div></div><div class="brow"><div class="bimg">🎁</div><div class="binf"><div class="bn"><?php echo esc_html( checkflow_str( 'bump.b2_name' ) ); ?></div><div class="bm"><?php echo esc_html( checkflow_str( 'bump.b2_meta' ) ); ?></div></div><div class="brt"><div class="bpct">29%</div><div class="brlbl"><?php echo esc_html( checkflow_str( 'bump.rate_lbl' ) ); ?></div></div></div></div></div></div>
 					<div class="panel"><div class="ph"><div class="pt">Rules</div></div><div class="pb"><div class="cf-module-list"><div><strong>Cart total</strong><span>Show when total is over $50</span></div><div><strong>Product match</strong><span>Show for apparel category</span></div><div><strong>Customer type</strong><span>First-time buyer only</span></div></div></div></div>
 				</div>

@@ -109,7 +109,8 @@ final class CheckFlow_Frontend_Checkout {
 	 * @return int
 	 */
 	private function get_order_bump_product_id() {
-		$product_id = absint( get_option( 'checkflow_order_bump_product_id', 0 ) );
+		$settings = CheckFlow_Admin::instance()->get_order_bump_settings();
+		$product_id = absint( $settings['product_id'] );
 		return absint( apply_filters( 'checkflow_order_bump_product_id', $product_id ) );
 	}
 
@@ -136,6 +137,10 @@ final class CheckFlow_Frontend_Checkout {
 		if ( ! function_exists( 'wc_get_product' ) ) {
 			return null;
 		}
+		$settings = CheckFlow_Admin::instance()->get_order_bump_settings();
+		if ( empty( $settings['enabled'] ) || ! $this->order_bump_rules_match( $settings ) ) {
+			return null;
+		}
 		$product_id = $this->get_order_bump_product_id();
 		if ( ! $product_id ) {
 			return null;
@@ -148,6 +153,128 @@ final class CheckFlow_Frontend_Checkout {
 			return null;
 		}
 		return $product;
+	}
+
+	/**
+	 * @param array<string,mixed> $settings Order bump settings.
+	 * @return bool
+	 */
+	private function order_bump_rules_match( $settings ) {
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+			return false;
+		}
+
+		$total = (float) WC()->cart->get_subtotal();
+		if ( '' !== (string) $settings['min_total'] && $total < (float) $settings['min_total'] ) {
+			return false;
+		}
+		if ( '' !== (string) $settings['max_total'] && $total > (float) $settings['max_total'] ) {
+			return false;
+		}
+
+		$cart_product_ids = $this->cart_product_ids();
+		$include_products = $this->csv_to_ints( $settings['include_products'] );
+		if ( $include_products && ! array_intersect( $include_products, $cart_product_ids ) ) {
+			return false;
+		}
+		$exclude_products = $this->csv_to_ints( $settings['exclude_products'] );
+		if ( $exclude_products && array_intersect( $exclude_products, $cart_product_ids ) ) {
+			return false;
+		}
+		$include_categories = $this->csv_to_ints( $settings['include_categories'] );
+		if ( $include_categories && ! $this->cart_has_categories( $include_categories ) ) {
+			return false;
+		}
+
+		$countries = $this->csv_to_strings( $settings['countries'] );
+		if ( $countries && ! in_array( $this->checkout_country(), $countries, true ) ) {
+			return false;
+		}
+		$payment_methods = $this->csv_to_strings( $settings['payment_methods'] );
+		if ( $payment_methods && ! in_array( $this->chosen_payment_method(), $payment_methods, true ) ) {
+			return false;
+		}
+
+		if ( 'guest' === $settings['customer_rule'] && is_user_logged_in() ) {
+			return false;
+		}
+		if ( 'logged_in' === $settings['customer_rule'] && ! is_user_logged_in() ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * @return array<int,int>
+	 */
+	private function cart_product_ids() {
+		$ids = array();
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+			return $ids;
+		}
+		foreach ( WC()->cart->get_cart() as $cart_item ) {
+			$ids[] = absint( $cart_item['product_id'] );
+			if ( ! empty( $cart_item['variation_id'] ) ) {
+				$ids[] = absint( $cart_item['variation_id'] );
+			}
+		}
+		return array_values( array_unique( array_filter( $ids ) ) );
+	}
+
+	/**
+	 * @param array<int,int> $category_ids Category IDs.
+	 * @return bool
+	 */
+	private function cart_has_categories( $category_ids ) {
+		foreach ( $this->cart_product_ids() as $product_id ) {
+			$product_categories = wc_get_product_term_ids( $product_id, 'product_cat' );
+			if ( array_intersect( array_map( 'absint', $product_categories ), $category_ids ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @return string
+	 */
+	private function checkout_country() {
+		if ( ! function_exists( 'WC' ) || ! WC()->customer ) {
+			return '';
+		}
+		$country = WC()->customer->get_shipping_country();
+		if ( '' === $country ) {
+			$country = WC()->customer->get_billing_country();
+		}
+		return strtolower( (string) $country );
+	}
+
+	/**
+	 * @return string
+	 */
+	private function chosen_payment_method() {
+		if ( function_exists( 'WC' ) && WC()->session ) {
+			return sanitize_key( (string) WC()->session->get( 'chosen_payment_method', '' ) );
+		}
+		return '';
+	}
+
+	/**
+	 * @param mixed $value CSV value.
+	 * @return array<int,int>
+	 */
+	private function csv_to_ints( $value ) {
+		return array_values( array_filter( array_map( 'absint', preg_split( '/[,\s]+/', (string) $value ) ) ) );
+	}
+
+	/**
+	 * @param mixed $value CSV value.
+	 * @return array<int,string>
+	 */
+	private function csv_to_strings( $value ) {
+		$items = preg_split( '/[,\s]+/', strtolower( (string) $value ) );
+		return array_values( array_filter( array_map( 'sanitize_key', is_array( $items ) ? $items : array() ) ) );
 	}
 
 	/**
@@ -331,10 +458,16 @@ final class CheckFlow_Frontend_Checkout {
 			echo '</div>';
 		}
 		if ( $bump ) {
+			$settings = CheckFlow_Admin::instance()->get_order_bump_settings();
+			$title = '' !== $settings['title'] ? $settings['title'] : $bump->get_name();
+			$description = '' !== $settings['description'] ? $settings['description'] : __( 'One click add-on for this order.', 'checkflow' );
 			echo '<div class="checkflow-order-bump-module" data-checkflow-bump-product="' . esc_attr( (string) $bump->get_id() ) . '">';
+			if ( '' !== $settings['badge'] ) {
+				echo '<div class="checkflow-order-bump-badge">' . esc_html( $settings['badge'] ) . '</div>';
+			}
 			echo '<label>';
 			echo '<input type="checkbox" class="checkflow-order-bump-checkbox" />';
-			echo '<span><strong>' . esc_html( $bump->get_name() ) . '</strong><em>' . wp_kses_post( $bump->get_price_html() ) . '</em></span>';
+			echo '<span><strong>' . esc_html( $title ) . '</strong><small>' . esc_html( $description ) . '</small><em>' . wp_kses_post( $bump->get_price_html() ) . '</em></span>';
 			echo '</label>';
 			echo '</div>';
 		}

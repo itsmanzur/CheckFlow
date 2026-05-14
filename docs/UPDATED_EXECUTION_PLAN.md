@@ -165,7 +165,7 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
   - Interactive local tracking insights.
   - Real browser firing for Meta Pixel, Google Ads / GA4, and TikTok Pixel.
 - Meta CAPI, Google Enhanced Conversions, and TikTok Events API server-side firing are not implemented yet.
-- Order bump/upsell/rules engine is not implemented.
+- Order bump now has an admin settings foundation, offer copy, product ID selection, cart/customer/location/payment targeting rules, and frontend rule enforcement; upsell rules are still pending.
 - Dashboard analytics foundation is implemented using WooCommerce order data and CheckFlow local event logs; dedicated analytics event tables are still pending.
 - Tests, security audit docs, checklist docs, screenshots, `.pot`/`.po` files are not implemented.
 - `checkflow.php` metadata still has placeholder Plugin URI and a mojibake dash in the description.
@@ -217,6 +217,7 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [x] Browser-test direct checkout from single product and shop/archive AJAX add-to-cart.
 - [x] Map Quick Settings to first-pass feature behavior: Direct Checkout, Guest Checkout, Urgency Timer.
 - [x] Wire Order Bump quick setting to a configured-product AJAX add-to-cart engine.
+- [x] Add Order Bump admin settings foundation with product, copy, placement, and targeting rules.
 - [x] Add popup modal checkout.
 - [x] Add slide-in checkout.
 - [x] Add reCAPTCHA v3 module contract with safe no-op when keys are missing.
@@ -242,7 +243,8 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [ ] Courier integrations and order meta tracking IDs.
 - [x] Pixel Tracking local event log, advanced controls, and provider setup UI.
 - [ ] Server-side external tracking and retry queue.
-- [ ] Order bump, upsell, rules engine, sales performance table.
+- [x] Order bump settings and first rules engine foundation.
+- [ ] Upsell rules engine and sales performance table.
 
 ### Milestone F - Hardening & Release
 

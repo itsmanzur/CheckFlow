@@ -1120,6 +1120,83 @@
 			});
 	}
 
+	function collectOrderBumpSettings() {
+		var data = {};
+		document.querySelectorAll("[data-bump-setting]").forEach(function (field) {
+			var key = field.getAttribute("data-bump-setting");
+			if (!key) {
+				return;
+			}
+			data[key] = field.type === "checkbox" ? (field.checked ? 1 : 0) : field.value;
+		});
+		return data;
+	}
+
+	function saveOrderBumpSettings(buttonEl) {
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl) {
+			return;
+		}
+		var data = collectOrderBumpSettings();
+		data.action = "checkflow_save_order_bump_settings";
+		data.nonce = checkflowAdmin.nonce;
+		var button = buttonEl || document.querySelector("[data-save-order-bump]");
+		var status = document.querySelector("[data-bump-save-status]");
+		if (button) {
+			button.disabled = true;
+		}
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: data,
+		})
+			.done(function (res) {
+				if (res && res.success) {
+					if (window.checkflowAdmin) {
+						checkflowAdmin.orderBumpSettings = res.data.settings || data;
+					}
+					if (status) {
+						status.textContent = res.data.message || "Order bump settings saved.";
+					}
+					showToast(res.data.message || "Order bump settings saved");
+					return;
+				}
+				showToast((res && res.data && res.data.message) || "Could not save order bump", "error");
+			})
+			.fail(function (xhr) {
+				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not save order bump";
+				showToast(message, "error");
+			})
+			.always(function () {
+				if (button) {
+					button.disabled = false;
+				}
+			});
+	}
+
+	function refreshOrderBumpPreview() {
+		var preview = document.querySelector(".cf-bump-preview");
+		if (!preview) {
+			return;
+		}
+		var badge = document.querySelector('[data-bump-setting="badge"]');
+		var title = document.querySelector('[data-bump-setting="title"]');
+		var description = document.querySelector('[data-bump-setting="description"]');
+		var badgeEl = preview.querySelector("span");
+		var titleEl = preview.querySelector("strong");
+		var descEl = preview.querySelector("em");
+		if (badgeEl && badge) {
+			badgeEl.textContent = badge.value || "Recommended";
+		}
+		if (titleEl && title) {
+			titleEl.textContent = title.value || "Add this recommended upgrade";
+		}
+		if (descEl && description) {
+			descEl.textContent = description.value || "One click add-on for this order.";
+		}
+	}
+
 	function prepareCourierDraft(buttonEl) {
 		var root = document.getElementById("checkflow-admin");
 		var detail = root && root._cfActiveOrderDetail ? root._cfActiveOrderDetail : null;
@@ -3117,6 +3194,14 @@
 
 		$(document).on("click", "[data-save-courier-settings]", function () {
 			saveCourierSettings(this);
+		});
+
+		$(document).on("click", "[data-save-order-bump]", function () {
+			saveOrderBumpSettings(this);
+		});
+
+		$(document).on("input change", "[data-bump-setting]", function () {
+			refreshOrderBumpPreview();
 		});
 
 		$(document).on("click", "[data-save-pixel-settings]", function () {

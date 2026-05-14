@@ -26,6 +26,8 @@ final class CheckFlow_Admin {
 
 	const PIXEL_SETTINGS_OPTION = 'checkflow_pixel_settings';
 
+	const ORDER_BUMP_OPTION = 'checkflow_order_bump_settings';
+
 	/** @var self|null */
 	private static $instance;
 
@@ -130,6 +132,7 @@ final class CheckFlow_Admin {
 				'checkoutTemplates' => $this->get_checkout_templates(),
 				'courierSettings' => $this->get_courier_settings(),
 				'pixelSettings' => $this->get_pixel_settings(),
+				'orderBumpSettings' => $this->get_order_bump_settings(),
 				'screens' => array(
 					'dashboard'    => array(
 						'title' => checkflow_str( 'nav.dashboard' ),
@@ -810,7 +813,8 @@ final class CheckFlow_Admin {
 	 * @return array<string,mixed>
 	 */
 	private function dashboard_bump_seed() {
-		$product_id = absint( get_option( 'checkflow_order_bump_product_id', 0 ) );
+		$settings = $this->get_order_bump_settings();
+		$product_id = absint( $settings['product_id'] );
 		$name = $product_id ? get_the_title( $product_id ) : __( 'Configured bump product', 'checkflow' );
 		return array(
 			'product_id' => $product_id,
@@ -978,6 +982,52 @@ final class CheckFlow_Admin {
 				'note_id'   => (string) $note_id,
 				'note_type' => $is_customer_note ? 'customer' : 'internal',
 				'note'      => $note,
+			)
+		);
+	}
+
+	/**
+	 * Save the Order Bump product, copy, and rule foundation.
+	 */
+	public function ajax_save_order_bump_settings() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'checkflow' ) ),
+				403
+			);
+		}
+
+		$settings = $this->get_order_bump_settings();
+		$settings['enabled'] = isset( $_POST['enabled'] ) ? (bool) absint( wp_unslash( $_POST['enabled'] ) ) : false;
+		$settings['product_id'] = isset( $_POST['product_id'] ) ? absint( wp_unslash( $_POST['product_id'] ) ) : 0;
+		$settings['title'] = isset( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : '';
+		$settings['description'] = isset( $_POST['description'] ) ? sanitize_text_field( wp_unslash( $_POST['description'] ) ) : '';
+		$settings['badge'] = isset( $_POST['badge'] ) ? sanitize_text_field( wp_unslash( $_POST['badge'] ) ) : '';
+		$settings['placement'] = isset( $_POST['placement'] ) ? sanitize_key( wp_unslash( $_POST['placement'] ) ) : 'after_summary';
+		if ( ! in_array( $settings['placement'], array( 'after_summary', 'before_payment', 'after_payment' ), true ) ) {
+			$settings['placement'] = 'after_summary';
+		}
+		$settings['min_total'] = isset( $_POST['min_total'] ) ? $this->sanitize_decimal_setting( wp_unslash( $_POST['min_total'] ) ) : '';
+		$settings['max_total'] = isset( $_POST['max_total'] ) ? $this->sanitize_decimal_setting( wp_unslash( $_POST['max_total'] ) ) : '';
+		$settings['include_products'] = $this->sanitize_csv_ids( isset( $_POST['include_products'] ) ? wp_unslash( $_POST['include_products'] ) : '' );
+		$settings['exclude_products'] = $this->sanitize_csv_ids( isset( $_POST['exclude_products'] ) ? wp_unslash( $_POST['exclude_products'] ) : '' );
+		$settings['include_categories'] = $this->sanitize_csv_ids( isset( $_POST['include_categories'] ) ? wp_unslash( $_POST['include_categories'] ) : '' );
+		$settings['countries'] = $this->sanitize_csv_codes( isset( $_POST['countries'] ) ? wp_unslash( $_POST['countries'] ) : '' );
+		$settings['payment_methods'] = $this->sanitize_csv_keys( isset( $_POST['payment_methods'] ) ? wp_unslash( $_POST['payment_methods'] ) : '' );
+		$settings['customer_rule'] = isset( $_POST['customer_rule'] ) ? sanitize_key( wp_unslash( $_POST['customer_rule'] ) ) : 'all';
+		if ( ! in_array( $settings['customer_rule'], array( 'all', 'guest', 'logged_in' ), true ) ) {
+			$settings['customer_rule'] = 'all';
+		}
+
+		update_option( self::ORDER_BUMP_OPTION, $settings, false );
+		update_option( 'checkflow_order_bump_product_id', absint( $settings['product_id'] ), false );
+
+		wp_send_json_success(
+			array(
+				'message'  => __( 'Order bump settings saved.', 'checkflow' ),
+				'settings' => $settings,
 			)
 		);
 	}
@@ -1276,6 +1326,126 @@ final class CheckFlow_Admin {
 		);
 		$saved = get_option( self::COURIER_SETTINGS_OPTION, array() );
 		return wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+	}
+
+	/**
+	 * @return array<string,mixed>
+	 */
+	public function get_order_bump_settings() {
+		$defaults = array(
+			'enabled'            => true,
+			'product_id'         => absint( get_option( 'checkflow_order_bump_product_id', 0 ) ),
+			'title'              => __( 'Add this recommended upgrade', 'checkflow' ),
+			'description'        => __( 'One click add-on for this order.', 'checkflow' ),
+			'badge'              => __( 'Recommended', 'checkflow' ),
+			'placement'          => 'after_summary',
+			'min_total'          => '',
+			'max_total'          => '',
+			'include_products'   => '',
+			'exclude_products'   => '',
+			'include_categories' => '',
+			'countries'          => '',
+			'payment_methods'    => '',
+			'customer_rule'      => 'all',
+		);
+		$saved = get_option( self::ORDER_BUMP_OPTION, array() );
+		$settings = wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+		$settings['enabled'] = ! empty( $settings['enabled'] );
+		$settings['product_id'] = absint( $settings['product_id'] );
+		$settings['title'] = sanitize_text_field( (string) $settings['title'] );
+		$settings['description'] = sanitize_text_field( (string) $settings['description'] );
+		$settings['badge'] = sanitize_text_field( (string) $settings['badge'] );
+		$settings['placement'] = in_array( $settings['placement'], array( 'after_summary', 'before_payment', 'after_payment' ), true ) ? $settings['placement'] : 'after_summary';
+		$settings['min_total'] = $this->sanitize_decimal_setting( $settings['min_total'] );
+		$settings['max_total'] = $this->sanitize_decimal_setting( $settings['max_total'] );
+		$settings['include_products'] = $this->sanitize_csv_ids( $settings['include_products'] );
+		$settings['exclude_products'] = $this->sanitize_csv_ids( $settings['exclude_products'] );
+		$settings['include_categories'] = $this->sanitize_csv_ids( $settings['include_categories'] );
+		$settings['countries'] = $this->sanitize_csv_codes( $settings['countries'] );
+		$settings['payment_methods'] = $this->sanitize_csv_keys( $settings['payment_methods'] );
+		$settings['customer_rule'] = in_array( $settings['customer_rule'], array( 'all', 'guest', 'logged_in' ), true ) ? $settings['customer_rule'] : 'all';
+
+		return $settings;
+	}
+
+	/**
+	 * @return array<int,array<string,string>>
+	 */
+	public function get_order_bump_product_choices() {
+		if ( ! function_exists( 'wc_get_products' ) ) {
+			return array();
+		}
+		$products = wc_get_products(
+			array(
+				'limit'   => 12,
+				'status'  => 'publish',
+				'orderby' => 'date',
+				'order'   => 'DESC',
+				'return'  => 'objects',
+			)
+		);
+		$choices = array();
+		foreach ( $products as $product ) {
+			if ( ! $product instanceof WC_Product ) {
+				continue;
+			}
+			$choices[] = array(
+				'id'    => (string) $product->get_id(),
+				'label' => sprintf( '#%d - %s', $product->get_id(), $product->get_name() ),
+			);
+		}
+		return $choices;
+	}
+
+	/**
+	 * @param mixed $value Raw decimal value.
+	 * @return string
+	 */
+	private function sanitize_decimal_setting( $value ) {
+		$value = trim( (string) $value );
+		if ( '' === $value ) {
+			return '';
+		}
+		if ( function_exists( 'wc_format_decimal' ) ) {
+			return wc_format_decimal( $value );
+		}
+		return preg_replace( '/[^0-9.]/', '', $value );
+	}
+
+	/**
+	 * @param mixed $value Raw CSV IDs.
+	 * @return string
+	 */
+	private function sanitize_csv_ids( $value ) {
+		$ids = array_filter( array_map( 'absint', preg_split( '/[,\s]+/', (string) $value ) ) );
+		return implode( ',', array_values( array_unique( $ids ) ) );
+	}
+
+	/**
+	 * @param mixed $value Raw CSV country codes.
+	 * @return string
+	 */
+	private function sanitize_csv_codes( $value ) {
+		$codes = preg_split( '/[,\s]+/', strtoupper( (string) $value ) );
+		$codes = array_filter(
+			array_map(
+				function ( $code ) {
+					return preg_replace( '/[^A-Z]/', '', $code );
+				},
+				is_array( $codes ) ? $codes : array()
+			)
+		);
+		return implode( ',', array_values( array_unique( $codes ) ) );
+	}
+
+	/**
+	 * @param mixed $value Raw CSV keys.
+	 * @return string
+	 */
+	private function sanitize_csv_keys( $value ) {
+		$keys = preg_split( '/[,\s]+/', strtolower( (string) $value ) );
+		$keys = array_filter( array_map( 'sanitize_key', is_array( $keys ) ? $keys : array() ) );
+		return implode( ',', array_values( array_unique( $keys ) ) );
 	}
 
 	/**

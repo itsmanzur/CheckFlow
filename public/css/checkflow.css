@@ -672,11 +672,26 @@
 }
 
 .checkflow-order-bump-module {
+	position: relative;
 	padding: 12px;
 	border: 1px solid #dbeafe;
 	border-radius: var(--cf-radius);
-	background: #eff6ff;
+	background: linear-gradient(135deg, #eff6ff, #ffffff);
 	box-sizing: border-box;
+	box-shadow: 0 10px 30px rgba(37, 99, 235, 0.08);
+}
+
+.checkflow-order-bump-badge {
+	display: inline-flex;
+	align-items: center;
+	width: max-content;
+	margin-bottom: 8px;
+	padding: 3px 8px;
+	border-radius: 999px;
+	background: #dbeafe;
+	color: #1d4ed8;
+	font-size: 11px;
+	font-weight: 700;
 }
 
 .checkflow-order-bump-module label {
@@ -689,9 +704,11 @@
 
 .checkflow-order-bump-module input {
 	margin-top: 2px;
+	accent-color: #2563eb;
 }
 
 .checkflow-order-bump-module strong,
+.checkflow-order-bump-module small,
 .checkflow-order-bump-module em {
 	display: block;
 	font-style: normal;
@@ -703,11 +720,19 @@
 	color: #111827;
 }
 
+.checkflow-order-bump-module small {
+	margin-top: 3px;
+	font-size: 12px;
+	line-height: 1.4;
+	color: #64748b;
+}
+
 .checkflow-order-bump-module em {
-	margin-top: 2px;
+	margin-top: 5px;
 	font-size: 12px;
 	line-height: 1.35;
 	color: #1d4ed8;
+	font-weight: 700;
 }
 
 .checkflow-popup-checkout {

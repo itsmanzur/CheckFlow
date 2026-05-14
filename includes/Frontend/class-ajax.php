@@ -241,10 +241,14 @@ final class CheckFlow_Frontend_Ajax {
 			$this->send_error( __( 'Cart unavailable.', 'checkflow' ), array(), 400 );
 		}
 
-		$product_id = absint( apply_filters( 'checkflow_order_bump_product_id', get_option( 'checkflow_order_bump_product_id', 0 ) ) );
+		$settings   = CheckFlow_Admin::instance()->get_order_bump_settings();
+		$product_id = absint( apply_filters( 'checkflow_order_bump_product_id', $settings['product_id'] ) );
 		$posted_id  = isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0;
-		if ( ! $product_id || $posted_id !== $product_id ) {
+		if ( empty( $settings['enabled'] ) || ! $product_id || $posted_id !== $product_id ) {
 			$this->send_error( __( 'Order bump is not configured.', 'checkflow' ), array( 'product_id' ), 400 );
+		}
+		if ( ! $this->order_bump_rules_match( $settings ) ) {
+			$this->send_error( __( 'This order bump is not available for the current cart.', 'checkflow' ), array( 'product_id' ), 400 );
 		}
 
 		$product = wc_get_product( $product_id );
@@ -272,6 +276,112 @@ final class CheckFlow_Frontend_Ajax {
 			$this->build_checkout_payload(),
 			__( 'Order bump added.', 'checkflow' )
 		);
+	}
+
+	/**
+	 * @param array<string,mixed> $settings Order bump settings.
+	 * @return bool
+	 */
+	private function order_bump_rules_match( $settings ) {
+		$total = (float) WC()->cart->get_subtotal();
+		if ( '' !== (string) $settings['min_total'] && $total < (float) $settings['min_total'] ) {
+			return false;
+		}
+		if ( '' !== (string) $settings['max_total'] && $total > (float) $settings['max_total'] ) {
+			return false;
+		}
+
+		$cart_product_ids = $this->cart_product_ids();
+		$include_products = $this->csv_to_ints( $settings['include_products'] );
+		if ( $include_products && ! array_intersect( $include_products, $cart_product_ids ) ) {
+			return false;
+		}
+		$exclude_products = $this->csv_to_ints( $settings['exclude_products'] );
+		if ( $exclude_products && array_intersect( $exclude_products, $cart_product_ids ) ) {
+			return false;
+		}
+		$include_categories = $this->csv_to_ints( $settings['include_categories'] );
+		if ( $include_categories && ! $this->cart_has_categories( $include_categories ) ) {
+			return false;
+		}
+		$countries = $this->csv_to_strings( $settings['countries'] );
+		if ( $countries && ! in_array( $this->checkout_country(), $countries, true ) ) {
+			return false;
+		}
+		$payment_methods = $this->csv_to_strings( $settings['payment_methods'] );
+		if ( $payment_methods && ! in_array( $this->chosen_payment_method(), $payment_methods, true ) ) {
+			return false;
+		}
+		if ( 'guest' === $settings['customer_rule'] && is_user_logged_in() ) {
+			return false;
+		}
+		if ( 'logged_in' === $settings['customer_rule'] && ! is_user_logged_in() ) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * @return array<int,int>
+	 */
+	private function cart_product_ids() {
+		$ids = array();
+		foreach ( WC()->cart->get_cart() as $cart_item ) {
+			$ids[] = absint( $cart_item['product_id'] );
+			if ( ! empty( $cart_item['variation_id'] ) ) {
+				$ids[] = absint( $cart_item['variation_id'] );
+			}
+		}
+		return array_values( array_unique( array_filter( $ids ) ) );
+	}
+
+	/**
+	 * @param array<int,int> $category_ids Category IDs.
+	 * @return bool
+	 */
+	private function cart_has_categories( $category_ids ) {
+		foreach ( $this->cart_product_ids() as $product_id ) {
+			$product_categories = wc_get_product_term_ids( $product_id, 'product_cat' );
+			if ( array_intersect( array_map( 'absint', $product_categories ), $category_ids ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @return string
+	 */
+	private function checkout_country() {
+		$country = WC()->customer ? WC()->customer->get_shipping_country() : '';
+		if ( '' === $country && WC()->customer ) {
+			$country = WC()->customer->get_billing_country();
+		}
+		return strtolower( (string) $country );
+	}
+
+	/**
+	 * @return string
+	 */
+	private function chosen_payment_method() {
+		return WC()->session ? sanitize_key( (string) WC()->session->get( 'chosen_payment_method', '' ) ) : '';
+	}
+
+	/**
+	 * @param mixed $value CSV value.
+	 * @return array<int,int>
+	 */
+	private function csv_to_ints( $value ) {
+		return array_values( array_filter( array_map( 'absint', preg_split( '/[,\s]+/', (string) $value ) ) ) );
+	}
+
+	/**
+	 * @param mixed $value CSV value.
+	 * @return array<int,string>
+	 */
+	private function csv_to_strings( $value ) {
+		$items = preg_split( '/[,\s]+/', strtolower( (string) $value ) );
+		return array_values( array_filter( array_map( 'sanitize_key', is_array( $items ) ? $items : array() ) ) );
 	}
 
 	/**
