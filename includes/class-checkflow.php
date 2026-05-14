@@ -13,6 +13,7 @@ require_once CHECKFLOW_PATH . 'includes/Frontend/class-assets.php';
 require_once CHECKFLOW_PATH . 'includes/Frontend/class-ajax.php';
 require_once CHECKFLOW_PATH . 'includes/Frontend/class-checkout.php';
 require_once CHECKFLOW_PATH . 'includes/Frontend/class-field-editor.php';
+require_once CHECKFLOW_PATH . 'includes/Frontend/class-pixel-tracking.php';
 
 final class CheckFlow {
 
@@ -46,6 +47,7 @@ final class CheckFlow {
 		$ajax   = CheckFlow_Frontend_Ajax::instance();
 		$checkout = CheckFlow_Frontend_Checkout::instance();
 		$field_editor = CheckFlow_Field_Editor::instance();
+		$pixel_tracking = CheckFlow_Pixel_Tracking::instance();
 
 		$this->loader->add_action( 'init', $i18n, 'load_textdomain' );
 		$this->loader->add_action( 'wp_ajax_checkflow_set_admin_locale', $i18n, 'ajax_set_admin_locale' );
@@ -57,6 +59,7 @@ final class CheckFlow {
 		$this->loader->add_action( 'wp_ajax_checkflow_toggle_setting', $admin, 'ajax_toggle_setting' );
 		$this->loader->add_action( 'wp_ajax_checkflow_save_admin_theme', $admin, 'ajax_save_admin_theme' );
 		$this->loader->add_action( 'wp_ajax_checkflow_get_stats', $admin, 'ajax_get_stats' );
+		$this->loader->add_action( 'wp_ajax_checkflow_save_pixel_settings', $admin, 'ajax_save_pixel_settings' );
 		$this->loader->add_action( 'wp_ajax_checkflow_save_checkout_template', $admin, 'ajax_save_checkout_template' );
 		$this->loader->add_action( 'wp_ajax_checkflow_update_order_status', $admin, 'ajax_update_order_status' );
 		$this->loader->add_action( 'wp_ajax_checkflow_add_order_note', $admin, 'ajax_add_order_note' );
@@ -73,6 +76,9 @@ final class CheckFlow {
 		$this->loader->add_action( 'admin_notices', $this, 'render_wc_notice' );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $assets, 'enqueue' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $pixel_tracking, 'enqueue' );
+		$this->loader->add_action( 'wp_ajax_checkflow_log_pixel_event', $pixel_tracking, 'ajax_log_event' );
+		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_log_pixel_event', $pixel_tracking, 'ajax_log_event' );
 		$this->loader->add_filter( 'body_class', $checkout, 'body_class' );
 
 		$this->loader->add_action( 'wp_ajax_checkflow_update_order_review', $ajax, 'update_order_review' );

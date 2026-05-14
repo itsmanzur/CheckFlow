@@ -50,6 +50,9 @@ $order_rows     = $admin_instance->get_recent_orders( 12 );
 $order_metrics  = $admin_instance->get_order_metrics();
 $courier_providers = $admin_instance->get_courier_providers();
 $courier_settings  = $admin_instance->get_courier_settings();
+$pixel_settings    = $admin_instance->get_pixel_settings();
+$pixel_events      = $admin_instance->get_recent_pixel_events( 8 );
+$pixel_analytics   = $admin_instance->get_pixel_event_analytics();
 
 $str_keys       = $i18n->get_flat_keys_sorted();
 $quick_settings = $admin_instance->get_quick_settings();
@@ -562,8 +565,83 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 			<div class="cf-pane<?php echo esc_attr( $screen_class( 'pixel' ) ); ?>" data-pane="pixel">
 				<div class="g2">
 					<div class="panel">
-						<div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'nav.pixel' ) ); ?></div><div class="pa">Test Event</div></div>
+						<div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'nav.pixel' ) ); ?></div><div class="pa">Local Event Log</div></div>
 						<div class="pb">
+							<div class="cf-pixel-provider-grid">
+								<div class="cf-pixel-card is-local is-open">
+									<div class="cf-pixel-card-head" data-pixel-provider-toggle role="button" tabindex="0"><div><strong>CheckFlow Local</strong><span>Own first-party event log inside WordPress.</span></div><em><?php echo ! empty( $pixel_settings['local_enabled'] ) ? 'Enabled' : 'Disabled'; ?></em></div>
+									<label class="cf-field-switch"><span>Log local events</span><input type="checkbox" data-pixel-setting="local_enabled" <?php checked( ! empty( $pixel_settings['local_enabled'] ) ); ?> /></label>
+									<p>Stores PageView, ViewContent, AddToCart, InitiateCheckout, and Purchase with event IDs for future CAPI dedupe.</p>
+								</div>
+								<div class="cf-pixel-card">
+									<div class="cf-pixel-card-head" data-pixel-provider-toggle role="button" tabindex="0"><div><strong>Meta Pixel</strong><span>Browser pixel foundation. Real CAPI test later.</span></div><em><?php echo ! empty( $pixel_settings['meta_pixel_id'] ) ? 'Configured' : 'Not set'; ?></em></div>
+									<div class="cf-pixel-card-fields">
+										<label class="cf-field-switch"><span>Enable Meta Pixel</span><input type="checkbox" data-pixel-setting="meta_enabled" <?php checked( ! empty( $pixel_settings['meta_enabled'] ) ); ?> /></label>
+										<label><span>Pixel ID</span><input type="text" inputmode="numeric" data-pixel-setting="meta_pixel_id" value="<?php echo esc_attr( $pixel_settings['meta_pixel_id'] ); ?>" placeholder="123456789012345" /></label>
+										<label class="cf-field-switch"><span>Debug console log</span><input type="checkbox" data-pixel-setting="debug_mode" <?php checked( ! empty( $pixel_settings['debug_mode'] ) ); ?> /></label>
+									</div>
+								</div>
+								<div class="cf-pixel-card">
+									<div class="cf-pixel-card-head" data-pixel-provider-toggle role="button" tabindex="0"><div><strong>Google Ads / GA4</strong><span>Save IDs now; event firing comes in final real test pass.</span></div><em><?php echo ( ! empty( $pixel_settings['google_measurement_id'] ) && ! empty( $pixel_settings['google_conversion_label'] ) ) ? 'Configured' : 'Not set'; ?></em></div>
+									<div class="cf-pixel-card-fields">
+										<label class="cf-field-switch"><span>Enable Google</span><input type="checkbox" data-pixel-setting="google_enabled" <?php checked( ! empty( $pixel_settings['google_enabled'] ) ); ?> /></label>
+										<label><span>Measurement / Conversion ID</span><input type="text" data-pixel-setting="google_measurement_id" value="<?php echo esc_attr( $pixel_settings['google_measurement_id'] ); ?>" placeholder="G-XXXX or AW-XXXX" /></label>
+										<label><span>Conversion label</span><input type="text" data-pixel-setting="google_conversion_label" value="<?php echo esc_attr( $pixel_settings['google_conversion_label'] ); ?>" placeholder="Purchase label" /></label>
+									</div>
+								</div>
+								<div class="cf-pixel-card">
+									<div class="cf-pixel-card-head" data-pixel-provider-toggle role="button" tabindex="0"><div><strong>TikTok Events</strong><span>Pixel/API placeholders ready. Live firing later.</span></div><em><?php echo ( ! empty( $pixel_settings['tiktok_pixel_id'] ) || ! empty( $pixel_settings['tiktok_api_token'] ) ) ? 'Configured' : 'Not set'; ?></em></div>
+									<div class="cf-pixel-card-fields">
+										<label class="cf-field-switch"><span>Enable TikTok</span><input type="checkbox" data-pixel-setting="tiktok_enabled" <?php checked( ! empty( $pixel_settings['tiktok_enabled'] ) ); ?> /></label>
+										<label><span>Pixel ID</span><input type="text" data-pixel-setting="tiktok_pixel_id" value="<?php echo esc_attr( $pixel_settings['tiktok_pixel_id'] ); ?>" placeholder="TikTok Pixel ID" /></label>
+										<label><span>API token</span><input type="password" data-pixel-setting="tiktok_api_token" value="<?php echo esc_attr( $pixel_settings['tiktok_api_token'] ); ?>" placeholder="Saved locally for future API pass" /></label>
+									</div>
+								</div>
+							</div>
+							<div class="cf-pixel-actions">
+								<div class="cf-pixel-save-row" data-pixel-save-status>Local browser events are ready. External real validation will run after all features are complete.</div>
+								<button type="button" class="btn-p" data-save-pixel-settings>Save tracking settings</button>
+							</div>
+							<div class="cf-pixel-visuals">
+								<div class="cf-pixel-visuals-head">
+									<div><strong>Tracking insights</strong><span>Quick conversion signal from local events.</span></div>
+									<button type="button" data-pixel-insights-toggle>Show chart</button>
+								</div>
+								<div class="cf-pixel-kpis">
+									<div><span>Total events</span><strong><?php echo esc_html( (string) $pixel_analytics['total'] ); ?></strong></div>
+									<div><span>Add to cart</span><strong><?php echo esc_html( (string) $pixel_analytics['counts']['AddToCart'] ); ?></strong></div>
+									<div><span>Checkout</span><strong><?php echo esc_html( (string) $pixel_analytics['counts']['InitiateCheckout'] ); ?></strong></div>
+									<div><span>Purchase</span><strong><?php echo esc_html( (string) $pixel_analytics['counts']['Purchase'] ); ?></strong></div>
+								</div>
+								<div class="cf-pixel-chart" aria-label="Local event breakdown">
+									<?php foreach ( $pixel_analytics['counts'] as $event_name => $total ) : ?>
+										<?php $width = max( 4, round( ( absint( $total ) / max( 1, absint( $pixel_analytics['max'] ) ) ) * 100 ) ); ?>
+										<?php $percent = $pixel_analytics['total'] ? round( ( absint( $total ) / absint( $pixel_analytics['total'] ) ) * 100 ) : 0; ?>
+										<button type="button" class="cf-pixel-chart-row" data-pixel-filter="<?php echo esc_attr( $event_name ); ?>" data-chart-label="<?php echo esc_attr( $event_name . ': ' . $total . ' events, ' . $percent . '%' ); ?>">
+											<span><?php echo esc_html( $event_name ); ?><small><?php echo esc_html( (string) $percent ); ?>%</small></span>
+											<i><b style="width: <?php echo esc_attr( (string) $width ); ?>%"></b></i>
+											<em><?php echo esc_html( (string) $total ); ?></em>
+										</button>
+									<?php endforeach; ?>
+								</div>
+								<div class="cf-pixel-timeline">
+									<?php if ( empty( $pixel_analytics['recent'] ) ) : ?>
+										<span>No activity yet</span>
+									<?php else : ?>
+										<?php foreach ( $pixel_analytics['recent'] as $activity ) : ?>
+											<button type="button" data-pixel-filter="<?php echo esc_attr( $activity['event_name'] ); ?>"><strong><?php echo esc_html( substr( $activity['event_name'], 0, 1 ) ); ?></strong><span><?php echo esc_html( $activity['time'] ); ?></span></button>
+										<?php endforeach; ?>
+									<?php endif; ?>
+								</div>
+								<div class="cf-pixel-chart-status" data-pixel-chart-status>Showing all recent local events.</div>
+							</div>
+							<div class="cf-pixel-settings">
+								<label class="cf-field-switch"><span>Enable Meta Pixel</span><input type="checkbox" data-pixel-setting="meta_enabled" <?php checked( ! empty( $pixel_settings['meta_enabled'] ) ); ?> /></label>
+								<label><span>Meta Pixel ID</span><input type="text" inputmode="numeric" data-pixel-setting="meta_pixel_id" value="<?php echo esc_attr( $pixel_settings['meta_pixel_id'] ); ?>" placeholder="123456789012345" /></label>
+								<label class="cf-field-switch"><span>Debug console log</span><input type="checkbox" data-pixel-setting="debug_mode" <?php checked( ! empty( $pixel_settings['debug_mode'] ) ); ?> /></label>
+								<button type="button" class="btn-p" data-save-pixel-settings>Save pixel settings</button>
+							</div>
+							<div class="cf-pixel-save-row" data-pixel-save-status>Meta browser events: PageView, ViewContent, AddToCart, InitiateCheckout, Purchase.</div>
 							<div class="pxl">
 								<div class="pxi"><span style="font-size:18px">📘</span><div><div class="pxn">Meta CAPI</div><div class="pxe">Purchase, InitiateCheckout, AddPaymentInfo</div></div><div class="pxs ok"><div class="pulse"></div><?php echo esc_html( checkflow_str( 'pixel.active' ) ); ?></div></div>
 								<div class="pxi"><span style="font-size:18px">🎯</span><div><div class="pxn">Google Enhanced</div><div class="pxe">Conversion ID + Label pending real settings</div></div><div class="pxs ok"><div class="pulse"></div><?php echo esc_html( checkflow_str( 'pixel.active' ) ); ?></div></div>
@@ -571,7 +649,28 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 							</div>
 						</div>
 					</div>
-					<div class="panel"><div class="ph"><div class="pt">Event queue</div><div class="pa">Retry failed</div></div><div class="pb"><div class="cf-module-list"><div><strong>Purchase</strong><span>checkflow_1047 · sent</span></div><div><strong>InitiateCheckout</strong><span>session_a82 · sent</span></div><div><strong>AddPaymentInfo</strong><span>session_a82 · pending</span></div><div><strong>Purchase</strong><span>checkflow_1042 · failed</span></div></div></div></div>
+					<div class="panel">
+						<div class="ph"><div class="pt">CheckFlow Event Log</div><div class="pa"><button type="button" class="cf-pixel-filter-clear" data-pixel-filter="all">All events</button></div></div>
+						<div class="pb">
+							<?php if ( empty( $pixel_events ) ) : ?>
+								<div class="cf-pixel-event-empty"><strong>No local events yet</strong><span>Visit product, shop, checkout, or order received pages to populate this log.</span></div>
+							<?php else : ?>
+								<div class="cf-module-list cf-pixel-event-list">
+									<?php foreach ( $pixel_events as $event ) : ?>
+										<button type="button" data-pixel-event-row data-event-name="<?php echo esc_attr( $event['event_name'] ); ?>" data-event-id="<?php echo esc_attr( $event['event_id'] ); ?>" data-event-summary="<?php echo esc_attr( $event['summary'] ); ?>" data-event-url="<?php echo esc_url( $event['page_url'] ); ?>" data-event-context="<?php echo esc_attr( $event['context'] ); ?>">
+											<strong><?php echo esc_html( $event['event_name'] ); ?></strong>
+											<span><?php echo esc_html( $event['summary'] . ' - ' . $event['created_at'] ); ?></span>
+										</button>
+									<?php endforeach; ?>
+								</div>
+								<div class="cf-pixel-filter-empty" data-pixel-filter-empty hidden>No events found for this filter yet.</div>
+								<div class="cf-pixel-detail" data-pixel-detail>
+									<strong>Select an event</strong>
+									<span>Click any event row or chart bar to inspect context.</span>
+								</div>
+							<?php endif; ?>
+						</div>
+					</div>
 				</div>
 			</div>
 

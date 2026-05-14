@@ -24,6 +24,8 @@ final class CheckFlow_Admin {
 
 	const ADMIN_THEME_META = 'checkflow_admin_theme';
 
+	const PIXEL_SETTINGS_OPTION = 'checkflow_pixel_settings';
+
 	/** @var self|null */
 	private static $instance;
 
@@ -126,6 +128,7 @@ final class CheckFlow_Admin {
 				'checkoutTemplate' => $this->get_checkout_template(),
 				'checkoutTemplates' => $this->get_checkout_templates(),
 				'courierSettings' => $this->get_courier_settings(),
+				'pixelSettings' => $this->get_pixel_settings(),
 				'screens' => array(
 					'dashboard'    => array(
 						'title' => checkflow_str( 'nav.dashboard' ),
@@ -298,6 +301,42 @@ final class CheckFlow_Admin {
 				'period'      => $period,
 				'dailyOrders' => array( 38, 55, 42, 71, 63, 88, 47 ),
 				'source'      => 'mock',
+			)
+		);
+	}
+
+	/**
+	 * Save Pixel Tracking provider and local event log settings.
+	 */
+	public function ajax_save_pixel_settings() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'checkflow' ) ),
+				403
+			);
+		}
+
+		$settings = array(
+			'local_enabled'           => isset( $_POST['local_enabled'] ) ? (bool) absint( wp_unslash( $_POST['local_enabled'] ) ) : false,
+			'meta_enabled'            => isset( $_POST['meta_enabled'] ) ? (bool) absint( wp_unslash( $_POST['meta_enabled'] ) ) : false,
+			'meta_pixel_id'           => isset( $_POST['meta_pixel_id'] ) ? preg_replace( '/[^0-9]/', '', (string) wp_unslash( $_POST['meta_pixel_id'] ) ) : '',
+			'debug_mode'              => isset( $_POST['debug_mode'] ) ? (bool) absint( wp_unslash( $_POST['debug_mode'] ) ) : false,
+			'google_enabled'          => isset( $_POST['google_enabled'] ) ? (bool) absint( wp_unslash( $_POST['google_enabled'] ) ) : false,
+			'google_measurement_id'   => isset( $_POST['google_measurement_id'] ) ? sanitize_text_field( wp_unslash( $_POST['google_measurement_id'] ) ) : '',
+			'google_conversion_label' => isset( $_POST['google_conversion_label'] ) ? sanitize_text_field( wp_unslash( $_POST['google_conversion_label'] ) ) : '',
+			'tiktok_enabled'          => isset( $_POST['tiktok_enabled'] ) ? (bool) absint( wp_unslash( $_POST['tiktok_enabled'] ) ) : false,
+			'tiktok_pixel_id'         => isset( $_POST['tiktok_pixel_id'] ) ? sanitize_text_field( wp_unslash( $_POST['tiktok_pixel_id'] ) ) : '',
+			'tiktok_api_token'        => isset( $_POST['tiktok_api_token'] ) ? sanitize_text_field( wp_unslash( $_POST['tiktok_api_token'] ) ) : '',
+		);
+
+		update_option( self::PIXEL_SETTINGS_OPTION, $settings, false );
+
+		wp_send_json_success(
+			array(
+				'message'  => __( 'Pixel settings saved.', 'checkflow' ),
+				'settings' => $settings,
 			)
 		);
 	}
@@ -1248,6 +1287,144 @@ final class CheckFlow_Admin {
 	public function get_admin_theme() {
 		$theme = sanitize_key( (string) get_user_meta( get_current_user_id(), self::ADMIN_THEME_META, true ) );
 		return in_array( $theme, array( 'dark', 'light' ), true ) ? $theme : 'dark';
+	}
+
+	/**
+	 * @return array<string,mixed>
+	 */
+	public function get_pixel_settings() {
+		$defaults = array(
+			'local_enabled'           => true,
+			'meta_enabled'            => false,
+			'meta_pixel_id'           => '',
+			'debug_mode'              => false,
+			'google_enabled'          => false,
+			'google_measurement_id'   => '',
+			'google_conversion_label' => '',
+			'tiktok_enabled'          => false,
+			'tiktok_pixel_id'         => '',
+			'tiktok_api_token'        => '',
+		);
+		$saved = get_option( self::PIXEL_SETTINGS_OPTION, array() );
+		$settings = wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+		foreach ( array( 'local_enabled', 'meta_enabled', 'debug_mode', 'google_enabled', 'tiktok_enabled' ) as $key ) {
+			$settings[ $key ] = (bool) $settings[ $key ];
+		}
+		$settings['meta_pixel_id']           = preg_replace( '/[^0-9]/', '', (string) $settings['meta_pixel_id'] );
+		$settings['google_measurement_id']   = sanitize_text_field( (string) $settings['google_measurement_id'] );
+		$settings['google_conversion_label'] = sanitize_text_field( (string) $settings['google_conversion_label'] );
+		$settings['tiktok_pixel_id']         = sanitize_text_field( (string) $settings['tiktok_pixel_id'] );
+		$settings['tiktok_api_token']        = sanitize_text_field( (string) $settings['tiktok_api_token'] );
+		return $settings;
+	}
+
+	/**
+	 * @param int $limit Number of rows.
+	 * @return array<int,array<string,string>>
+	 */
+	public function get_recent_pixel_events( $limit = 8 ) {
+		global $wpdb;
+
+		$table = CheckFlow_Activator::event_log_table_name();
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+			CheckFlow_Activator::create_event_log_table();
+		}
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT event_name, event_id, page_url, context, provider_state, created_at FROM {$table} ORDER BY id DESC LIMIT %d",
+				max( 1, absint( $limit ) )
+			),
+			ARRAY_A
+		);
+
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		return array_map(
+			function ( $row ) {
+				$context = json_decode( (string) $row['context'], true );
+				return array(
+					'event_name' => sanitize_text_field( (string) $row['event_name'] ),
+					'event_id'   => sanitize_text_field( (string) $row['event_id'] ),
+					'page_url'   => esc_url_raw( (string) $row['page_url'] ),
+					'summary'    => $this->pixel_event_summary( is_array( $context ) ? $context : array() ),
+					'context'    => wp_json_encode( is_array( $context ) ? $context : array() ),
+					'created_at' => mysql2date( 'M j, H:i', (string) $row['created_at'] ),
+				);
+			},
+			$rows
+		);
+	}
+
+	/**
+	 * @return array<string,mixed>
+	 */
+	public function get_pixel_event_analytics() {
+		global $wpdb;
+
+		$table = CheckFlow_Activator::event_log_table_name();
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+			CheckFlow_Activator::create_event_log_table();
+		}
+
+		$count_rows = $wpdb->get_results( "SELECT event_name, COUNT(*) AS total FROM {$table} GROUP BY event_name", ARRAY_A );
+		$counts     = array(
+			'PageView'          => 0,
+			'ViewContent'       => 0,
+			'AddToCart'         => 0,
+			'InitiateCheckout'  => 0,
+			'Purchase'          => 0,
+		);
+		if ( is_array( $count_rows ) ) {
+			foreach ( $count_rows as $row ) {
+				$name = sanitize_text_field( (string) $row['event_name'] );
+				if ( isset( $counts[ $name ] ) ) {
+					$counts[ $name ] = absint( $row['total'] );
+				}
+			}
+		}
+
+		$total = array_sum( $counts );
+		$max   = max( 1, max( $counts ) );
+
+		$recent = $wpdb->get_results(
+			"SELECT event_name, created_at FROM {$table} ORDER BY id DESC LIMIT 12",
+			ARRAY_A
+		);
+
+		return array(
+			'total'  => $total,
+			'counts' => $counts,
+			'max'    => $max,
+			'recent' => is_array( $recent ) ? array_map(
+				function ( $row ) {
+					return array(
+						'event_name' => sanitize_text_field( (string) $row['event_name'] ),
+						'time'       => mysql2date( 'H:i', (string) $row['created_at'] ),
+					);
+				},
+				array_reverse( $recent )
+			) : array(),
+		);
+	}
+
+	/**
+	 * @param array<string,mixed> $context Event context.
+	 * @return string
+	 */
+	private function pixel_event_summary( $context ) {
+		if ( ! empty( $context['order_id'] ) ) {
+			return sprintf( 'Order %s', sanitize_text_field( (string) $context['order_id'] ) );
+		}
+		if ( ! empty( $context['content_ids'] ) && is_array( $context['content_ids'] ) ) {
+			return sprintf( '%d product(s)', count( $context['content_ids'] ) );
+		}
+		if ( ! empty( $context['num_items'] ) ) {
+			return sprintf( '%d item(s)', absint( $context['num_items'] ) );
+		}
+		return __( 'Browser event', 'checkflow' );
 	}
 
 	/**

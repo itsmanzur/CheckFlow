@@ -1439,6 +1439,445 @@ body.checkflow-admin-screen.checkflow-admin-theme-light #wpbody-content {
 	flex-direction: column;
 	gap: 8px;
 }
+#checkflow-admin.checkflow-root .cf-pane[data-pane="pixel"] .cf-pixel-settings,
+#checkflow-admin.checkflow-root .cf-pane[data-pane="pixel"] .cf-pixel-settings + .cf-pixel-save-row,
+#checkflow-admin.checkflow-root .cf-pane[data-pane="pixel"] .pxl {
+	display: none;
+}
+#checkflow-admin.checkflow-root .cf-pixel-provider-grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 10px;
+	margin-bottom: 14px;
+}
+#checkflow-admin.checkflow-root .cf-pixel-card {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	min-width: 0;
+	padding: 12px 14px;
+	border: 1px solid var(--bd);
+	border-radius: 12px;
+	background: var(--s2);
+}
+#checkflow-admin.checkflow-root .cf-pixel-card.is-local {
+	border-color: rgba(47, 127, 255, 0.45);
+	background: linear-gradient(135deg, rgba(47, 127, 255, 0.12), var(--s2));
+}
+#checkflow-admin.checkflow-root .cf-pixel-card-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 14px;
+	cursor: pointer;
+	outline: none;
+}
+#checkflow-admin.checkflow-root .cf-pixel-card-head:after {
+	content: "+";
+	display: grid;
+	place-items: center;
+	flex: 0 0 26px;
+	width: 26px;
+	height: 26px;
+	border-radius: 8px;
+	background: var(--s1);
+	color: var(--pr2);
+	font-size: 16px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-pixel-card.is-open .cf-pixel-card-head:after {
+	content: "-";
+}
+#checkflow-admin.checkflow-root .cf-pixel-card:not(.is-open) {
+	padding-block: 12px;
+}
+#checkflow-admin.checkflow-root .cf-pixel-card:not(.is-open) .cf-field-switch,
+#checkflow-admin.checkflow-root .cf-pixel-card:not(.is-open) .cf-pixel-card-fields,
+#checkflow-admin.checkflow-root .cf-pixel-card:not(.is-open) p {
+	display: none;
+}
+#checkflow-admin.checkflow-root .cf-pixel-card-head strong {
+	display: block;
+	color: var(--tx);
+	font-size: 14px;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-pixel-card-head span,
+#checkflow-admin.checkflow-root .cf-pixel-card p {
+	display: block;
+	margin: 3px 0 0;
+	color: var(--tx3);
+	font-size: 12px;
+	line-height: 1.45;
+}
+#checkflow-admin.checkflow-root .cf-pixel-card-head em {
+	flex: 0 0 auto;
+	padding: 5px 9px;
+	border-radius: 999px;
+	background: rgba(47, 127, 255, 0.14);
+	color: var(--pr2);
+	font-style: normal;
+	font-size: 11px;
+	font-weight: 800;
+	white-space: nowrap;
+}
+#checkflow-admin.checkflow-root .cf-pixel-card-fields {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 12px;
+	align-items: end;
+}
+#checkflow-admin.checkflow-root .cf-pixel-card-fields label:not(.cf-field-switch) {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	color: var(--tx3);
+	font-size: 11px;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-pixel-card-fields label:not(.cf-field-switch):last-child:nth-child(3) {
+	grid-column: 1 / -1;
+}
+#checkflow-admin.checkflow-root .cf-pixel-card-fields input[type="text"],
+#checkflow-admin.checkflow-root .cf-pixel-card-fields input[type="password"] {
+	width: 100%;
+	min-height: 40px;
+	border: 1px solid var(--bd2);
+	border-radius: 10px;
+	background: var(--s1);
+	color: var(--tx);
+	font: 700 12px var(--font);
+	padding: 0 12px;
+}
+#checkflow-admin.checkflow-root .cf-pixel-card-fields input[type="text"]:focus,
+#checkflow-admin.checkflow-root .cf-pixel-card-fields input[type="password"]:focus {
+	border-color: var(--pr);
+	box-shadow: 0 0 0 2px var(--pr-d);
+	outline: none;
+}
+#checkflow-admin.checkflow-root .cf-pixel-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	margin-top: 2px;
+	padding-top: 14px;
+	border-top: 1px solid var(--bd);
+}
+#checkflow-admin.checkflow-root .cf-pixel-actions .btn-p {
+	flex: 0 0 auto;
+	min-width: 190px;
+}
+#checkflow-admin.checkflow-root .cf-pixel-event-empty {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 18px;
+	border: 1px dashed var(--bd2);
+	border-radius: 12px;
+	background: var(--s2);
+}
+#checkflow-admin.checkflow-root .cf-pixel-event-empty strong {
+	color: var(--tx);
+	font-size: 14px;
+}
+#checkflow-admin.checkflow-root .cf-pixel-event-empty span,
+#checkflow-admin.checkflow-root .cf-pixel-event-list span {
+	color: var(--tx3);
+	font-size: 12px;
+	line-height: 1.45;
+}
+#checkflow-admin.checkflow-root .cf-pixel-visuals {
+	display: grid;
+	gap: 14px;
+	margin: 16px 0 0;
+	padding-top: 16px;
+	border-top: 1px solid var(--bd);
+}
+#checkflow-admin.checkflow-root .cf-pixel-visuals-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+}
+#checkflow-admin.checkflow-root .cf-pixel-visuals-head strong {
+	display: block;
+	color: var(--tx);
+	font-size: 14px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-pixel-visuals-head span {
+	display: block;
+	margin-top: 2px;
+	color: var(--tx3);
+	font-size: 12px;
+}
+#checkflow-admin.checkflow-root .cf-pixel-visuals-head button {
+	flex: 0 0 auto;
+	min-height: 34px;
+	padding: 0 12px;
+	border: 1px solid var(--bd2);
+	border-radius: 10px;
+	background: var(--s2);
+	color: var(--pr2);
+	font: 800 12px var(--font);
+	cursor: pointer;
+}
+#checkflow-admin.checkflow-root .cf-pixel-kpis {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 10px;
+}
+#checkflow-admin.checkflow-root .cf-pixel-kpis > div {
+	padding: 12px;
+	border: 1px solid var(--bd);
+	border-radius: 12px;
+	background: var(--s2);
+}
+#checkflow-admin.checkflow-root .cf-pixel-kpis span {
+	display: block;
+	color: var(--tx3);
+	font-size: 11px;
+	font-weight: 800;
+	text-transform: uppercase;
+}
+#checkflow-admin.checkflow-root .cf-pixel-kpis strong {
+	display: block;
+	margin-top: 6px;
+	color: var(--tx);
+	font-size: 22px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-pixel-chart {
+	display: grid;
+	gap: 8px;
+}
+#checkflow-admin.checkflow-root .cf-pixel-chart,
+#checkflow-admin.checkflow-root .cf-pixel-timeline {
+	display: none;
+}
+#checkflow-admin.checkflow-root .cf-pixel-visuals.is-open .cf-pixel-chart {
+	display: grid;
+}
+#checkflow-admin.checkflow-root .cf-pixel-visuals.is-open .cf-pixel-timeline {
+	display: flex;
+}
+#checkflow-admin.checkflow-root .cf-pixel-chart-row {
+	display: grid;
+	grid-template-columns: 130px 1fr 38px;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 10px;
+	border: 1px solid var(--bd);
+	border-radius: 10px;
+	background: var(--s2);
+	color: var(--tx);
+	text-align: left;
+	cursor: pointer;
+}
+#checkflow-admin.checkflow-root .cf-pixel-chart-row:hover,
+#checkflow-admin.checkflow-root .cf-pixel-chart-row.is-active {
+	border-color: rgba(47, 127, 255, 0.55);
+	background: rgba(47, 127, 255, 0.1);
+}
+#checkflow-admin.checkflow-root .cf-pixel-chart-row:before {
+	content: attr(data-chart-label);
+	position: absolute;
+	z-index: 4;
+	transform: translateY(-34px);
+	opacity: 0;
+	pointer-events: none;
+	padding: 6px 8px;
+	border-radius: 8px;
+	background: var(--s1);
+	border: 1px solid var(--bd2);
+	color: var(--tx);
+	font-size: 11px;
+	font-weight: 800;
+	box-shadow: var(--shadow);
+	transition: opacity 0.16s ease, transform 0.16s ease;
+}
+#checkflow-admin.checkflow-root .cf-pixel-chart-row:hover:before {
+	opacity: 1;
+	transform: translateY(-40px);
+}
+#checkflow-admin.checkflow-root .cf-pixel-chart-row span,
+#checkflow-admin.checkflow-root .cf-pixel-chart-row em {
+	font-size: 12px;
+	font-style: normal;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-pixel-chart-row {
+	position: relative;
+}
+#checkflow-admin.checkflow-root .cf-pixel-chart-row span small {
+	display: block;
+	margin-top: 2px;
+	color: var(--tx3);
+	font-size: 10px;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-pixel-chart-row i {
+	display: block;
+	height: 8px;
+	overflow: hidden;
+	border-radius: 999px;
+	background: var(--s3);
+}
+#checkflow-admin.checkflow-root .cf-pixel-chart-row b {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: linear-gradient(90deg, var(--pr), #34d399);
+}
+#checkflow-admin.checkflow-root .cf-pixel-timeline {
+	align-items: center;
+	gap: 8px;
+	overflow-x: auto;
+	padding-bottom: 2px;
+}
+#checkflow-admin.checkflow-root .cf-pixel-timeline button {
+	display: grid;
+	place-items: center;
+	min-width: 54px;
+	padding: 8px 10px;
+	border: 1px solid var(--bd);
+	border-radius: 12px;
+	background: var(--s2);
+	color: var(--tx3);
+	cursor: pointer;
+}
+#checkflow-admin.checkflow-root .cf-pixel-timeline button:hover,
+#checkflow-admin.checkflow-root .cf-pixel-timeline button.is-active {
+	border-color: rgba(47, 127, 255, 0.55);
+	color: var(--pr2);
+}
+#checkflow-admin.checkflow-root .cf-pixel-timeline strong {
+	color: var(--tx);
+	font-size: 13px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-pixel-timeline span {
+	font-size: 10px;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-pixel-event-list button {
+	display: grid;
+	grid-template-columns: 120px minmax(0, 1fr);
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	padding: 12px 14px;
+	border: 1px solid var(--bd);
+	border-radius: 10px;
+	background: var(--s2);
+	color: var(--tx);
+	text-align: left;
+	cursor: pointer;
+}
+#checkflow-admin.checkflow-root .cf-pixel-event-list button span {
+	text-align: right;
+	word-break: break-word;
+}
+#checkflow-admin.checkflow-root .cf-pixel-event-list button:hover,
+#checkflow-admin.checkflow-root .cf-pixel-event-list button.is-selected {
+	border-color: rgba(47, 127, 255, 0.55);
+	background: rgba(47, 127, 255, 0.1);
+}
+#checkflow-admin.checkflow-root .cf-pixel-filter-clear {
+	border: 0;
+	background: transparent;
+	color: var(--pr2);
+	font: 800 12px var(--font);
+	cursor: pointer;
+}
+#checkflow-admin.checkflow-root .cf-pixel-detail {
+	display: grid;
+	gap: 8px;
+	margin-top: 14px;
+	padding: 14px;
+	border: 1px solid var(--bd);
+	border-radius: 12px;
+	background: var(--s2);
+}
+#checkflow-admin.checkflow-root .cf-pixel-chart-status,
+#checkflow-admin.checkflow-root .cf-pixel-filter-empty {
+	padding: 10px 12px;
+	border: 1px solid var(--bd);
+	border-radius: 10px;
+	background: var(--s2);
+	color: var(--tx3);
+	font-size: 12px;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-pixel-filter-empty {
+	margin-top: 12px;
+	text-align: center;
+}
+#checkflow-admin.checkflow-root .cf-pixel-detail strong {
+	color: var(--tx);
+	font-size: 14px;
+}
+#checkflow-admin.checkflow-root .cf-pixel-detail span,
+#checkflow-admin.checkflow-root .cf-pixel-detail small {
+	color: var(--tx3);
+	font-size: 12px;
+	line-height: 1.45;
+	word-break: break-word;
+}
+#checkflow-admin.checkflow-root .cf-pixel-detail code,
+#checkflow-admin.checkflow-root .cf-pixel-detail pre {
+	margin: 0;
+	padding: 10px;
+	border: 1px solid var(--bd);
+	border-radius: 10px;
+	background: var(--s1);
+	color: var(--tx2);
+	font: 700 11px "JetBrains Mono", monospace;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+#checkflow-admin.checkflow-root .cf-pixel-settings {
+	display: grid;
+	grid-template-columns: minmax(160px, 0.8fr) minmax(220px, 1fr) minmax(150px, 0.8fr) auto;
+	gap: 10px;
+	align-items: end;
+	margin-bottom: 12px;
+	padding: 12px;
+	border: 1px solid var(--bd);
+	border-radius: 12px;
+	background: var(--s2);
+}
+#checkflow-admin.checkflow-root .cf-pixel-settings label:not(.cf-field-switch) {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	color: var(--tx3);
+	font-size: 11px;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-pixel-settings input[type="text"] {
+	width: 100%;
+	min-height: 36px;
+	border: 1px solid var(--bd2);
+	border-radius: 8px;
+	background: var(--s1);
+	color: var(--tx);
+	font: 700 12px var(--font);
+	padding: 0 10px;
+}
+#checkflow-admin.checkflow-root .cf-pixel-settings input[type="text"]:focus {
+	border-color: var(--pr);
+	box-shadow: 0 0 0 2px var(--pr-d);
+	outline: none;
+}
+#checkflow-admin.checkflow-root .cf-pixel-save-row {
+	margin-bottom: 12px;
+	color: var(--tx3);
+	font-size: 12px;
+	line-height: 1.45;
+}
 #checkflow-admin.checkflow-root .pxi {
 	display: flex;
 	align-items: center;
@@ -3107,6 +3546,9 @@ html.cf-field-dragging body {
 }
 #checkflow-admin.checkflow-root.is-light .cf-orders-search,
 #checkflow-admin.checkflow-root.is-light .cf-field-search,
+#checkflow-admin.checkflow-root.is-light .cf-pixel-settings input[type="text"],
+#checkflow-admin.checkflow-root.is-light .cf-pixel-card-fields input[type="text"],
+#checkflow-admin.checkflow-root.is-light .cf-pixel-card-fields input[type="password"],
 #checkflow-admin.checkflow-root.is-light .cf-field-create input,
 #checkflow-admin.checkflow-root.is-light .cf-field-create select,
 #checkflow-admin.checkflow-root.is-light .cf-field-main input[type="text"],
@@ -3128,6 +3570,16 @@ html.cf-field-dragging body {
 }
 #checkflow-admin.checkflow-root.is-light .cf-orders-toolbar,
 #checkflow-admin.checkflow-root.is-light .cf-orders-bulkbar,
+#checkflow-admin.checkflow-root.is-light .cf-pixel-settings,
+#checkflow-admin.checkflow-root.is-light .cf-pixel-card,
+#checkflow-admin.checkflow-root.is-light .cf-pixel-kpis > div,
+#checkflow-admin.checkflow-root.is-light .cf-pixel-chart-row,
+#checkflow-admin.checkflow-root.is-light .cf-pixel-timeline button,
+#checkflow-admin.checkflow-root.is-light .cf-pixel-event-list button,
+#checkflow-admin.checkflow-root.is-light .cf-pixel-detail,
+#checkflow-admin.checkflow-root.is-light .cf-pixel-detail code,
+#checkflow-admin.checkflow-root.is-light .cf-pixel-detail pre,
+#checkflow-admin.checkflow-root.is-light .cf-pixel-event-empty,
 #checkflow-admin.checkflow-root.is-light .cf-field-create,
 #checkflow-admin.checkflow-root.is-light .cf-field-row,
 #checkflow-admin.checkflow-root.is-light .cf-field-advanced,
@@ -3280,6 +3732,12 @@ html.cf-field-dragging body {
 	#checkflow-admin.checkflow-root .cf-orders-layout > .gcol {
 		grid-template-columns: 1fr;
 	}
+	#checkflow-admin.checkflow-root .cf-pixel-provider-grid {
+		grid-template-columns: 1fr;
+	}
+	#checkflow-admin.checkflow-root .cf-pixel-kpis {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
 	#checkflow-admin.checkflow-root .cf-pathao-foundation {
 		grid-template-columns: 1fr;
 	}
@@ -3328,6 +3786,22 @@ html.cf-field-dragging body {
 	#checkflow-admin.checkflow-root .cnt {
 		padding: 16px;
 		overflow: visible;
+	}
+	#checkflow-admin.checkflow-root .cf-pixel-card-fields,
+	#checkflow-admin.checkflow-root .cf-pixel-actions {
+		display: grid;
+		grid-template-columns: 1fr;
+	}
+	#checkflow-admin.checkflow-root .cf-pixel-kpis,
+	#checkflow-admin.checkflow-root .cf-pixel-chart-row,
+	#checkflow-admin.checkflow-root .cf-pixel-event-list button {
+		grid-template-columns: 1fr;
+	}
+	#checkflow-admin.checkflow-root .cf-pixel-event-list button span {
+		text-align: left;
+	}
+	#checkflow-admin.checkflow-root .cf-pixel-actions .btn-p {
+		width: 100%;
 	}
 	#checkflow-admin.checkflow-root .sg,
 	#checkflow-admin.checkflow-root .cf-template-grid,

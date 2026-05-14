@@ -87,6 +87,18 @@
 		}, 2200);
 	}
 
+	function escapeHtml(value) {
+		return String(value == null ? "" : value).replace(/[&<>"']/g, function (char) {
+			return {
+				"&": "&amp;",
+				"<": "&lt;",
+				">": "&gt;",
+				'"': "&quot;",
+				"'": "&#039;",
+			}[char];
+		});
+	}
+
 	function applyAdminTheme(theme) {
 		var root = document.getElementById("checkflow-admin");
 		var next = theme === "light" ? "light" : "dark";
@@ -771,6 +783,159 @@
 		var checkedDefault = root.querySelector("[data-courier-default]:checked");
 		data.default_provider = checkedDefault ? checkedDefault.value : "pathao";
 		return data;
+	}
+
+	function collectPixelSettings() {
+		var root = document.getElementById("checkflow-admin");
+		var data = {};
+		if (!root) {
+			return data;
+		}
+		root.querySelectorAll("[data-pixel-setting]").forEach(function (field) {
+			if (field.closest(".cf-pixel-settings")) {
+				return;
+			}
+			var key = field.getAttribute("data-pixel-setting");
+			if (!key) {
+				return;
+			}
+			data[key] = field.type === "checkbox" ? (field.checked ? "1" : "0") : field.value;
+		});
+		return data;
+	}
+
+	function savePixelSettings(buttonEl) {
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl) {
+			return;
+		}
+		var data = collectPixelSettings();
+		data.action = "checkflow_save_pixel_settings";
+		data.nonce = checkflowAdmin.nonce;
+		var button = buttonEl || document.querySelector("[data-save-pixel-settings]");
+		var status = document.querySelector("[data-pixel-save-status]");
+		if (button) {
+			button.disabled = true;
+		}
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: data,
+		})
+			.done(function (res) {
+				if (res && res.success) {
+					if (window.checkflowAdmin) {
+						checkflowAdmin.pixelSettings = res.data.settings || data;
+					}
+					if (status) {
+						status.textContent = (res.data.message || "Pixel settings saved.") + " Local log is active when enabled; external real validation remains for the final tracking pass.";
+					}
+					showToast(res.data.message || "Pixel settings saved");
+					return;
+				}
+				showToast((res && res.data && res.data.message) || "Could not save pixel settings", "error");
+			})
+			.fail(function (xhr) {
+				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not save pixel settings";
+				showToast(message, "error");
+			})
+			.always(function () {
+				if (button) {
+					button.disabled = false;
+				}
+			});
+	}
+
+	function setupPixelInsights() {
+		var root = document.getElementById("checkflow-admin");
+		if (!root) {
+			return;
+		}
+		var detail = root.querySelector("[data-pixel-detail]");
+		var status = root.querySelector("[data-pixel-chart-status]");
+		var empty = root.querySelector("[data-pixel-filter-empty]");
+		function setFilter(name) {
+			var visible = 0;
+			root.querySelectorAll("[data-pixel-filter]").forEach(function (button) {
+				button.classList.toggle("is-active", button.getAttribute("data-pixel-filter") === name);
+			});
+			root.querySelectorAll("[data-pixel-event-row]").forEach(function (row) {
+				var match = name === "all" || row.getAttribute("data-event-name") === name;
+				row.hidden = !match;
+				if (match) {
+					visible += 1;
+				}
+			});
+			if (status) {
+				status.textContent = name === "all" ? "Showing all recent local events." : "Showing " + visible + " recent " + name + " event" + (visible === 1 ? "." : "s.");
+			}
+			if (empty) {
+				empty.hidden = visible !== 0;
+			}
+		}
+		function toggleProvider(card) {
+			if (!card) {
+				return;
+			}
+			root.querySelectorAll(".cf-pixel-card").forEach(function (item) {
+				item.classList.toggle("is-open", item === card && !item.classList.contains("is-open"));
+			});
+			if (!card.classList.contains("is-open")) {
+				card.classList.add("is-open");
+			}
+		}
+		function showDetail(row) {
+			if (!detail || !row) {
+				return;
+			}
+			root.querySelectorAll("[data-pixel-event-row]").forEach(function (item) {
+				item.classList.toggle("is-selected", item === row);
+			});
+			var context = {};
+			try {
+				context = JSON.parse(row.getAttribute("data-event-context") || "{}");
+			} catch (error) {
+				context = {};
+			}
+			var contextText = Object.keys(context).length ? JSON.stringify(context, null, 2) : "No extra context";
+			detail.innerHTML =
+				"<strong>" +
+				escapeHtml(row.getAttribute("data-event-name") || "Event") +
+				"</strong><span>" +
+				escapeHtml(row.getAttribute("data-event-summary") || "") +
+				"</span><code>" +
+				escapeHtml(row.getAttribute("data-event-id") || "") +
+				"</code><small>" +
+				escapeHtml(row.getAttribute("data-event-url") || "") +
+				"</small><pre>" +
+				escapeHtml(contextText) +
+				"</pre>";
+		}
+		$(document).on("click", "[data-pixel-filter]", function () {
+			setFilter(this.getAttribute("data-pixel-filter") || "all");
+		});
+		$(document).on("click", "[data-pixel-event-row]", function () {
+			showDetail(this);
+		});
+		$(document).on("click", "[data-pixel-provider-toggle]", function () {
+			toggleProvider(this.closest(".cf-pixel-card"));
+		});
+		$(document).on("keydown", "[data-pixel-provider-toggle]", function (event) {
+			if (event.key === "Enter" || event.key === " ") {
+				event.preventDefault();
+				toggleProvider(this.closest(".cf-pixel-card"));
+			}
+		});
+		$(document).on("click", "[data-pixel-insights-toggle]", function () {
+			var panel = this.closest(".cf-pixel-visuals");
+			if (!panel) {
+				return;
+			}
+			panel.classList.toggle("is-open");
+			this.textContent = panel.classList.contains("is-open") ? "Hide chart" : "Show chart";
+		});
+		setFilter("all");
 	}
 
 	function saveCourierSettings(buttonEl) {
@@ -2815,6 +2980,10 @@
 			saveCourierSettings(this);
 		});
 
+		$(document).on("click", "[data-save-pixel-settings]", function () {
+			savePixelSettings(this);
+		});
+
 		$(document).on("change", "[data-courier-default]", function () {
 			document.querySelectorAll("[data-courier-provider-card]").forEach(function (card) {
 				card.classList.toggle("is-default", card.getAttribute("data-courier-provider-card") === this.value);
@@ -2846,6 +3015,7 @@
 		});
 
 		bindFieldDragEvents();
+		setupPixelInsights();
 		restorePresetUi();
 		applyAdminTheme((window.checkflowAdmin && checkflowAdmin.adminTheme) || "dark");
 		applyOrderFilters();
