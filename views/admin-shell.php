@@ -48,6 +48,7 @@ $st_map = array(
 $admin_instance = CheckFlow_Admin::instance();
 $order_rows     = $admin_instance->get_recent_orders( 12 );
 $order_metrics  = $admin_instance->get_order_metrics();
+$dashboard_analytics = $admin_instance->get_dashboard_analytics( '7d' );
 $courier_providers = $admin_instance->get_courier_providers();
 $courier_settings  = $admin_instance->get_courier_settings();
 $pixel_settings    = $admin_instance->get_pixel_settings();
@@ -213,28 +214,35 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 				<div class="sg">
 					<div class="sc bl">
 						<div class="slbl"><?php echo esc_html( checkflow_str( 'stats.total_revenue' ) ); ?></div>
-						<div class="sval bl"><?php echo esc_html( checkflow_str( 'stats.rev_value' ) ); ?></div>
-						<div class="sdlt up"><?php echo esc_html( checkflow_str( 'stats.rev_delta' ) ); ?></div>
-						<div class="ssub" style="margin-top:5px"><?php echo esc_html( checkflow_str( 'stats.vs_7d' ) ); ?></div>
+						<div class="sval bl"><?php echo esc_html( $dashboard_analytics['cards']['revenue']['value'] ); ?></div>
+						<div class="sdlt <?php echo esc_attr( $dashboard_analytics['cards']['revenue']['delta_class'] ); ?>"><?php echo esc_html( $dashboard_analytics['cards']['revenue']['delta'] ); ?></div>
+						<div class="ssub" style="margin-top:5px"><?php echo esc_html( $dashboard_analytics['cards']['revenue']['context'] ); ?></div>
 					</div>
 					<div class="sc gn">
 						<div class="slbl"><?php echo esc_html( checkflow_str( 'stats.success_orders' ) ); ?></div>
-						<div class="sval gn"><?php echo esc_html( checkflow_str( 'stats.orders_value' ) ); ?></div>
-						<div class="sdlt up"><?php echo esc_html( checkflow_str( 'stats.orders_delta' ) ); ?></div>
-						<div class="ssub" style="margin-top:5px"><?php echo esc_html( checkflow_str( 'stats.conv_line' ) ); ?></div>
+						<div class="sval gn"><?php echo esc_html( $dashboard_analytics['cards']['orders']['value'] ); ?></div>
+						<div class="sdlt <?php echo esc_attr( $dashboard_analytics['cards']['orders']['delta_class'] ); ?>"><?php echo esc_html( $dashboard_analytics['cards']['orders']['delta'] ); ?></div>
+						<div class="ssub" style="margin-top:5px"><?php echo esc_html( $dashboard_analytics['cards']['orders']['context'] ); ?></div>
 					</div>
 					<div class="sc or">
 						<div class="slbl"><?php echo esc_html( checkflow_str( 'stats.bump_revenue' ) ); ?></div>
-						<div class="sval or"><?php echo esc_html( checkflow_str( 'stats.bump_value' ) ); ?></div>
-						<div class="sdlt up"><?php echo esc_html( checkflow_str( 'stats.bump_delta' ) ); ?></div>
-						<div class="ssub" style="margin-top:5px"><?php echo esc_html( checkflow_str( 'stats.take_line' ) ); ?></div>
+						<div class="sval or"><?php echo esc_html( $dashboard_analytics['cards']['bump']['value'] ); ?></div>
+						<div class="sdlt <?php echo esc_attr( $dashboard_analytics['cards']['bump']['delta_class'] ); ?>"><?php echo esc_html( $dashboard_analytics['cards']['bump']['delta'] ); ?></div>
+						<div class="ssub" style="margin-top:5px"><?php echo esc_html( $dashboard_analytics['cards']['bump']['context'] ); ?></div>
 					</div>
 					<div class="sc pu">
 						<div class="slbl"><?php echo esc_html( checkflow_str( 'stats.avg_order' ) ); ?></div>
-						<div class="sval pu"><?php echo esc_html( checkflow_str( 'stats.avg_value' ) ); ?></div>
-						<div class="sdlt dn"><?php echo esc_html( checkflow_str( 'stats.avg_delta' ) ); ?></div>
-						<div class="ssub" style="margin-top:5px"><?php echo esc_html( checkflow_str( 'stats.avg_target_line' ) ); ?></div>
+						<div class="sval pu"><?php echo esc_html( $dashboard_analytics['cards']['average']['value'] ); ?></div>
+						<div class="sdlt <?php echo esc_attr( $dashboard_analytics['cards']['average']['delta_class'] ); ?>"><?php echo esc_html( $dashboard_analytics['cards']['average']['delta'] ); ?></div>
+						<div class="ssub" style="margin-top:5px"><?php echo esc_html( $dashboard_analytics['cards']['average']['context'] ); ?></div>
 					</div>
+				</div>
+
+				<div class="cf-dashboard-source">
+					<span>Real analytics</span>
+					<strong>WooCommerce orders</strong>
+					<em>+</em>
+					<strong>CheckFlow local events</strong>
 				</div>
 
 				<div class="g2">
@@ -242,30 +250,14 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 						<div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'funnel.title' ) ); ?></div><div class="pa"><?php echo esc_html( checkflow_str( 'funnel.details' ) ); ?></div></div>
 						<div class="pb">
 							<div class="funnel">
-								<div class="fr">
-									<div class="flbl"><?php echo esc_html( checkflow_str( 'funnel.page_views' ) ); ?></div>
-									<div class="fbw"><div class="fb bl" style="width:100%"><?php echo esc_html( checkflow_str( 'funnel.f1_txt' ) ); ?></div></div>
-									<div class="fnum"><?php echo esc_html( checkflow_str( 'funnel.f1_num' ) ); ?></div>
-									<div class="fdrop"></div>
-								</div>
-								<div class="fr">
-									<div class="flbl"><?php echo esc_html( checkflow_str( 'funnel.form_start' ) ); ?></div>
-									<div class="fbw"><div class="fb tl" style="width:80%"><?php echo esc_html( checkflow_str( 'funnel.f2_txt' ) ); ?></div></div>
-									<div class="fnum"><?php echo esc_html( checkflow_str( 'funnel.f2_num' ) ); ?></div>
-									<div class="fdrop" style="color:var(--rd)"><?php echo esc_html( checkflow_str( 'funnel.drop20' ) ); ?></div>
-								</div>
-								<div class="fr">
-									<div class="flbl"><?php echo esc_html( checkflow_str( 'funnel.payment_select' ) ); ?></div>
-									<div class="fbw"><div class="fb or" style="width:71%"><?php echo esc_html( checkflow_str( 'funnel.f3_txt' ) ); ?></div></div>
-									<div class="fnum"><?php echo esc_html( checkflow_str( 'funnel.f3_num' ) ); ?></div>
-									<div class="fdrop" style="color:var(--or)"><?php echo esc_html( checkflow_str( 'funnel.drop11' ) ); ?></div>
-								</div>
-								<div class="fr">
-									<div class="flbl"><?php echo esc_html( checkflow_str( 'funnel.complete' ) ); ?></div>
-									<div class="fbw"><div class="fb gn" style="width:68%"><?php echo esc_html( checkflow_str( 'funnel.f4_txt' ) ); ?></div></div>
-									<div class="fnum"><?php echo esc_html( checkflow_str( 'funnel.f4_num' ) ); ?></div>
-									<div class="fdrop" style="color:var(--gn)"><?php echo esc_html( checkflow_str( 'funnel.pct68' ) ); ?></div>
-								</div>
+								<?php foreach ( $dashboard_analytics['funnel'] as $row ) : ?>
+									<div class="fr">
+										<div class="flbl"><?php echo esc_html( $row['label'] ); ?></div>
+										<div class="fbw"><div class="fb <?php echo esc_attr( $row['class'] ); ?>" style="width:<?php echo esc_attr( (string) $row['width'] ); ?>%"><?php echo esc_html( sprintf( '%d people', absint( $row['value'] ) ) ); ?></div></div>
+										<div class="fnum"><?php echo esc_html( (string) absint( $row['value'] ) ); ?></div>
+										<div class="fdrop"><?php echo esc_html( (string) $row['drop'] ); ?></div>
+									</div>
+								<?php endforeach; ?>
 							</div>
 							<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bd)">
 								<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:12px"><?php echo esc_html( checkflow_str( 'bump_perf.title' ) ); ?></div>
@@ -273,18 +265,18 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 									<div class="brow">
 										<div class="bimg">👕</div>
 										<div class="binf">
-											<div class="bn"><?php echo esc_html( checkflow_str( 'bump.b1_name' ) ); ?></div>
-											<div class="bm"><?php echo esc_html( checkflow_str( 'bump.b1_meta' ) ); ?></div>
+											<div class="bn"><?php echo esc_html( $dashboard_analytics['bump']['name'] ); ?></div>
+											<div class="bm"><?php echo esc_html( $dashboard_analytics['bump']['product_id'] ? sprintf( '%d added - %s revenue', absint( $dashboard_analytics['bump']['quantity'] ), $dashboard_analytics['cards']['bump']['value'] ) : 'Configure a bump product to track revenue.' ); ?></div>
 										</div>
-										<div class="brt"><div class="bpct">38%</div><div class="brlbl"><?php echo esc_html( checkflow_str( 'bump.rate_lbl' ) ); ?></div></div>
+										<div class="brt"><div class="bpct"><?php echo esc_html( $dashboard_analytics['cards']['bump']['delta'] ); ?></div><div class="brlbl"><?php echo esc_html( checkflow_str( 'bump.rate_lbl' ) ); ?></div></div>
 									</div>
 									<div class="brow">
 										<div class="bimg">🎁</div>
 										<div class="binf">
-											<div class="bn"><?php echo esc_html( checkflow_str( 'bump.b2_name' ) ); ?></div>
-											<div class="bm"><?php echo esc_html( checkflow_str( 'bump.b2_meta' ) ); ?></div>
+											<div class="bn">Checkout started</div>
+											<div class="bm">From CheckFlow local InitiateCheckout events</div>
 										</div>
-										<div class="brt"><div class="bpct">29%</div><div class="brlbl"><?php echo esc_html( checkflow_str( 'bump.rate_lbl' ) ); ?></div></div>
+										<div class="brt"><div class="bpct"><?php echo esc_html( (string) absint( $dashboard_analytics['funnel'][2]['value'] ) ); ?></div><div class="brlbl">Events</div></div>
 									</div>
 								</div>
 							</div>
@@ -295,30 +287,14 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 						<div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'payment.title' ) ); ?></div><div class="pa"><?php echo esc_html( checkflow_str( 'payment.settings' ) ); ?></div></div>
 						<div class="pb">
 							<div class="plist">
-								<div class="pi">
-									<div class="pdot" style="background:#ff4081"></div>
-									<div class="pname"><?php echo esc_html( checkflow_str( 'payment.bkash' ) ); ?></div>
-									<div class="pbw"><div class="pbar" style="width:48%;background:#ff4081"></div></div>
-									<div class="ppct"><?php echo esc_html( checkflow_str( 'payment.pct48' ) ); ?></div>
-								</div>
-								<div class="pi">
-									<div class="pdot" style="background:var(--or)"></div>
-									<div class="pname"><?php echo esc_html( checkflow_str( 'payment.nagad' ) ); ?></div>
-									<div class="pbw"><div class="pbar" style="width:22%;background:var(--or)"></div></div>
-									<div class="ppct"><?php echo esc_html( checkflow_str( 'payment.pct22' ) ); ?></div>
-								</div>
-								<div class="pi">
-									<div class="pdot" style="background:var(--gn)"></div>
-									<div class="pname"><?php echo esc_html( checkflow_str( 'payment.cod' ) ); ?></div>
-									<div class="pbw"><div class="pbar" style="width:18%;background:var(--gn)"></div></div>
-									<div class="ppct"><?php echo esc_html( checkflow_str( 'payment.pct18' ) ); ?></div>
-								</div>
-								<div class="pi">
-									<div class="pdot" style="background:var(--pr)"></div>
-									<div class="pname"><?php echo esc_html( checkflow_str( 'payment.card' ) ); ?></div>
-									<div class="pbw"><div class="pbar" style="width:12%;background:var(--pr)"></div></div>
-									<div class="ppct"><?php echo esc_html( checkflow_str( 'payment.pct12' ) ); ?></div>
-								</div>
+								<?php foreach ( $dashboard_analytics['payment_mix'] as $payment_row ) : ?>
+									<div class="pi">
+										<div class="pdot" style="background:<?php echo esc_attr( $payment_row['color'] ); ?>"></div>
+										<div class="pname"><?php echo esc_html( $payment_row['label'] ); ?></div>
+										<div class="pbw"><div class="pbar" style="width:<?php echo esc_attr( (string) absint( $payment_row['percent'] ) ); ?>%;background:<?php echo esc_attr( $payment_row['color'] ); ?>"></div></div>
+										<div class="ppct"><?php echo esc_html( absint( $payment_row['percent'] ) . '%' ); ?></div>
+									</div>
+								<?php endforeach; ?>
 							</div>
 							<div style="margin-top:16px;border-top:1px solid var(--bd);padding-top:14px">
 								<div style="font-size:11px;color:var(--tx3);margin-bottom:8px"><?php echo esc_html( checkflow_str( 'payment.daily' ) ); ?></div>
@@ -328,9 +304,9 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 							<div style="margin-top:16px;border-top:1px solid var(--bd);padding-top:14px">
 								<div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:8px"><?php echo esc_html( checkflow_str( 'courier.summary_title' ) ); ?></div>
 								<div class="cg">
-									<div class="cc"><div class="ccn">Pathao</div><div class="cco"><?php echo esc_html( checkflow_str( 'courier.pathao' ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div>
-									<div class="cc"><div class="ccn">RedX</div><div class="cco"><?php echo esc_html( checkflow_str( 'courier.redx' ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div>
-									<div class="cc"><div class="ccn">Steadfast</div><div class="cco"><?php echo esc_html( checkflow_str( 'courier.steadfast' ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div>
+									<div class="cc"><div class="ccn">Pathao</div><div class="cco"><?php echo esc_html( (string) absint( $dashboard_analytics['couriers']['pathao'] ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div>
+									<div class="cc"><div class="ccn">RedX</div><div class="cco"><?php echo esc_html( (string) absint( $dashboard_analytics['couriers']['redx'] ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div>
+									<div class="cc"><div class="ccn">Steadfast</div><div class="cco"><?php echo esc_html( (string) absint( $dashboard_analytics['couriers']['steadfast'] ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div>
 								</div>
 							</div>
 						</div>

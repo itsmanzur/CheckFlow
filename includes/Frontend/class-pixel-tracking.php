@@ -34,7 +34,9 @@ final class CheckFlow_Pixel_Tracking {
 	public function enqueue() {
 		$settings = CheckFlow_Admin::instance()->get_pixel_settings();
 		$meta_ready = ! empty( $settings['meta_enabled'] ) && ! empty( $settings['meta_pixel_id'] );
-		if ( empty( $settings['local_enabled'] ) && ! $meta_ready ) {
+		$google_ready = ! empty( $settings['google_enabled'] ) && ! empty( $settings['google_measurement_id'] );
+		$tiktok_ready = ! empty( $settings['tiktok_enabled'] ) && ! empty( $settings['tiktok_pixel_id'] );
+		if ( empty( $settings['local_enabled'] ) && ! $meta_ready && ! $google_ready && ! $tiktok_ready ) {
 			return;
 		}
 
@@ -56,6 +58,11 @@ final class CheckFlow_Pixel_Tracking {
 				'localEnabled'  => ! empty( $settings['local_enabled'] ),
 				'metaEnabled'   => $meta_ready,
 				'metaPixelId'   => (string) $settings['meta_pixel_id'],
+				'googleEnabled' => $google_ready,
+				'googleId'      => (string) $settings['google_measurement_id'],
+				'googleLabel'   => (string) $settings['google_conversion_label'],
+				'tiktokEnabled' => $tiktok_ready,
+				'tiktokPixelId' => (string) $settings['tiktok_pixel_id'],
 				'debug'         => ! empty( $settings['debug_mode'] ),
 				'providerState' => $this->provider_state( $settings ),
 				'enabledEvents' => $this->enabled_events( $settings ),

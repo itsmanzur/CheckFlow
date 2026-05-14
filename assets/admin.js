@@ -28,15 +28,17 @@
 			var b = document.createElement("div");
 			b.className = "bc";
 			var h = mx ? (v / mx) * 100 : 0;
+			var active = i === vals.length - 1;
 			b.style.cssText =
 				"height:" +
 				h +
 				"%;background:" +
-				(i === 5 ? "var(--pr)" : "var(--s3)") +
+				(active ? "var(--pr)" : "var(--s3)") +
 				";flex:1;border-radius:3px 3px 0 0;";
+			b.title = (days[i] || "") + ": " + v + " orders";
 			mc.appendChild(b);
 			var l = document.createElement("span");
-			l.textContent = days[i] || "";
+			l.textContent = vals.length > 14 && i % 6 !== 0 && !active ? "" : (days[i] || "");
 			cx.appendChild(l);
 		});
 	}
@@ -1394,6 +1396,7 @@
 		}).done(function (res) {
 			if (res && res.success && res.data && res.data.dailyOrders) {
 				checkflowAdmin.chartVals = res.data.dailyOrders;
+				checkflowAdmin.chartDays = res.data.dailyLabels || checkflowAdmin.chartDays;
 				renderMiniChart();
 			}
 		});

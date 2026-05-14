@@ -55,6 +55,7 @@ final class CheckFlow {
 
 		$this->loader->add_action( 'admin_menu', $admin, 'register_menu' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $admin, 'enqueue_assets' );
+		$this->loader->add_action( 'admin_head', $admin, 'print_admin_compat_shims' );
 		$this->loader->add_filter( 'admin_body_class', $admin, 'body_class' );
 		$this->loader->add_action( 'wp_ajax_checkflow_toggle_setting', $admin, 'ajax_toggle_setting' );
 		$this->loader->add_action( 'wp_ajax_checkflow_save_admin_theme', $admin, 'ajax_save_admin_theme' );

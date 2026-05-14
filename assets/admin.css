@@ -546,6 +546,27 @@ body.checkflow-admin-screen.checkflow-admin-theme-light #wpbody-content {
 	color: var(--tx3);
 	margin-top: 4px;
 }
+#checkflow-admin.checkflow-root .cf-dashboard-source {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin: -8px 0 16px;
+	padding: 7px 10px;
+	border: 1px solid var(--bd);
+	border-radius: 999px;
+	background: var(--s1);
+	color: var(--tx3);
+	font-size: 11px;
+	font-weight: 600;
+}
+#checkflow-admin.checkflow-root .cf-dashboard-source strong {
+	color: var(--tx2);
+	font-weight: 700;
+}
+#checkflow-admin.checkflow-root .cf-dashboard-source em {
+	color: var(--pr);
+	font-style: normal;
+}
 
 #checkflow-admin.checkflow-root .g2 {
 	display: grid;
@@ -632,9 +653,11 @@ body.checkflow-admin-screen.checkflow-admin-theme-light #wpbody-content {
 	display: flex;
 	align-items: center;
 	padding-left: 10px;
+	min-width: 58px;
 	font-size: 11px;
 	font-weight: 700;
 	color: rgba(255, 255, 255, 0.9);
+	white-space: nowrap;
 }
 #checkflow-admin.checkflow-root .fb.bl {
 	background: linear-gradient(90deg, var(--pr), #7bb3ff);
@@ -714,6 +737,12 @@ body.checkflow-admin-screen.checkflow-admin-theme-light #wpbody-content {
 	flex: 1;
 	border-radius: 3px 3px 0 0;
 	min-height: 4px;
+	transition: height 0.18s ease, background-color 0.18s ease, opacity 0.18s ease;
+	opacity: 0.92;
+}
+#checkflow-admin.checkflow-root .bc:hover {
+	opacity: 1;
+	filter: brightness(1.12);
 }
 #checkflow-admin.checkflow-root .cx {
 	display: flex;

@@ -128,13 +128,12 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
   - CSS variables use `--bg`, `--s1`, etc.; Prompt 11 expects scoped `--cf-bg`, `--cf-s1`, etc.
   - CSS files are not in the Prompt 11 requested paths.
   - Several sections are dashboard stubs instead of real screens/submenus.
-- Admin stats, funnel, payments, couriers, pixels, recent orders are still mock/static data.
+- Admin dashboard cards, funnel, payment mix, courier snapshot, mini chart, and recent orders now read from WooCommerce orders plus CheckFlow local event data.
 - Quick setting toggles now save via `wp_ajax_checkflow_toggle_setting`, but each setting still needs explicit feature wiring before it can be treated as production-complete.
-- `checkflow_get_stats` AJAX exists with mock fallback data.
-- Activator only stores plugin version; it does not create required DB tables:
+- `checkflow_get_stats` AJAX now returns WooCommerce-backed daily order chart data.
+- Activator now creates the CheckFlow local pixel event log table, but remaining planned tables are not implemented:
   - `checkflow_analytics_events`
   - `checkflow_payment_logs`
-  - `checkflow_tracking_events`
   - `checkflow_sales_performance`
 - AJAX checkout engine first pass is implemented, but still needs full browser QA with real product/cart/payment scenarios.
 - `checkflow_place_order` delegates to WooCommerce checkout processing; final payment/order behavior must be tested with real gateways before release.
@@ -156,9 +155,18 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - Template system is not implemented.
 - bKash/Nagad/Rocket/SSLCOMMERZ gateways are not implemented.
 - Pathao/RedX/SteadFast courier integrations are not implemented.
-- Server-side Meta/Google/TikTok tracking is not implemented.
+- Pixel Tracking foundation is implemented:
+  - CheckFlow Local Event Log table.
+  - Storefront browser events for `PageView`, `ViewContent`, `AddToCart`, `InitiateCheckout`, and `Purchase`.
+  - Purchase duplicate guard.
+  - Meta Pixel setup and browser-fire foundation.
+  - Google Ads / GA4 and TikTok setup UI placeholders.
+  - Advanced event ON/OFF controls, retention days, test event, export CSV, and clear log actions.
+  - Interactive local tracking insights.
+  - Real browser firing for Meta Pixel, Google Ads / GA4, and TikTok Pixel.
+- Meta CAPI, Google Enhanced Conversions, and TikTok Events API server-side firing are not implemented yet.
 - Order bump/upsell/rules engine is not implemented.
-- Analytics storage/query/dashboard is not implemented.
+- Dashboard analytics foundation is implemented using WooCommerce order data and CheckFlow local event logs; dedicated analytics event tables are still pending.
 - Tests, security audit docs, checklist docs, screenshots, `.pot`/`.po` files are not implemented.
 - `checkflow.php` metadata still has placeholder Plugin URI and a mojibake dash in the description.
 - `Domain Path` says `/languages`, but translations are currently JSON in `/i18n`.
@@ -179,7 +187,7 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [x] Replace all stub panes with first-pass real screens matching the mockup layout.
 - [x] Make toggles save to `wp_options` via nonce-protected AJAX.
 - [x] Fix LocalWP admin AJAX same-origin handling for `gsttest.local:10040`.
-- [x] Add `checkflow_get_stats` AJAX with mock fallback first, then DB-backed stats later.
+- [x] Add `checkflow_get_stats` AJAX with WooCommerce-backed daily chart data.
 - [x] Browser-test the admin page at desktop and mobile widths and fix spacing/overflow differences.
 
 ### Milestone B - Architecture Cleanup
@@ -188,7 +196,8 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [ ] If using PSR-4, run Composer autoload and update bootstrap.
 - [ ] Fix plugin metadata, Plugin URI, Requires WP/Woo details, and text domain paths.
 - [ ] Add real helper methods to `class-security.php` and `class-logger.php`.
-- [ ] Add DB table creation to activator using `dbDelta`.
+- [x] Add first DB table creation to activator using `dbDelta` for CheckFlow local pixel event log.
+- [ ] Add remaining planned DB tables using `dbDelta`.
 - [ ] Add uninstall cleanup policy/options.
 
 ### Milestone C - Free Checkout Core
@@ -215,11 +224,13 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 
 ### Milestone D - Analytics Foundation
 
+- [x] Create CheckFlow local pixel event log table.
 - [ ] Create `checkflow_analytics_events`.
 - [ ] Track checkout view, started, payment selected, coupon applied, order placed, abandoned.
 - [ ] Keep PII out of analytics metadata.
-- [ ] Connect admin dashboard cards/funnel/payment breakdown to stored data.
-- [ ] Add CSV export and date range filters after base data is reliable.
+- [x] Connect admin dashboard cards/funnel/payment breakdown to WooCommerce and CheckFlow local event data.
+- [x] Add Pixel Tracking CSV export, retention control, and local event log controls.
+- [ ] Add analytics CSV export and date range filters after base analytics data is reliable.
 
 ### Milestone E - Pro Feature Modules
 
@@ -229,7 +240,8 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [ ] Template system.
 - [ ] BD payment gateways and `checkflow_payment_logs`.
 - [ ] Courier integrations and order meta tracking IDs.
-- [ ] Server-side tracking and retry queue.
+- [x] Pixel Tracking local event log, advanced controls, and provider setup UI.
+- [ ] Server-side external tracking and retry queue.
 - [ ] Order bump, upsell, rules engine, sales performance table.
 
 ### Milestone F - Hardening & Release
@@ -241,13 +253,48 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [ ] Screenshots and plugin icons.
 - [ ] PHP 7.4-8.3 and WooCommerce 7-9 compatibility tests.
 
-## 6. Next Action Recommendation
+## 6. Pixel Tracking QA Checklist
 
-Milestone A is complete and Milestone C server-side AJAX plus current checkout layout polish are implemented. The next coding task should be checkout browser QA:
+Pixel Tracking QA is now documented in:
 
-1. Create/use a real WooCommerce product and cart for checkout testing.
-2. Browser-test the current WooCommerce Blocks checkout layout: coupon apply/remove, shipping selection, payment method selection, totals, and place order.
-3. Test mobile/desktop screenshots for overflow or overlap.
-4. Fix any checkout JS/PHP/CSS edge cases found during browser QA.
+- `docs/PIXEL_TRACKING_QA_CHECKLIST.md`
+- `docs/PIXEL_TRACKING_EXTERNAL_FIRING_PLAN.md`
 
-After checkout QA passes, continue with popup checkout, slide-in checkout, and direct checkout because those are the Free version's visible conversion features.
+This checklist should be used before starting external tracking work and again before release.
+
+## 7. Next Action Recommendation
+
+Current recommended next task: continue non-tracking feature work. Real-ID tracking verification and bKash/Nagad payment settings foundation are intentionally deferred until later.
+
+Before final real-ID tracking verification:
+
+1. Re-run `docs/PIXEL_TRACKING_QA_CHECKLIST.md`.
+2. Keep CheckFlow Local Event Log as the source of truth for event IDs and payload debugging.
+3. Follow `docs/PIXEL_TRACKING_EXTERNAL_FIRING_PLAN.md` for provider-specific payload contracts:
+   - Meta browser Pixel first, then future CAPI.
+   - Google Ads / GA4 browser conversion events first, then future enhanced conversions.
+   - TikTok browser Pixel first, then future Events API.
+4. Keep external tests behind admin toggles and debug mode until each provider is verified.
+
+## 8. Deferred Task Notes
+
+### Final Tracking QA
+
+Real IDs should be added only near the end of the broader feature build:
+
+- Meta Pixel ID.
+- Google GA4 / Ads conversion IDs.
+- TikTok Pixel ID.
+- Real test order purchase verification.
+- Server-side CAPI/API verification after browser tracking passes.
+
+### Bangladesh Payment Settings Foundation
+
+The bKash / Nagad / Rocket / SSLCOMMERZ settings foundation is queued for later. Planned scope:
+
+- Provider cards in the Payment screen.
+- Sandbox/live mode per provider.
+- Credential fields saved securely in `wp_options`.
+- Readiness checklist per provider.
+- Safe no-op gateway foundation before real API calls.
+- Real payment API tests later, after settings and gateway contracts are stable.

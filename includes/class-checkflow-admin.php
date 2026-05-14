@@ -116,6 +116,7 @@ final class CheckFlow_Admin {
 
 		$i18n = CheckFlow_I18n::instance();
 		$loc  = $i18n->get_active_admin_locale();
+		$dashboard_analytics = $this->get_dashboard_analytics( '7d' );
 		wp_localize_script(
 			'checkflow-admin',
 			'checkflowAdmin',
@@ -171,16 +172,8 @@ final class CheckFlow_Admin {
 						'sub'   => checkflow_str( 'screen.settings.sub' ),
 					),
 				),
-				'chartDays' => array(
-					checkflow_str( 'chart.d0' ),
-					checkflow_str( 'chart.d1' ),
-					checkflow_str( 'chart.d2' ),
-					checkflow_str( 'chart.d3' ),
-					checkflow_str( 'chart.d4' ),
-					checkflow_str( 'chart.d5' ),
-					checkflow_str( 'chart.d6' ),
-				),
-				'chartVals'     => array( 38, 55, 42, 71, 63, 88, 47 ),
+				'chartDays' => $dashboard_analytics['daily_labels'],
+				'chartVals'     => $dashboard_analytics['daily_orders'],
 				'adminPageBase' => admin_url( 'admin.php?page=' . self::PAGE_SLUG ),
 				'fieldEditor'   => class_exists( 'CheckFlow_Field_Editor' ) ? CheckFlow_Field_Editor::instance()->get_admin_rows() : array(),
 			)
@@ -204,6 +197,28 @@ final class CheckFlow_Admin {
 			}
 		}
 		return $cls;
+	}
+
+	/**
+	 * Print tiny compatibility shims before third-party admin scripts run.
+	 */
+	public function print_admin_compat_shims() {
+		$hook = isset( $GLOBALS['pagenow'] ) ? (string) $GLOBALS['pagenow'] : '';
+		if ( 'admin.php' !== $hook || ! isset( $_GET['page'] ) ) {
+			return;
+		}
+
+		$page = sanitize_key( wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 0 !== strpos( $page, 'checkflow' ) ) {
+			return;
+		}
+
+		$script = 'window.gs_posts_grid_init=window.gs_posts_grid_init||function(){};';
+		if ( function_exists( 'wp_print_inline_script_tag' ) ) {
+			wp_print_inline_script_tag( $script );
+			return;
+		}
+		echo '<script>' . esc_html( $script ) . '</script>';
 	}
 
 	/**
@@ -277,7 +292,7 @@ final class CheckFlow_Admin {
 	}
 
 	/**
-	 * Return dashboard stats. Uses mock data until analytics tables are wired.
+	 * Return dashboard stats from WooCommerce orders and CheckFlow local events.
 	 */
 	public function ajax_get_stats() {
 		check_ajax_referer( 'checkflow_admin', 'nonce' );
@@ -296,11 +311,14 @@ final class CheckFlow_Admin {
 			$period = '7d';
 		}
 
+		$analytics = $this->get_dashboard_analytics( $period );
+
 		wp_send_json_success(
 			array(
 				'period'      => $period,
-				'dailyOrders' => array( 38, 55, 42, 71, 63, 88, 47 ),
-				'source'      => 'mock',
+				'dailyOrders' => $analytics['daily_orders'],
+				'dailyLabels' => $analytics['daily_labels'],
+				'source'      => 'woocommerce',
 			)
 		);
 	}
@@ -527,6 +545,338 @@ final class CheckFlow_Admin {
 			'pending'      => (string) $pending,
 			'revenue'      => function_exists( 'wc_price' ) ? $this->clean_money_text( wc_price( $revenue ) ) : number_format_i18n( $revenue, 2 ),
 		);
+	}
+
+	/**
+	 * Real dashboard analytics for the CheckFlow overview.
+	 *
+	 * @param string $period Period key: 7d, 30d, all.
+	 * @return array<string,mixed>
+	 */
+	public function get_dashboard_analytics( $period = '7d' ) {
+		$period = in_array( $period, array( '7d', '30d', 'all' ), true ) ? $period : '7d';
+		$orders = $this->get_dashboard_orders( $period );
+		$previous_orders = 'all' === $period ? array() : $this->get_dashboard_orders( $period, true );
+		$event_counts = $this->get_pixel_event_counts_for_period( $period );
+
+		$paid_statuses = array( 'completed', 'processing' );
+		$revenue = 0.0;
+		$previous_revenue = 0.0;
+		$successful_orders = 0;
+		$previous_successful_orders = 0;
+		$payment_counts = array();
+		$courier_counts = array(
+			'pathao'    => 0,
+			'redx'      => 0,
+			'steadfast' => 0,
+		);
+		$daily_orders = $this->empty_daily_orders( $period );
+		$bump = $this->dashboard_bump_seed();
+
+		foreach ( $orders as $order ) {
+			if ( ! $order instanceof WC_Order ) {
+				continue;
+			}
+
+			$status = (string) $order->get_status();
+			if ( in_array( $status, $paid_statuses, true ) ) {
+				$successful_orders++;
+				$revenue += (float) $order->get_total();
+			}
+
+			$payment = $this->payment_label( (string) $order->get_payment_method(), (string) $order->get_payment_method_title() );
+			$payment_counts[ $payment ] = isset( $payment_counts[ $payment ] ) ? $payment_counts[ $payment ] + 1 : 1;
+
+			$courier_provider = sanitize_key( (string) $order->get_meta( '_checkflow_courier_provider', true ) );
+			if ( isset( $courier_counts[ $courier_provider ] ) ) {
+				$courier_counts[ $courier_provider ]++;
+			}
+
+			$created = $order->get_date_created();
+			if ( $created ) {
+				$key = $created->date_i18n( 'Y-m-d' );
+				if ( isset( $daily_orders[ $key ] ) ) {
+					$daily_orders[ $key ]++;
+				}
+			}
+
+			$bump = $this->add_order_to_bump_analytics( $bump, $order );
+		}
+
+		foreach ( $previous_orders as $order ) {
+			if ( $order instanceof WC_Order && in_array( (string) $order->get_status(), $paid_statuses, true ) ) {
+				$previous_successful_orders++;
+				$previous_revenue += (float) $order->get_total();
+			}
+		}
+
+		$average_order = $successful_orders ? $revenue / $successful_orders : 0;
+		$previous_average = $previous_successful_orders ? $previous_revenue / $previous_successful_orders : 0;
+		$checkout_events = max( 0, absint( $event_counts['InitiateCheckout'] ) );
+		$conversion_rate = $checkout_events ? round( ( $successful_orders / max( 1, $checkout_events ) ) * 100, 1 ) : 0;
+		$bump_rate = $checkout_events ? round( ( absint( $bump['quantity'] ) / max( 1, $checkout_events ) ) * 100, 1 ) : 0;
+		$daily_labels = array_map(
+			function ( $day ) {
+				return date_i18n( 'M j', strtotime( $day . ' 00:00:00' ) );
+			},
+			array_keys( $daily_orders )
+		);
+
+		return array(
+			'cards'        => array(
+				'revenue' => array(
+					'value' => $this->format_money_for_admin( $revenue ),
+					'delta' => $this->format_delta( $revenue, $previous_revenue ),
+					'delta_class' => $revenue >= $previous_revenue ? 'up' : 'dn',
+					'context' => $this->period_context_label( $period ),
+				),
+				'orders'  => array(
+					'value' => (string) $successful_orders,
+					'delta' => $this->format_delta( $successful_orders, $previous_successful_orders ),
+					'delta_class' => $successful_orders >= $previous_successful_orders ? 'up' : 'dn',
+					'context' => sprintf( 'Conversion: %s%%', number_format_i18n( $conversion_rate, 1 ) ),
+				),
+				'bump'    => array(
+					'value' => $this->format_money_for_admin( (float) $bump['revenue'] ),
+					'delta' => $bump_rate > 0 ? sprintf( '%s%%', number_format_i18n( $bump_rate, 1 ) ) : '0%',
+					'delta_class' => $bump_rate > 0 ? 'up' : 'dn',
+					'context' => sprintf( 'Take rate: %s%%', number_format_i18n( $bump_rate, 1 ) ),
+				),
+				'average' => array(
+					'value' => $this->format_money_for_admin( $average_order ),
+					'delta' => $this->format_delta( $average_order, $previous_average ),
+					'delta_class' => $average_order >= $previous_average ? 'up' : 'dn',
+					'context' => sprintf( 'From %d paid orders', $successful_orders ),
+				),
+			),
+			'funnel'       => $this->dashboard_funnel_rows( $event_counts, $successful_orders ),
+			'payment_mix'  => $this->dashboard_payment_mix( $payment_counts ),
+			'daily_orders' => array_values( $daily_orders ),
+			'daily_labels' => $daily_labels,
+			'couriers'     => $courier_counts,
+			'bump'         => $bump,
+			'source'       => 'woocommerce',
+		);
+	}
+
+	/**
+	 * @param string $period Period key.
+	 * @param bool   $previous Whether to fetch the previous matching period.
+	 * @return array<int,WC_Order>
+	 */
+	private function get_dashboard_orders( $period, $previous = false ) {
+		if ( ! function_exists( 'wc_get_orders' ) ) {
+			return array();
+		}
+
+		$args = array(
+			'limit'   => 'all' === $period ? 250 : 200,
+			'orderby' => 'date',
+			'order'   => 'DESC',
+			'return'  => 'objects',
+			'status'  => array_keys( wc_get_order_statuses() ),
+		);
+
+		$range = $this->period_date_range( $period, $previous );
+		if ( $range ) {
+			$args['date_created'] = $range['after'] . '...' . $range['before'];
+		}
+
+		$orders = wc_get_orders( $args );
+		return is_array( $orders ) ? $orders : array();
+	}
+
+	/**
+	 * @param string $period Period key.
+	 * @param bool   $previous Whether to return previous period.
+	 * @return array{after:string,before:string}|null
+	 */
+	private function period_date_range( $period, $previous = false ) {
+		$days = '30d' === $period ? 30 : ( '7d' === $period ? 7 : 0 );
+		if ( ! $days ) {
+			return null;
+		}
+
+		$now = current_time( 'timestamp' );
+		$end = $previous ? strtotime( '-' . $days . ' days', $now ) : $now;
+		$start = strtotime( '-' . $days . ' days', $end );
+
+		return array(
+			'after'  => date_i18n( 'Y-m-d H:i:s', $start ),
+			'before' => date_i18n( 'Y-m-d H:i:s', $end ),
+		);
+	}
+
+	/**
+	 * @param string $period Period key.
+	 * @return array<string,int>
+	 */
+	private function empty_daily_orders( $period ) {
+		$days = '30d' === $period ? 30 : 7;
+		$items = array();
+		$now = current_time( 'timestamp' );
+		for ( $i = $days - 1; $i >= 0; $i-- ) {
+			$items[ date_i18n( 'Y-m-d', strtotime( '-' . $i . ' days', $now ) ) ] = 0;
+		}
+		return $items;
+	}
+
+	/**
+	 * @param string $period Period key.
+	 * @return array<string,int>
+	 */
+	private function get_pixel_event_counts_for_period( $period ) {
+		global $wpdb;
+
+		$table = $this->ensure_pixel_event_table();
+		$counts = array(
+			'PageView'         => 0,
+			'ViewContent'      => 0,
+			'AddToCart'        => 0,
+			'InitiateCheckout' => 0,
+			'AddPaymentInfo'   => 0,
+			'Purchase'         => 0,
+		);
+		$where = '';
+		$range = $this->period_date_range( $period, false );
+		if ( $range ) {
+			$where = $wpdb->prepare( ' WHERE created_at BETWEEN %s AND %s', $range['after'], $range['before'] );
+		}
+
+		$rows = $wpdb->get_results( "SELECT event_name, COUNT(*) AS total FROM {$table}{$where} GROUP BY event_name", ARRAY_A );
+		if ( is_array( $rows ) ) {
+			foreach ( $rows as $row ) {
+				$name = sanitize_text_field( (string) $row['event_name'] );
+				if ( isset( $counts[ $name ] ) ) {
+					$counts[ $name ] = absint( $row['total'] );
+				}
+			}
+		}
+		return $counts;
+	}
+
+	/**
+	 * @param array<string,int> $event_counts Local event totals.
+	 * @param int               $successful_orders Paid order count.
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function dashboard_funnel_rows( $event_counts, $successful_orders ) {
+		$rows = array(
+			array( 'label' => 'Page views', 'value' => absint( $event_counts['PageView'] ), 'class' => 'bl' ),
+			array( 'label' => 'Product views', 'value' => absint( $event_counts['ViewContent'] ), 'class' => 'tl' ),
+			array( 'label' => 'Checkout started', 'value' => absint( $event_counts['InitiateCheckout'] ), 'class' => 'or' ),
+			array( 'label' => 'Order complete', 'value' => absint( max( $event_counts['Purchase'], $successful_orders ) ), 'class' => 'gn' ),
+		);
+		$max = 1;
+		foreach ( $rows as $row ) {
+			$max = max( $max, absint( $row['value'] ) );
+		}
+		foreach ( $rows as $index => $row ) {
+			$rows[ $index ]['width'] = max( 7, round( ( absint( $row['value'] ) / $max ) * 100 ) );
+			$rows[ $index ]['drop'] = 0 === $index || 0 === absint( $rows[ $index - 1 ]['value'] ) ? '' : sprintf(
+				'%s%%',
+				number_format_i18n( round( ( absint( $row['value'] ) / max( 1, absint( $rows[ $index - 1 ]['value'] ) ) ) * 100 ) )
+			);
+		}
+		return $rows;
+	}
+
+	/**
+	 * @param array<string,int> $payment_counts Payment totals.
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function dashboard_payment_mix( $payment_counts ) {
+		arsort( $payment_counts );
+		$total = max( 1, array_sum( $payment_counts ) );
+		$colors = array( '#ff4081', 'var(--or)', 'var(--gn)', 'var(--pr)' );
+		$rows = array();
+		$index = 0;
+		foreach ( array_slice( $payment_counts, 0, 4, true ) as $label => $count ) {
+			$rows[] = array(
+				'label'   => $label,
+				'count'   => absint( $count ),
+				'percent' => round( ( absint( $count ) / $total ) * 100 ),
+				'color'   => $colors[ $index ] ?? 'var(--tx3)',
+			);
+			$index++;
+		}
+		if ( empty( $rows ) ) {
+			$rows[] = array( 'label' => __( 'No payments yet', 'checkflow' ), 'count' => 0, 'percent' => 0, 'color' => 'var(--tx3)' );
+		}
+		return $rows;
+	}
+
+	/**
+	 * @return array<string,mixed>
+	 */
+	private function dashboard_bump_seed() {
+		$product_id = absint( get_option( 'checkflow_order_bump_product_id', 0 ) );
+		$name = $product_id ? get_the_title( $product_id ) : __( 'Configured bump product', 'checkflow' );
+		return array(
+			'product_id' => $product_id,
+			'name'       => $name ? wp_strip_all_tags( $name ) : __( 'Configured bump product', 'checkflow' ),
+			'quantity'   => 0,
+			'revenue'    => 0.0,
+		);
+	}
+
+	/**
+	 * @param array<string,mixed> $bump Bump analytics.
+	 * @param WC_Order            $order Order.
+	 * @return array<string,mixed>
+	 */
+	private function add_order_to_bump_analytics( $bump, $order ) {
+		$product_id = absint( $bump['product_id'] );
+		if ( ! $product_id ) {
+			return $bump;
+		}
+		foreach ( $order->get_items() as $item ) {
+			if ( ! $item instanceof WC_Order_Item_Product ) {
+				continue;
+			}
+			if ( absint( $item->get_product_id() ) === $product_id || absint( $item->get_variation_id() ) === $product_id ) {
+				$bump['quantity'] = absint( $bump['quantity'] ) + absint( $item->get_quantity() );
+				$bump['revenue'] = (float) $bump['revenue'] + (float) $item->get_total();
+			}
+		}
+		return $bump;
+	}
+
+	/**
+	 * @param float|int $value Current value.
+	 * @param float|int $previous Previous value.
+	 * @return string
+	 */
+	private function format_delta( $value, $previous ) {
+		$value = (float) $value;
+		$previous = (float) $previous;
+		if ( 0.0 === $previous ) {
+			return $value > 0 ? '+100%' : '0%';
+		}
+		$delta = ( ( $value - $previous ) / abs( $previous ) ) * 100;
+		return sprintf( '%s%s%%', $delta >= 0 ? '+' : '', number_format_i18n( $delta, 1 ) );
+	}
+
+	/**
+	 * @param float $amount Amount.
+	 * @return string
+	 */
+	private function format_money_for_admin( $amount ) {
+		return function_exists( 'wc_price' ) ? $this->clean_money_text( wc_price( $amount ) ) : number_format_i18n( $amount, 2 );
+	}
+
+	/**
+	 * @param string $period Period key.
+	 * @return string
+	 */
+	private function period_context_label( $period ) {
+		if ( '30d' === $period ) {
+			return __( 'vs previous 30 days', 'checkflow' );
+		}
+		if ( 'all' === $period ) {
+			return __( 'all available orders', 'checkflow' );
+		}
+		return __( 'vs previous 7 days', 'checkflow' );
 	}
 
 	/**

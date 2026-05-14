@@ -31,6 +31,53 @@
 		return true;
 	}
 
+	function ensureGoogleTag() {
+		if (!checkflowPixel.googleEnabled || !checkflowPixel.googleId) {
+			return false;
+		}
+		window.dataLayer = window.dataLayer || [];
+		window.gtag =
+			window.gtag ||
+			function () {
+				window.dataLayer.push(arguments);
+			};
+		if (window.gtag.__checkflowReady) {
+			return true;
+		}
+		var script = document.createElement("script");
+		script.async = true;
+		script.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(checkflowPixel.googleId);
+		var first = document.getElementsByTagName("script")[0];
+		first.parentNode.insertBefore(script, first);
+		window.gtag("js", new Date());
+		window.gtag("config", checkflowPixel.googleId, { send_page_view: false });
+		window.gtag.__checkflowReady = true;
+		return true;
+	}
+
+	function ensureTikTokPixel() {
+		if (!checkflowPixel.tiktokEnabled || !checkflowPixel.tiktokPixelId) {
+			return false;
+		}
+		if (window.ttq && window.ttq.__checkflowReady) {
+			return true;
+		}
+		/* eslint-disable */
+		!function (w, d, t) {
+			w.TiktokAnalyticsObject = t;
+			var ttq = w[t] = w[t] || [];
+			ttq.methods = ["page", "track", "identify", "instances", "debug", "on", "off", "once", "ready", "alias", "group", "enableCookie", "disableCookie", "holdConsent", "revokeConsent", "grantConsent"];
+			ttq.setAndDefer = function (t, e) { t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))); }; };
+			for (var i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);
+			ttq.instance = function (t) { var e = ttq._i[t] || []; for (var n = 0; n < ttq.methods.length; n++) ttq.setAndDefer(e, ttq.methods[n]); return e; };
+			ttq.load = function (e, n) { var r = "https://analytics.tiktok.com/i18n/pixel/events.js"; ttq._i = ttq._i || {}; ttq._i[e] = []; ttq._i[e]._u = r; ttq._t = ttq._t || {}; ttq._t[e] = +new Date(); ttq._o = ttq._o || {}; ttq._o[e] = n || {}; var a = d.createElement("script"); a.type = "text/javascript"; a.async = true; a.src = r + "?sdkid=" + e + "&lib=" + t; var s = d.getElementsByTagName("script")[0]; s.parentNode.insertBefore(a, s); };
+		}(window, document, "ttq");
+		/* eslint-enable */
+		window.ttq.load(checkflowPixel.tiktokPixelId);
+		window.ttq.__checkflowReady = true;
+		return true;
+	}
+
 	function eventId(name, suffix) {
 		var base = "cf_" + name + "_" + (suffix || Date.now());
 		return base.replace(/[^a-zA-Z0-9_]/g, "_").slice(0, 80);
@@ -52,8 +99,96 @@
 		logLocalEvent(name, params || {}, id || eventId(name, Date.now()));
 		if (ensureMetaPixel()) {
 			window.fbq("track", name, params || {}, id ? { eventID: id } : {});
+			log("[CheckFlow Pixel] Meta fired", name, id || "");
 		}
+		fireGoogle(name, params || {}, id || "");
+		fireTikTok(name, params || {}, id || "");
 		log("[CheckFlow Pixel]", name, params || {}, id || "", checkflowPixel.providerState || {});
+	}
+
+	function money(value) {
+		var number = parseFloat(value);
+		return Number.isFinite(number) ? number : 0;
+	}
+
+	function googleEventName(name) {
+		return {
+			PageView: "page_view",
+			ViewContent: "view_item",
+			AddToCart: "add_to_cart",
+			InitiateCheckout: "begin_checkout",
+			Purchase: "purchase",
+		}[name];
+	}
+
+	function googleItems(params) {
+		return (params.content_ids || []).map(function (id) {
+			return { item_id: String(id) };
+		});
+	}
+
+	function fireGoogle(name, params, id) {
+		var mapped = googleEventName(name);
+		if (!mapped || !ensureGoogleTag()) {
+			return;
+		}
+		var payload = {
+			currency: params.currency || undefined,
+			value: money(params.value),
+			items: googleItems(params),
+			event_id: id || undefined,
+		};
+		if (name === "PageView") {
+			payload.page_location = window.location.href;
+			payload.page_title = document.title;
+		}
+		if (name === "Purchase") {
+			payload.transaction_id = params.order_id || id || undefined;
+		}
+		window.gtag("event", mapped, payload);
+		if (name === "Purchase" && /^AW-/i.test(checkflowPixel.googleId || "") && checkflowPixel.googleLabel) {
+			window.gtag("event", "conversion", {
+				send_to: checkflowPixel.googleId + "/" + checkflowPixel.googleLabel,
+				value: money(params.value),
+				currency: params.currency || undefined,
+				transaction_id: params.order_id || id || undefined,
+			});
+		}
+		log("[CheckFlow Pixel] Google fired", name, payload);
+	}
+
+	function tiktokEventName(name) {
+		return {
+			ViewContent: "ViewContent",
+			AddToCart: "AddToCart",
+			InitiateCheckout: "InitiateCheckout",
+			Purchase: "CompletePayment",
+		}[name];
+	}
+
+	function fireTikTok(name, params, id) {
+		if (!ensureTikTokPixel()) {
+			return;
+		}
+		if (name === "PageView") {
+			window.ttq.page();
+			log("[CheckFlow Pixel] TikTok fired", name);
+			return;
+		}
+		var mapped = tiktokEventName(name);
+		if (!mapped) {
+			return;
+		}
+		var payload = {
+			content_id: params.content_ids && params.content_ids[0] ? String(params.content_ids[0]) : undefined,
+			content_type: params.content_type || "product",
+			quantity: params.quantity || params.num_items || undefined,
+			value: money(params.value),
+			currency: params.currency || undefined,
+			event_id: id || undefined,
+		};
+		window.ttq.track(mapped, payload);
+		log("[CheckFlow Pixel] TikTok fired", name, payload);
 	}
 
 	function logLocalEvent(name, params, id) {
