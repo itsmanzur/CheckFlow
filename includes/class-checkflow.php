@@ -72,6 +72,7 @@ final class CheckFlow {
 		$this->loader->add_action( 'wp_ajax_checkflow_review_pathao_booking', $admin, 'ajax_review_pathao_booking' );
 		$this->loader->add_action( 'wp_ajax_checkflow_book_pathao_order', $admin, 'ajax_book_pathao_order' );
 		$this->loader->add_action( 'wp_ajax_checkflow_save_order_bump_settings', $admin, 'ajax_save_order_bump_settings' );
+		$this->loader->add_action( 'wp_ajax_checkflow_save_upsell_settings', $admin, 'ajax_save_upsell_settings' );
 		$this->loader->add_action( 'wp_ajax_checkflow_save_checkout_fields', $field_editor, 'ajax_save_fields' );
 		$this->loader->add_action( 'wp_ajax_checkflow_reset_checkout_fields', $field_editor, 'ajax_reset_fields' );
 		$this->loader->add_action( 'init', $field_editor, 'register_block_checkout_fields', 20 );

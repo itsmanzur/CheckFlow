@@ -770,6 +770,50 @@ body.checkflow-admin-screen.checkflow-admin-theme-light #wpbody-content {
 	color: var(--or);
 }
 
+#checkflow-admin.checkflow-root .cf-upsell-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+	gap: 14px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-status-strip {
+	margin-bottom: 12px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-flow-tabs {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	margin-bottom: 14px;
+	padding: 4px;
+	border: 1px solid var(--bd);
+	border-radius: 12px;
+	background: var(--s2);
+}
+#checkflow-admin.checkflow-root .cf-upsell-flow-tabs button {
+	min-height: 38px;
+	border: 0;
+	border-radius: 9px;
+	background: transparent;
+	color: var(--tx2);
+	cursor: pointer;
+	font-size: 12px;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-upsell-flow-tabs button.is-active {
+	background: var(--pr);
+	color: #fff;
+	box-shadow: 0 10px 22px rgba(45, 124, 255, 0.22);
+}
+#checkflow-admin.checkflow-root .cf-upsell-preview {
+	background: linear-gradient(135deg, rgba(45, 212, 191, 0.12), rgba(88, 166, 255, 0.08));
+}
+#checkflow-admin.checkflow-root .cf-upsell-preview span {
+	background: var(--pr-d);
+	color: var(--pr);
+}
+#checkflow-admin.checkflow-root .cf-upsell-roadmap .cf-module-list > div {
+	align-items: flex-start;
+}
+
 #checkflow-admin.checkflow-root .g2 {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
@@ -3946,7 +3990,8 @@ html.cf-field-dragging body {
 #checkflow-admin.checkflow-root.is-light .cf-bump-form input,
 #checkflow-admin.checkflow-root.is-light .cf-bump-form select,
 #checkflow-admin.checkflow-root.is-light .cf-bump-rules-grid input,
-#checkflow-admin.checkflow-root.is-light .cf-bump-rules-grid select {
+#checkflow-admin.checkflow-root.is-light .cf-bump-rules-grid select,
+#checkflow-admin.checkflow-root.is-light .cf-upsell-flow-tabs {
 	background: #ffffff;
 	color: var(--tx);
 	border-color: rgba(15, 23, 42, 0.14);
@@ -3989,6 +4034,7 @@ html.cf-field-dragging body {
 #checkflow-admin.checkflow-root.is-light .cf-bump-qa-list span,
 #checkflow-admin.checkflow-root.is-light .cf-bump-form .cf-field-switch,
 #checkflow-admin.checkflow-root.is-light .cf-bump-preview,
+#checkflow-admin.checkflow-root.is-light .cf-upsell-preview,
 #checkflow-admin.checkflow-root.is-light .cf-mini-card,
 #checkflow-admin.checkflow-root.is-light .cf-module-list > div,
 #checkflow-admin.checkflow-root.is-light .cf-builder-row,
@@ -4140,6 +4186,7 @@ html.cf-field-dragging body {
 		grid-template-columns: 1fr;
 	}
 	#checkflow-admin.checkflow-root .cf-bump-layout,
+	#checkflow-admin.checkflow-root .cf-upsell-layout,
 	#checkflow-admin.checkflow-root .cf-bump-form,
 	#checkflow-admin.checkflow-root .cf-bump-rules-grid {
 		grid-template-columns: 1fr;

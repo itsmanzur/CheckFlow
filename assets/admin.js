@@ -1268,6 +1268,145 @@
 		if (text) el.textContent = text;
 	}
 
+	function collectUpsellSettings() {
+		var data = {};
+		document.querySelectorAll("[data-upsell-setting]").forEach(function (field) {
+			var key = field.getAttribute("data-upsell-setting");
+			if (!key) {
+				return;
+			}
+			data[key] = field.type === "checkbox" ? (field.checked ? 1 : 0) : field.value;
+		});
+		return data;
+	}
+
+	function saveUpsellSettings(buttonEl) {
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl) {
+			return;
+		}
+		var data = collectUpsellSettings();
+		data.action = "checkflow_save_upsell_settings";
+		data.nonce = checkflowAdmin.nonce;
+		var button = buttonEl || document.querySelector("[data-save-upsell]");
+		var status = document.querySelector("[data-upsell-save-status]");
+		if (button) {
+			button.disabled = true;
+		}
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: data,
+		})
+			.done(function (res) {
+				if (res && res.success) {
+					if (window.checkflowAdmin) {
+						checkflowAdmin.upsellSettings = res.data.settings || data;
+					}
+					if (status) {
+						status.textContent = res.data.message || "Upsell funnel saved.";
+					}
+					showToast(res.data.message || "Upsell funnel saved");
+					return;
+				}
+				showToast((res && res.data && res.data.message) || "Could not save upsell funnel", "error");
+			})
+			.fail(function (xhr) {
+				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not save upsell funnel";
+				showToast(message, "error");
+			})
+			.always(function () {
+				if (button) {
+					button.disabled = false;
+				}
+			});
+	}
+
+	function refreshUpsellPreview() {
+		var preview = document.querySelector(".cf-upsell-preview");
+		if (!preview) {
+			return;
+		}
+		var settings = collectUpsellSettings();
+		var product = document.querySelector("[data-upsell-product-select]");
+		var productLabel = document.querySelector("[data-upsell-product-label]");
+		var productStatus = document.querySelector("[data-upsell-product-status]");
+		var mode = preview.querySelector("[data-upsell-preview-mode]");
+		var title = preview.querySelector("strong");
+		var description = preview.querySelector("em");
+		var meta = preview.querySelector("[data-upsell-preview-meta]");
+		if (product && productLabel) {
+			productLabel.textContent = product.value && product.value !== "0" ? product.options[product.selectedIndex].text : "No offer product selected";
+		}
+		if (productStatus) {
+			productStatus.textContent = product && product.value && product.value !== "0" ? "Offer selected" : "Needs offer";
+		}
+		if (mode) {
+			mode.textContent = settings.flow_type === "post_purchase" ? "Post-purchase" : "Pre-purchase";
+		}
+		if (title) {
+			title.textContent = settings.title || "Upgrade your order";
+		}
+		if (description) {
+			description.textContent = settings.description || "A smart one-click offer matched to this customer.";
+		}
+		if (meta) {
+			meta.textContent = upsellRuleSummary(settings).join(" • ");
+		}
+		refreshUpsellRuleSummary(settings);
+	}
+
+	function upsellRuleSummary(settings) {
+		var summary = [];
+		if (!settings || !parseInt(settings.enabled || 0, 10)) {
+			summary.push("Funnel disabled");
+		} else {
+			summary.push("Funnel enabled");
+		}
+		summary.push(settings && settings.flow_type === "post_purchase" ? "Post-purchase flow" : "Pre-purchase flow");
+		if (settings && settings.discount_type && settings.discount_type !== "none") {
+			summary.push("Discount: " + settings.discount_value + " " + settings.discount_type);
+		}
+		if (settings && settings.trigger_min_total) summary.push("Min total " + settings.trigger_min_total);
+		if (settings && settings.trigger_max_total) summary.push("Max total " + settings.trigger_max_total);
+		if (settings && settings.trigger_products) summary.push("Requires products " + settings.trigger_products);
+		if (settings && settings.trigger_categories) summary.push("Categories " + settings.trigger_categories);
+		if (settings && settings.countries) summary.push("Countries " + settings.countries.toUpperCase());
+		if (settings && settings.payment_methods) summary.push("Payments " + settings.payment_methods);
+		if (settings && settings.customer_rule && settings.customer_rule !== "all") summary.push("Customer: " + settings.customer_rule.replace(/_/g, " "));
+		if (settings && settings.display_timing) summary.push("Timing: " + settings.display_timing.replace(/_/g, " "));
+		if (summary.length <= 3) summary.push("No narrow targeting yet");
+		return summary;
+	}
+
+	function refreshUpsellRuleSummary(settings) {
+		var summary = document.querySelector("[data-upsell-rule-summary]");
+		if (summary) {
+			summary.innerHTML = upsellRuleSummary(settings || collectUpsellSettings())
+				.map(function (item) {
+					return "<span>" + escapeHtml(item) + "</span>";
+				})
+				.join("");
+		}
+		var productOk = settings && settings.offer_product_id && settings.offer_product_id !== "0";
+		var titleOk = settings && String(settings.title || "").trim();
+		var flowOk = settings && String(settings.flow_type || "").trim();
+		var hasRules =
+			settings &&
+			(settings.trigger_min_total ||
+				settings.trigger_max_total ||
+				settings.trigger_products ||
+				settings.trigger_categories ||
+				settings.countries ||
+				settings.payment_methods ||
+				(settings.customer_rule && settings.customer_rule !== "all"));
+		setBumpCheck("[data-upsell-check-product]", productOk);
+		setBumpCheck("[data-upsell-check-copy]", titleOk);
+		setBumpCheck("[data-upsell-check-flow]", flowOk);
+		setBumpCheck("[data-upsell-check-rules]", true, hasRules ? "Rules reviewed" : "All-cart fallback");
+	}
+
 	function prepareCourierDraft(buttonEl) {
 		var root = document.getElementById("checkflow-admin");
 		var detail = root && root._cfActiveOrderDetail ? root._cfActiveOrderDetail : null;
@@ -3275,6 +3414,26 @@
 			refreshOrderBumpPreview();
 		});
 
+		$(document).on("click", "[data-save-upsell]", function () {
+			saveUpsellSettings(this);
+		});
+
+		$(document).on("input change", "[data-upsell-setting]", function () {
+			refreshUpsellPreview();
+		});
+
+		$(document).on("click", "[data-upsell-flow]", function () {
+			var flow = this.getAttribute("data-upsell-flow") || "pre_purchase";
+			var field = document.querySelector('[data-upsell-setting="flow_type"]');
+			document.querySelectorAll("[data-upsell-flow]").forEach(function (button) {
+				button.classList.toggle("is-active", button === this);
+			}, this);
+			if (field) {
+				field.value = flow;
+			}
+			refreshUpsellPreview();
+		});
+
 		$(document).on("click", "[data-save-pixel-settings]", function () {
 			savePixelSettings(this);
 		});
@@ -3327,6 +3486,7 @@
 		applyAdminTheme((window.checkflowAdmin && checkflowAdmin.adminTheme) || "dark");
 		applyOrderFilters();
 		refreshOrderBumpPreview();
+		refreshUpsellPreview();
 
 		window.addEventListener("beforeunload", function (event) {
 			if (!fieldEditorDirty) return;

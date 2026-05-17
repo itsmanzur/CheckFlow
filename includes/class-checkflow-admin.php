@@ -28,6 +28,8 @@ final class CheckFlow_Admin {
 
 	const ORDER_BUMP_OPTION = 'checkflow_order_bump_settings';
 
+	const UPSELL_OPTION = 'checkflow_upsell_settings';
+
 	/** @var self|null */
 	private static $instance;
 
@@ -133,6 +135,7 @@ final class CheckFlow_Admin {
 				'courierSettings' => $this->get_courier_settings(),
 				'pixelSettings' => $this->get_pixel_settings(),
 				'orderBumpSettings' => $this->get_order_bump_settings(),
+				'upsellSettings' => $this->get_upsell_settings(),
 				'screens' => array(
 					'dashboard'    => array(
 						'title' => checkflow_str( 'nav.dashboard' ),
@@ -1043,6 +1046,59 @@ final class CheckFlow_Admin {
 	}
 
 	/**
+	 * Save the Upsell Funnel rules UI foundation.
+	 */
+	public function ajax_save_upsell_settings() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'checkflow' ) ),
+				403
+			);
+		}
+
+		$settings = $this->get_upsell_settings();
+		$settings['enabled'] = isset( $_POST['enabled'] ) ? (bool) absint( wp_unslash( $_POST['enabled'] ) ) : false;
+		$settings['flow_type'] = isset( $_POST['flow_type'] ) ? sanitize_key( wp_unslash( $_POST['flow_type'] ) ) : 'pre_purchase';
+		if ( ! in_array( $settings['flow_type'], array( 'pre_purchase', 'post_purchase' ), true ) ) {
+			$settings['flow_type'] = 'pre_purchase';
+		}
+		$settings['offer_product_id'] = isset( $_POST['offer_product_id'] ) ? absint( wp_unslash( $_POST['offer_product_id'] ) ) : 0;
+		$settings['downsell_product_id'] = isset( $_POST['downsell_product_id'] ) ? absint( wp_unslash( $_POST['downsell_product_id'] ) ) : 0;
+		$settings['title'] = isset( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : '';
+		$settings['description'] = isset( $_POST['description'] ) ? sanitize_text_field( wp_unslash( $_POST['description'] ) ) : '';
+		$settings['discount_type'] = isset( $_POST['discount_type'] ) ? sanitize_key( wp_unslash( $_POST['discount_type'] ) ) : 'none';
+		if ( ! in_array( $settings['discount_type'], array( 'none', 'percent', 'fixed' ), true ) ) {
+			$settings['discount_type'] = 'none';
+		}
+		$settings['discount_value'] = isset( $_POST['discount_value'] ) ? $this->sanitize_decimal_setting( wp_unslash( $_POST['discount_value'] ) ) : '';
+		$settings['trigger_min_total'] = isset( $_POST['trigger_min_total'] ) ? $this->sanitize_decimal_setting( wp_unslash( $_POST['trigger_min_total'] ) ) : '';
+		$settings['trigger_max_total'] = isset( $_POST['trigger_max_total'] ) ? $this->sanitize_decimal_setting( wp_unslash( $_POST['trigger_max_total'] ) ) : '';
+		$settings['trigger_products'] = $this->sanitize_csv_ids( isset( $_POST['trigger_products'] ) ? wp_unslash( $_POST['trigger_products'] ) : '' );
+		$settings['trigger_categories'] = $this->sanitize_csv_ids( isset( $_POST['trigger_categories'] ) ? wp_unslash( $_POST['trigger_categories'] ) : '' );
+		$settings['countries'] = $this->sanitize_csv_codes( isset( $_POST['countries'] ) ? wp_unslash( $_POST['countries'] ) : '' );
+		$settings['payment_methods'] = $this->sanitize_csv_keys( isset( $_POST['payment_methods'] ) ? wp_unslash( $_POST['payment_methods'] ) : '' );
+		$settings['customer_rule'] = isset( $_POST['customer_rule'] ) ? sanitize_key( wp_unslash( $_POST['customer_rule'] ) ) : 'all';
+		if ( ! in_array( $settings['customer_rule'], array( 'all', 'guest', 'logged_in', 'first_time', 'returning' ), true ) ) {
+			$settings['customer_rule'] = 'all';
+		}
+		$settings['display_timing'] = isset( $_POST['display_timing'] ) ? sanitize_key( wp_unslash( $_POST['display_timing'] ) ) : 'after_checkout';
+		if ( ! in_array( $settings['display_timing'], array( 'before_payment', 'after_checkout', 'order_received' ), true ) ) {
+			$settings['display_timing'] = 'after_checkout';
+		}
+
+		update_option( self::UPSELL_OPTION, $settings, false );
+
+		wp_send_json_success(
+			array(
+				'message'  => __( 'Upsell funnel saved.', 'checkflow' ),
+				'settings' => $settings,
+			)
+		);
+	}
+
+	/**
 	 * Save courier provider settings for the base integration layer.
 	 */
 	public function ajax_save_courier_settings() {
@@ -1405,6 +1461,50 @@ final class CheckFlow_Admin {
 			);
 		}
 		return $choices;
+	}
+
+	/**
+	 * @return array<string,mixed>
+	 */
+	public function get_upsell_settings() {
+		$defaults = array(
+			'enabled'             => false,
+			'flow_type'           => 'pre_purchase',
+			'offer_product_id'    => 0,
+			'downsell_product_id' => 0,
+			'title'               => __( 'Upgrade your order', 'checkflow' ),
+			'description'         => __( 'A smart one-click offer matched to this customer.', 'checkflow' ),
+			'discount_type'       => 'none',
+			'discount_value'      => '',
+			'trigger_min_total'   => '',
+			'trigger_max_total'   => '',
+			'trigger_products'    => '',
+			'trigger_categories'  => '',
+			'countries'           => '',
+			'payment_methods'     => '',
+			'customer_rule'       => 'all',
+			'display_timing'      => 'after_checkout',
+		);
+		$saved = get_option( self::UPSELL_OPTION, array() );
+		$settings = wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+		$settings['enabled'] = ! empty( $settings['enabled'] );
+		$settings['flow_type'] = in_array( $settings['flow_type'], array( 'pre_purchase', 'post_purchase' ), true ) ? $settings['flow_type'] : 'pre_purchase';
+		$settings['offer_product_id'] = absint( $settings['offer_product_id'] );
+		$settings['downsell_product_id'] = absint( $settings['downsell_product_id'] );
+		$settings['title'] = sanitize_text_field( (string) $settings['title'] );
+		$settings['description'] = sanitize_text_field( (string) $settings['description'] );
+		$settings['discount_type'] = in_array( $settings['discount_type'], array( 'none', 'percent', 'fixed' ), true ) ? $settings['discount_type'] : 'none';
+		$settings['discount_value'] = $this->sanitize_decimal_setting( $settings['discount_value'] );
+		$settings['trigger_min_total'] = $this->sanitize_decimal_setting( $settings['trigger_min_total'] );
+		$settings['trigger_max_total'] = $this->sanitize_decimal_setting( $settings['trigger_max_total'] );
+		$settings['trigger_products'] = $this->sanitize_csv_ids( $settings['trigger_products'] );
+		$settings['trigger_categories'] = $this->sanitize_csv_ids( $settings['trigger_categories'] );
+		$settings['countries'] = $this->sanitize_csv_codes( $settings['countries'] );
+		$settings['payment_methods'] = $this->sanitize_csv_keys( $settings['payment_methods'] );
+		$settings['customer_rule'] = in_array( $settings['customer_rule'], array( 'all', 'guest', 'logged_in', 'first_time', 'returning' ), true ) ? $settings['customer_rule'] : 'all';
+		$settings['display_timing'] = in_array( $settings['display_timing'], array( 'before_payment', 'after_checkout', 'order_received' ), true ) ? $settings['display_timing'] : 'after_checkout';
+
+		return $settings;
 	}
 
 	/**

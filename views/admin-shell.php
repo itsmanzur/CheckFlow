@@ -56,6 +56,12 @@ $order_bump_products = $admin_instance->get_order_bump_product_choices();
 $order_bump_product  = ! empty( $order_bump_settings['product_id'] ) && function_exists( 'wc_get_product' ) ? wc_get_product( absint( $order_bump_settings['product_id'] ) ) : null;
 $order_bump_product_label = $order_bump_product instanceof WC_Product ? sprintf( '#%1$d - %2$s', $order_bump_product->get_id(), $order_bump_product->get_name() ) : __( 'No product selected', 'checkflow' );
 $order_bump_product_status = $order_bump_product instanceof WC_Product && $order_bump_product->is_purchasable() && $order_bump_product->is_in_stock() ? __( 'Product ready', 'checkflow' ) : __( 'Needs product', 'checkflow' );
+$upsell_settings = $admin_instance->get_upsell_settings();
+$upsell_products = $order_bump_products;
+$upsell_offer_product = ! empty( $upsell_settings['offer_product_id'] ) && function_exists( 'wc_get_product' ) ? wc_get_product( absint( $upsell_settings['offer_product_id'] ) ) : null;
+$upsell_offer_label = $upsell_offer_product instanceof WC_Product ? sprintf( '#%1$d - %2$s', $upsell_offer_product->get_id(), $upsell_offer_product->get_name() ) : __( 'No offer product selected', 'checkflow' );
+$upsell_downsell_product = ! empty( $upsell_settings['downsell_product_id'] ) && function_exists( 'wc_get_product' ) ? wc_get_product( absint( $upsell_settings['downsell_product_id'] ) ) : null;
+$upsell_downsell_label = $upsell_downsell_product instanceof WC_Product ? sprintf( '#%1$d - %2$s', $upsell_downsell_product->get_id(), $upsell_downsell_product->get_name() ) : '';
 $pixel_settings    = $admin_instance->get_pixel_settings();
 $pixel_events      = $admin_instance->get_recent_pixel_events( 8 );
 $pixel_analytics   = $admin_instance->get_pixel_event_analytics();
@@ -1198,9 +1204,125 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 			</div>
 
 			<div class="cf-pane<?php echo esc_attr( $screen_class( 'upsell' ) ); ?>" data-pane="upsell">
-				<div class="g2">
-					<div class="panel"><div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'nav.upsell' ) ); ?></div><div class="pa">Create funnel</div></div><div class="pb"><div class="cf-module-list"><div><strong>Step 1</strong><span>Post-payment premium add-on</span></div><div><strong>Step 2</strong><span>Downsell if customer skips</span></div><div><strong>Thank-you</strong><span>Return to WooCommerce order received</span></div></div></div></div>
-					<div class="panel"><div class="ph"><div class="pt">Performance</div></div><div class="pb"><div class="cf-mini-grid"><div class="cf-mini-card"><strong>124</strong><span>Shown</span></div><div class="cf-mini-card"><strong>31</strong><span>Accepted</span></div><div class="cf-mini-card"><strong>25%</strong><span>Take rate</span></div></div></div></div>
+				<div class="cf-upsell-layout">
+					<div class="panel">
+						<div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'nav.upsell' ) ); ?></div><div class="pa">Rules UI foundation</div></div>
+						<div class="pb">
+							<div class="cf-bump-status-strip cf-upsell-status-strip">
+								<div>
+									<span>Current offer</span>
+									<strong data-upsell-product-label><?php echo esc_html( $upsell_offer_label ); ?></strong>
+								</div>
+								<em data-upsell-product-status><?php echo $upsell_offer_product instanceof WC_Product ? esc_html__( 'Offer selected', 'checkflow' ) : esc_html__( 'Needs offer', 'checkflow' ); ?></em>
+							</div>
+							<div class="cf-upsell-flow-tabs" data-upsell-flow-tabs>
+								<button type="button" data-upsell-flow="pre_purchase" class="<?php echo 'pre_purchase' === $upsell_settings['flow_type'] ? 'is-active' : ''; ?>">Pre-purchase</button>
+								<button type="button" data-upsell-flow="post_purchase" class="<?php echo 'post_purchase' === $upsell_settings['flow_type'] ? 'is-active' : ''; ?>">Post-purchase</button>
+							</div>
+							<input type="hidden" data-upsell-setting="flow_type" value="<?php echo esc_attr( $upsell_settings['flow_type'] ); ?>" />
+							<div class="cf-bump-form cf-upsell-form">
+								<label class="cf-field-switch"><span>Enable funnel</span><input type="checkbox" data-upsell-setting="enabled" <?php checked( $upsell_settings['enabled'] ); ?> /></label>
+								<label><span>Offer product</span>
+									<select data-upsell-setting="offer_product_id" data-upsell-product-select>
+										<option value="0"><?php esc_html_e( 'Select offer product', 'checkflow' ); ?></option>
+										<?php $upsell_offer_seen = false; ?>
+										<?php foreach ( $upsell_products as $product_choice ) : ?>
+											<?php $upsell_offer_seen = $upsell_offer_seen || absint( $product_choice['id'] ) === absint( $upsell_settings['offer_product_id'] ); ?>
+											<option value="<?php echo esc_attr( $product_choice['id'] ); ?>" <?php selected( absint( $product_choice['id'] ), absint( $upsell_settings['offer_product_id'] ) ); ?>><?php echo esc_html( $product_choice['label'] ); ?></option>
+										<?php endforeach; ?>
+										<?php if ( $upsell_offer_product instanceof WC_Product && ! $upsell_offer_seen ) : ?>
+											<option value="<?php echo esc_attr( (string) $upsell_offer_product->get_id() ); ?>" selected><?php echo esc_html( $upsell_offer_label ); ?></option>
+										<?php endif; ?>
+									</select>
+								</label>
+								<label><span>Downsell product</span>
+									<select data-upsell-setting="downsell_product_id">
+										<option value="0"><?php esc_html_e( 'Optional downsell product', 'checkflow' ); ?></option>
+										<?php $upsell_downsell_seen = false; ?>
+										<?php foreach ( $upsell_products as $product_choice ) : ?>
+											<?php $upsell_downsell_seen = $upsell_downsell_seen || absint( $product_choice['id'] ) === absint( $upsell_settings['downsell_product_id'] ); ?>
+											<option value="<?php echo esc_attr( $product_choice['id'] ); ?>" <?php selected( absint( $product_choice['id'] ), absint( $upsell_settings['downsell_product_id'] ) ); ?>><?php echo esc_html( $product_choice['label'] ); ?></option>
+										<?php endforeach; ?>
+										<?php if ( $upsell_downsell_product instanceof WC_Product && ! $upsell_downsell_seen ) : ?>
+											<option value="<?php echo esc_attr( (string) $upsell_downsell_product->get_id() ); ?>" selected><?php echo esc_html( $upsell_downsell_label ); ?></option>
+										<?php endif; ?>
+									</select>
+								</label>
+								<label><span>Offer title</span><input type="text" data-upsell-setting="title" value="<?php echo esc_attr( $upsell_settings['title'] ); ?>" /></label>
+								<label><span>Offer description</span><input type="text" data-upsell-setting="description" value="<?php echo esc_attr( $upsell_settings['description'] ); ?>" /></label>
+								<label><span>Discount type</span>
+									<select data-upsell-setting="discount_type">
+										<option value="none" <?php selected( $upsell_settings['discount_type'], 'none' ); ?>>No discount</option>
+										<option value="percent" <?php selected( $upsell_settings['discount_type'], 'percent' ); ?>>Percent off</option>
+										<option value="fixed" <?php selected( $upsell_settings['discount_type'], 'fixed' ); ?>>Fixed amount</option>
+									</select>
+								</label>
+								<label><span>Discount value</span><input type="text" data-upsell-setting="discount_value" value="<?php echo esc_attr( $upsell_settings['discount_value'] ); ?>" placeholder="10" /></label>
+							</div>
+							<div class="cf-bump-preview cf-upsell-preview">
+								<span data-upsell-preview-mode><?php echo 'post_purchase' === $upsell_settings['flow_type'] ? esc_html__( 'Post-purchase', 'checkflow' ) : esc_html__( 'Pre-purchase', 'checkflow' ); ?></span>
+								<strong><?php echo esc_html( $upsell_settings['title'] ); ?></strong>
+								<em><?php echo esc_html( $upsell_settings['description'] ); ?></em>
+								<small data-upsell-preview-meta></small>
+							</div>
+						</div>
+					</div>
+					<div class="panel">
+						<div class="ph"><div class="pt">Trigger rules</div><div class="pa">Safe targeting</div></div>
+						<div class="pb">
+							<div class="cf-bump-rules-grid cf-upsell-rules-grid">
+								<label><span>Minimum cart total</span><input type="text" data-upsell-setting="trigger_min_total" value="<?php echo esc_attr( $upsell_settings['trigger_min_total'] ); ?>" placeholder="No minimum" /></label>
+								<label><span>Maximum cart total</span><input type="text" data-upsell-setting="trigger_max_total" value="<?php echo esc_attr( $upsell_settings['trigger_max_total'] ); ?>" placeholder="No maximum" /></label>
+								<label><span>Require products</span><input type="text" data-upsell-setting="trigger_products" value="<?php echo esc_attr( $upsell_settings['trigger_products'] ); ?>" placeholder="IDs: 12,34" /></label>
+								<label><span>Require categories</span><input type="text" data-upsell-setting="trigger_categories" value="<?php echo esc_attr( $upsell_settings['trigger_categories'] ); ?>" placeholder="Category IDs" /></label>
+								<label><span>Countries</span><input type="text" data-upsell-setting="countries" value="<?php echo esc_attr( $upsell_settings['countries'] ); ?>" placeholder="BD,US" /></label>
+								<label><span>Payment methods</span><input type="text" data-upsell-setting="payment_methods" value="<?php echo esc_attr( $upsell_settings['payment_methods'] ); ?>" placeholder="cod,bacs" /></label>
+								<label><span>Customer</span>
+									<select data-upsell-setting="customer_rule">
+										<option value="all" <?php selected( $upsell_settings['customer_rule'], 'all' ); ?>>All customers</option>
+										<option value="guest" <?php selected( $upsell_settings['customer_rule'], 'guest' ); ?>>Guests only</option>
+										<option value="logged_in" <?php selected( $upsell_settings['customer_rule'], 'logged_in' ); ?>>Logged-in only</option>
+										<option value="first_time" <?php selected( $upsell_settings['customer_rule'], 'first_time' ); ?>>First-time buyer</option>
+										<option value="returning" <?php selected( $upsell_settings['customer_rule'], 'returning' ); ?>>Returning customer</option>
+									</select>
+								</label>
+								<label><span>Display timing</span>
+									<select data-upsell-setting="display_timing">
+										<option value="before_payment" <?php selected( $upsell_settings['display_timing'], 'before_payment' ); ?>>Before payment</option>
+										<option value="after_checkout" <?php selected( $upsell_settings['display_timing'], 'after_checkout' ); ?>>After checkout click</option>
+										<option value="order_received" <?php selected( $upsell_settings['display_timing'], 'order_received' ); ?>>Order received</option>
+									</select>
+								</label>
+							</div>
+							<div class="cf-bump-rule-summary cf-upsell-rule-summary" data-upsell-rule-summary></div>
+							<div class="cf-bump-qa-list cf-upsell-qa-list">
+								<strong>Build checklist</strong>
+								<span data-upsell-check-product>Offer product selected</span>
+								<span data-upsell-check-copy>Offer copy ready</span>
+								<span data-upsell-check-flow>Flow selected</span>
+								<span data-upsell-check-rules>Rules reviewed</span>
+							</div>
+							<div class="cf-bump-save-row">
+								<div data-upsell-save-status>Settings save now; customer-facing upsell execution comes in the next implementation pass.</div>
+								<button type="button" class="btn-p" data-save-upsell>Save funnel</button>
+							</div>
+						</div>
+					</div>
+					<div class="panel cf-upsell-roadmap">
+						<div class="ph"><div class="pt">Workflow preview</div><div class="pa">No payment hijack</div></div>
+						<div class="pb">
+							<div class="cf-module-list">
+								<div><strong>1. Trigger check</strong><span>Cart, product, category, country, payment, customer rules.</span></div>
+								<div><strong>2. Offer screen</strong><span>Pre-purchase inline or post-purchase interstitial in a later pass.</span></div>
+								<div><strong>3. Downsell fallback</strong><span>Optional secondary offer if the first offer is skipped.</span></div>
+								<div><strong>4. Return safely</strong><span>Always return to WooCommerce checkout/order-received flow.</span></div>
+							</div>
+						</div>
+					</div>
+					<div class="panel">
+						<div class="ph"><div class="pt">Performance foundation</div><div class="pa">Future data</div></div>
+						<div class="pb"><div class="cf-mini-grid"><div class="cf-mini-card"><strong>0</strong><span>Shown</span></div><div class="cf-mini-card"><strong>0</strong><span>Accepted</span></div><div class="cf-mini-card"><strong>0%</strong><span>Take rate</span></div></div></div>
+					</div>
 				</div>
 			</div>
 
