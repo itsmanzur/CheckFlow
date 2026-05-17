@@ -1215,6 +1215,10 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								</div>
 								<em data-upsell-product-status><?php echo $upsell_offer_product instanceof WC_Product ? esc_html__( 'Offer selected', 'checkflow' ) : esc_html__( 'Needs offer', 'checkflow' ); ?></em>
 							</div>
+							<div class="cf-upsell-safe-note">
+								<strong>Foundation mode</strong>
+								<span>Rules save now. Customer-facing upsell screens will be wired in the next execution pass without hijacking WooCommerce payment submission.</span>
+							</div>
 							<div class="cf-upsell-flow-tabs" data-upsell-flow-tabs>
 								<button type="button" data-upsell-flow="pre_purchase" class="<?php echo 'pre_purchase' === $upsell_settings['flow_type'] ? 'is-active' : ''; ?>">Pre-purchase</button>
 								<button type="button" data-upsell-flow="post_purchase" class="<?php echo 'post_purchase' === $upsell_settings['flow_type'] ? 'is-active' : ''; ?>">Post-purchase</button>
@@ -1303,7 +1307,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								<span data-upsell-check-rules>Rules reviewed</span>
 							</div>
 							<div class="cf-bump-save-row">
-								<div data-upsell-save-status>Settings save now; customer-facing upsell execution comes in the next implementation pass.</div>
+								<div class="cf-upsell-save-status" data-upsell-save-status>Settings save now; customer-facing upsell execution comes in the next implementation pass.</div>
 								<button type="button" class="btn-p" data-save-upsell>Save funnel</button>
 							</div>
 						</div>

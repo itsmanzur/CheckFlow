@@ -1292,6 +1292,13 @@
 		var status = document.querySelector("[data-upsell-save-status]");
 		if (button) {
 			button.disabled = true;
+			button.setAttribute("data-original-text", button.textContent || "Save funnel");
+			button.textContent = "Saving...";
+		}
+		if (status) {
+			status.textContent = "Saving upsell rules...";
+			status.classList.remove("is-saved", "is-error");
+			status.classList.add("is-saving");
 		}
 		$.ajax({
 			url: ajaxUrl,
@@ -1304,21 +1311,35 @@
 					if (window.checkflowAdmin) {
 						checkflowAdmin.upsellSettings = res.data.settings || data;
 					}
+					var saved = (res.data && res.data.settings) || data;
 					if (status) {
-						status.textContent = res.data.message || "Upsell funnel saved.";
+						status.textContent = (res.data.message || "Upsell funnel saved.") + " " + upsellSaveSummary(saved);
+						status.classList.remove("is-saving", "is-error");
+						status.classList.add("is-saved");
 					}
 					showToast(res.data.message || "Upsell funnel saved");
 					return;
+				}
+				if (status) {
+					status.textContent = "Could not save upsell funnel.";
+					status.classList.remove("is-saving", "is-saved");
+					status.classList.add("is-error");
 				}
 				showToast((res && res.data && res.data.message) || "Could not save upsell funnel", "error");
 			})
 			.fail(function (xhr) {
 				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not save upsell funnel";
+				if (status) {
+					status.textContent = message;
+					status.classList.remove("is-saving", "is-saved");
+					status.classList.add("is-error");
+				}
 				showToast(message, "error");
 			})
 			.always(function () {
 				if (button) {
 					button.disabled = false;
+					button.textContent = button.getAttribute("data-original-text") || "Save funnel";
 				}
 			});
 	}
@@ -1336,6 +1357,7 @@
 		var title = preview.querySelector("strong");
 		var description = preview.querySelector("em");
 		var meta = preview.querySelector("[data-upsell-preview-meta]");
+		var discountValue = document.querySelector('[data-upsell-setting="discount_value"]');
 		if (product && productLabel) {
 			productLabel.textContent = product.value && product.value !== "0" ? product.options[product.selectedIndex].text : "No offer product selected";
 		}
@@ -1354,7 +1376,21 @@
 		if (meta) {
 			meta.textContent = upsellRuleSummary(settings).join(" • ");
 		}
+		if (discountValue) {
+			discountValue.disabled = settings.discount_type === "none";
+			discountValue.placeholder = settings.discount_type === "percent" ? "10%" : settings.discount_type === "fixed" ? "100" : "No discount";
+		}
 		refreshUpsellRuleSummary(settings);
+	}
+
+	function upsellSaveSummary(settings) {
+		var parts = [];
+		parts.push(settings && settings.flow_type === "post_purchase" ? "Post-purchase" : "Pre-purchase");
+		parts.push(settings && parseInt(settings.enabled || 0, 10) ? "enabled" : "disabled");
+		if (settings && settings.offer_product_id && settings.offer_product_id !== "0") {
+			parts.push("offer #" + settings.offer_product_id);
+		}
+		return "(" + parts.join(", ") + ")";
 	}
 
 	function upsellRuleSummary(settings) {

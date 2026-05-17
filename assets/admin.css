@@ -778,6 +778,25 @@ body.checkflow-admin-screen.checkflow-admin-theme-light #wpbody-content {
 #checkflow-admin.checkflow-root .cf-upsell-status-strip {
 	margin-bottom: 12px;
 }
+#checkflow-admin.checkflow-root .cf-upsell-safe-note {
+	display: grid;
+	gap: 4px;
+	margin-bottom: 12px;
+	padding: 12px 14px;
+	border: 1px solid rgba(245, 158, 11, 0.24);
+	border-radius: 12px;
+	background: rgba(245, 158, 11, 0.08);
+}
+#checkflow-admin.checkflow-root .cf-upsell-safe-note strong {
+	color: var(--or);
+	font-size: 12px;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-upsell-safe-note span {
+	color: var(--tx2);
+	font-size: 12px;
+	line-height: 1.45;
+}
 #checkflow-admin.checkflow-root .cf-upsell-flow-tabs {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -812,6 +831,19 @@ body.checkflow-admin-screen.checkflow-admin-theme-light #wpbody-content {
 }
 #checkflow-admin.checkflow-root .cf-upsell-roadmap .cf-module-list > div {
 	align-items: flex-start;
+}
+#checkflow-admin.checkflow-root .cf-upsell-save-status.is-saving {
+	color: var(--or);
+}
+#checkflow-admin.checkflow-root .cf-upsell-save-status.is-saved {
+	color: var(--gr);
+}
+#checkflow-admin.checkflow-root .cf-upsell-save-status.is-error {
+	color: #ff6b6b;
+}
+#checkflow-admin.checkflow-root .cf-upsell-form input:disabled {
+	cursor: not-allowed;
+	opacity: 0.62;
 }
 
 #checkflow-admin.checkflow-root .g2 {
@@ -4035,6 +4067,7 @@ html.cf-field-dragging body {
 #checkflow-admin.checkflow-root.is-light .cf-bump-form .cf-field-switch,
 #checkflow-admin.checkflow-root.is-light .cf-bump-preview,
 #checkflow-admin.checkflow-root.is-light .cf-upsell-preview,
+#checkflow-admin.checkflow-root.is-light .cf-upsell-safe-note,
 #checkflow-admin.checkflow-root.is-light .cf-mini-card,
 #checkflow-admin.checkflow-root.is-light .cf-module-list > div,
 #checkflow-admin.checkflow-root.is-light .cf-builder-row,
