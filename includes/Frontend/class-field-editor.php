@@ -907,8 +907,121 @@ final class CheckFlow_Field_Editor {
 			if ( ! empty( $field['protected'] ) ) {
 				$defaults[ $key ]['enabled'] = true;
 			}
+			$defaults[ $key ] = $this->normalize_text_encoding( $defaults[ $key ] );
 		}
 
 		return $defaults;
+	}
+
+	/**
+	 * Repair old saved labels that were stored as UTF-8 bytes read as Windows-1252.
+	 *
+	 * @param array<string,mixed> $field Field config.
+	 * @return array<string,mixed>
+	 */
+	private function normalize_text_encoding( array $field ) {
+		foreach ( array( 'label', 'placeholder', 'help', 'default_value', 'required_message', 'validation_message' ) as $key ) {
+			if ( isset( $field[ $key ] ) ) {
+				$field[ $key ] = $this->repair_mojibake_text( (string) $field[ $key ] );
+			}
+		}
+		if ( isset( $field['options'] ) && is_array( $field['options'] ) ) {
+			foreach ( $field['options'] as $value => $label ) {
+				$field['options'][ $value ] = $this->repair_mojibake_text( (string) $label );
+			}
+		}
+		return $field;
+	}
+
+	/**
+	 * @param string $text Text.
+	 * @return string
+	 */
+	private function repair_mojibake_text( $text ) {
+		if ( '' === $text || ( false === strpos( $text, 'à¦' ) && false === strpos( $text, 'à§' ) ) ) {
+			return $text;
+		}
+		$manual = $this->repair_bengali_mojibake( $text );
+		if ( $manual !== $text ) {
+			return $manual;
+		}
+		if ( ! function_exists( 'iconv' ) ) {
+			return $text;
+		}
+		$converted = iconv( 'UTF-8', 'Windows-1252//IGNORE', $text );
+		if ( false === $converted || '' === $converted ) {
+			return $text;
+		}
+		if ( function_exists( 'wp_check_invalid_utf8' ) && '' === wp_check_invalid_utf8( $converted ) ) {
+			return $text;
+		}
+		return preg_match( '/[\x{0980}-\x{09FF}]/u', $converted ) ? $converted : $text;
+	}
+
+	/**
+	 * @param string $text Text.
+	 * @return string
+	 */
+	private function repair_bengali_mojibake( $text ) {
+		static $map = null;
+		if ( null === $map ) {
+			$map = array();
+			for ( $codepoint = 0x0980; $codepoint <= 0x09FF; $codepoint++ ) {
+				$char = html_entity_decode( '&#x' . dechex( $codepoint ) . ';', ENT_NOQUOTES, 'UTF-8' );
+				if ( '' === $char ) {
+					continue;
+				}
+				$bytes = unpack( 'C*', $char );
+				if ( ! is_array( $bytes ) ) {
+					continue;
+				}
+				$mojibake = '';
+				foreach ( $bytes as $byte ) {
+					$mojibake .= $this->windows_1252_char( (int) $byte );
+				}
+				if ( '' !== $mojibake && $mojibake !== $char ) {
+					$map[ $mojibake ] = $char;
+				}
+			}
+		}
+		return strtr( $text, $map );
+	}
+
+	/**
+	 * @param int $byte Byte.
+	 * @return string
+	 */
+	private function windows_1252_char( $byte ) {
+		$cp1252 = array(
+			0x80 => 0x20AC,
+			0x82 => 0x201A,
+			0x83 => 0x0192,
+			0x84 => 0x201E,
+			0x85 => 0x2026,
+			0x86 => 0x2020,
+			0x87 => 0x2021,
+			0x88 => 0x02C6,
+			0x89 => 0x2030,
+			0x8A => 0x0160,
+			0x8B => 0x2039,
+			0x8C => 0x0152,
+			0x8E => 0x017D,
+			0x91 => 0x2018,
+			0x92 => 0x2019,
+			0x93 => 0x201C,
+			0x94 => 0x201D,
+			0x95 => 0x2022,
+			0x96 => 0x2013,
+			0x97 => 0x2014,
+			0x98 => 0x02DC,
+			0x99 => 0x2122,
+			0x9A => 0x0161,
+			0x9B => 0x203A,
+			0x9C => 0x0153,
+			0x9E => 0x017E,
+			0x9F => 0x0178,
+		);
+		$codepoint = isset( $cp1252[ $byte ] ) ? $cp1252[ $byte ] : $byte;
+		return html_entity_decode( '&#x' . dechex( $codepoint ) . ';', ENT_NOQUOTES, 'UTF-8' );
 	}
 }

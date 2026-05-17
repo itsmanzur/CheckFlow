@@ -85,12 +85,25 @@
 	}
 
 	function ensureQuickModulesPlacement() {
-		var review = orderReview();
-		if (!review) {
-			return;
-		}
 		var modules = document.querySelector(".checkflow-checkout-modules");
 		if (!modules) {
+			return;
+		}
+		var placement = modules.getAttribute("data-checkflow-placement") || "after_summary";
+		var payment = document.querySelector("#payment, .woocommerce-checkout-payment, .wc-block-checkout__payment-method");
+		if (placement === "before_payment" && payment && payment.parentNode) {
+			payment.parentNode.insertBefore(modules, payment);
+			refreshOrderBumpRules();
+			return;
+		}
+		if (placement === "after_payment" && payment && payment.parentNode) {
+			payment.parentNode.insertBefore(modules, payment.nextSibling);
+			refreshOrderBumpRules();
+			return;
+		}
+
+		var review = orderReview();
+		if (!review) {
 			return;
 		}
 		var slot = review.querySelector(":scope > .checkflow-checkout-modules-slot");
@@ -100,6 +113,40 @@
 			review.appendChild(slot);
 		}
 		slot.appendChild(modules);
+		refreshOrderBumpRules();
+	}
+
+	function csvRules(value) {
+		return String(value || "")
+			.split(",")
+			.map(function (item) {
+				return item.trim().toLowerCase();
+			})
+			.filter(Boolean);
+	}
+
+	function selectedPaymentMethod() {
+		var checked = document.querySelector('input[name="payment_method"]:checked');
+		return checked ? String(checked.value || "").toLowerCase() : "";
+	}
+
+	function selectedCheckoutCountry() {
+		var shipping = document.querySelector('[name="shipping_country"], #shipping_country');
+		var billing = document.querySelector('[name="billing_country"], #billing_country');
+		var country = shipping && shipping.value ? shipping.value : billing && billing.value ? billing.value : "";
+		return String(country || "").toLowerCase();
+	}
+
+	function refreshOrderBumpRules() {
+		document.querySelectorAll(".checkflow-order-bump-module").forEach(function (module) {
+			var paymentRules = csvRules(module.getAttribute("data-checkflow-bump-payments"));
+			var countryRules = csvRules(module.getAttribute("data-checkflow-bump-countries"));
+			var payment = selectedPaymentMethod();
+			var country = selectedCheckoutCountry();
+			var paymentOk = !paymentRules.length || !payment || paymentRules.indexOf(payment) !== -1;
+			var countryOk = !countryRules.length || !country || countryRules.indexOf(country) !== -1;
+			module.hidden = !(paymentOk && countryOk);
+		});
 	}
 
 	function initCountdowns() {
@@ -131,6 +178,91 @@
 			return window.CSS.escape(value);
 		}
 		return String(value).replace(/"/g, '\\"');
+	}
+
+	function repairMojibakeText(value) {
+		var text = String(value || "");
+		if (text.indexOf("\u00e0\u00a6") === -1 && text.indexOf("\u00e0\u00a7") === -1) {
+			return text;
+		}
+		if (!window.TextDecoder || !window.Uint8Array) {
+			return text;
+		}
+		return text.replace(/(?:\u00e0[\u00a6\u00a7].)+/gu, function (segment) {
+			return decodeMojibakeSegment(segment);
+		});
+	}
+
+	function decodeMojibakeSegment(segment) {
+		var cp1252 = {
+			0x20ac: 0x80,
+			0x201a: 0x82,
+			0x0192: 0x83,
+			0x201e: 0x84,
+			0x2026: 0x85,
+			0x2020: 0x86,
+			0x2021: 0x87,
+			0x02c6: 0x88,
+			0x2030: 0x89,
+			0x0160: 0x8a,
+			0x2039: 0x8b,
+			0x0152: 0x8c,
+			0x017d: 0x8e,
+			0x2018: 0x91,
+			0x2019: 0x92,
+			0x201c: 0x93,
+			0x201d: 0x94,
+			0x2022: 0x95,
+			0x2013: 0x96,
+			0x2014: 0x97,
+			0x02dc: 0x98,
+			0x2122: 0x99,
+			0x0161: 0x9a,
+			0x203a: 0x9b,
+			0x0153: 0x9c,
+			0x017e: 0x9e,
+			0x0178: 0x9f,
+		};
+		var bytes = [];
+		for (var i = 0; i < segment.length; i += 1) {
+			var code = segment.codePointAt(i);
+			if (code > 0xffff) {
+				i += 1;
+			}
+			if (code <= 0xff) {
+				bytes.push(code);
+			} else if (cp1252[code]) {
+				bytes.push(cp1252[code]);
+			} else {
+				return segment;
+			}
+		}
+		try {
+			var repaired = new TextDecoder("utf-8", { fatal: true }).decode(new Uint8Array(bytes));
+			return /[\u0980-\u09ff]/.test(repaired) ? repaired : segment;
+		} catch (e) {
+			return segment;
+		}
+	}
+
+	function repairCheckoutMojibake(root) {
+		var scope = root || checkoutRoot() || document.body;
+		if (!scope) {
+			return;
+		}
+		var walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+		var node;
+		while ((node = walker.nextNode())) {
+			node.nodeValue = repairMojibakeText(node.nodeValue);
+		}
+		scope.querySelectorAll("input, textarea, select, option").forEach(function (field) {
+			["placeholder", "aria-label", "title"].forEach(function (attr) {
+				var value = field.getAttribute(attr);
+				if (value) {
+					field.setAttribute(attr, repairMojibakeText(value));
+				}
+			});
+		});
 	}
 
 	function fieldCandidates(key) {
@@ -581,7 +713,10 @@
 			.on("updated_checkout checkout_error", function () {
 				setBusy(false);
 				enhancePlaceOrder(checkoutForm() || document);
+				ensureQuickModulesPlacement();
+				refreshOrderBumpRules();
 				applyAdvancedFieldSettings();
+				repairCheckoutMojibake(checkoutRoot() || document.body);
 			})
 			.on("checkout_error", function () {
 				state.activeStep = "contact";
@@ -609,8 +744,10 @@
 		}
 		ensureTrustBadgesPlacement();
 		ensureQuickModulesPlacement();
+		refreshOrderBumpRules();
 		initCountdowns();
 		applyAdvancedFieldSettings();
+		repairCheckoutMojibake(form);
 		bindConditionalRefresh();
 	}
 
@@ -627,9 +764,11 @@
 		}
 		ensureTrustBadgesPlacement();
 		ensureQuickModulesPlacement();
+		refreshOrderBumpRules();
 		initCountdowns();
 		enhancePlaceOrder(root);
 		applyAdvancedFieldSettings();
+		repairCheckoutMojibake(root);
 		bindConditionalRefresh();
 		observeCheckoutEvents();
 	}
@@ -654,14 +793,18 @@
 			window.setTimeout(function () {
 				ensureTrustBadgesPlacement();
 				ensureQuickModulesPlacement();
+				refreshOrderBumpRules();
 				initCountdowns();
 				applyAdvancedFieldSettings();
+				repairCheckoutMojibake(checkoutRoot() || document.body);
 			}, 250);
 			window.setTimeout(function () {
 				ensureTrustBadgesPlacement();
 				ensureQuickModulesPlacement();
+				refreshOrderBumpRules();
 				initCountdowns();
 				applyAdvancedFieldSettings();
+				repairCheckoutMojibake(checkoutRoot() || document.body);
 			}, 1000);
 			return;
 		}
@@ -669,8 +812,10 @@
 		window.setTimeout(function () {
 			ensureTrustBadgesPlacement();
 			ensureQuickModulesPlacement();
+			refreshOrderBumpRules();
 			initCountdowns();
 			applyAdvancedFieldSettings();
+			repairCheckoutMojibake(checkoutRoot() || document.body);
 		}, 250);
 	}
 
@@ -695,6 +840,11 @@
 	} else {
 		initVanilla();
 	}
+	document.addEventListener("change", function (event) {
+		if (event.target && event.target.matches && event.target.matches('input[name="payment_method"], [name="billing_country"], [name="shipping_country"], #billing_country, #shipping_country')) {
+			window.setTimeout(refreshOrderBumpRules, 20);
+		}
+	});
 
 	window.checkflowCheckoutApp = window.checkflowCheckoutApp || {};
 	window.checkflowCheckoutApp.goToStep = goToStep;

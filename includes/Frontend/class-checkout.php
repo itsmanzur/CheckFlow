@@ -138,7 +138,7 @@ final class CheckFlow_Frontend_Checkout {
 			return null;
 		}
 		$settings = CheckFlow_Admin::instance()->get_order_bump_settings();
-		if ( empty( $settings['enabled'] ) || ! $this->order_bump_rules_match( $settings ) ) {
+		if ( empty( $settings['enabled'] ) || ! $this->order_bump_rules_match( $settings, false ) ) {
 			return null;
 		}
 		$product_id = $this->get_order_bump_product_id();
@@ -157,9 +157,10 @@ final class CheckFlow_Frontend_Checkout {
 
 	/**
 	 * @param array<string,mixed> $settings Order bump settings.
+	 * @param bool                $check_dynamic Whether to check payment/country session state.
 	 * @return bool
 	 */
-	private function order_bump_rules_match( $settings ) {
+	private function order_bump_rules_match( $settings, $check_dynamic = true ) {
 		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
 			return false;
 		}
@@ -186,13 +187,15 @@ final class CheckFlow_Frontend_Checkout {
 			return false;
 		}
 
-		$countries = $this->csv_to_strings( $settings['countries'] );
-		if ( $countries && ! in_array( $this->checkout_country(), $countries, true ) ) {
-			return false;
-		}
-		$payment_methods = $this->csv_to_strings( $settings['payment_methods'] );
-		if ( $payment_methods && ! in_array( $this->chosen_payment_method(), $payment_methods, true ) ) {
-			return false;
+		if ( $check_dynamic ) {
+			$countries = $this->csv_to_strings( $settings['countries'] );
+			if ( $countries && ! in_array( $this->checkout_country(), $countries, true ) ) {
+				return false;
+			}
+			$payment_methods = $this->csv_to_strings( $settings['payment_methods'] );
+			if ( $payment_methods && ! in_array( $this->chosen_payment_method(), $payment_methods, true ) ) {
+				return false;
+			}
 		}
 
 		if ( 'guest' === $settings['customer_rule'] && is_user_logged_in() ) {
@@ -450,7 +453,8 @@ final class CheckFlow_Frontend_Checkout {
 			return;
 		}
 
-		echo '<div class="checkflow-checkout-modules" data-checkflow-modules="1">';
+		$settings = CheckFlow_Admin::instance()->get_order_bump_settings();
+		echo '<div class="checkflow-checkout-modules" data-checkflow-modules="1" data-checkflow-placement="' . esc_attr( $settings['placement'] ) . '">';
 		if ( $has_timer ) {
 			echo '<div class="checkflow-urgency-timer" data-checkflow-countdown-seconds="900">';
 			echo '<span>' . esc_html__( 'Your checkout session is reserved', 'checkflow' ) . '</span>';
@@ -458,10 +462,11 @@ final class CheckFlow_Frontend_Checkout {
 			echo '</div>';
 		}
 		if ( $bump ) {
-			$settings = CheckFlow_Admin::instance()->get_order_bump_settings();
 			$title = '' !== $settings['title'] ? $settings['title'] : $bump->get_name();
 			$description = '' !== $settings['description'] ? $settings['description'] : __( 'One click add-on for this order.', 'checkflow' );
-			echo '<div class="checkflow-order-bump-module" data-checkflow-bump-product="' . esc_attr( (string) $bump->get_id() ) . '">';
+			$country_rules = $this->csv_to_strings( $settings['countries'] );
+			$payment_rules = $this->csv_to_strings( $settings['payment_methods'] );
+			echo '<div class="checkflow-order-bump-module" data-checkflow-bump-product="' . esc_attr( (string) $bump->get_id() ) . '" data-checkflow-bump-countries="' . esc_attr( implode( ',', $country_rules ) ) . '" data-checkflow-bump-payments="' . esc_attr( implode( ',', $payment_rules ) ) . '">';
 			if ( '' !== $settings['badge'] ) {
 				echo '<div class="checkflow-order-bump-badge">' . esc_html( $settings['badge'] ) . '</div>';
 			}
