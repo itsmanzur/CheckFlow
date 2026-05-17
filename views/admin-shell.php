@@ -53,6 +53,9 @@ $courier_providers = $admin_instance->get_courier_providers();
 $courier_settings  = $admin_instance->get_courier_settings();
 $order_bump_settings = $admin_instance->get_order_bump_settings();
 $order_bump_products = $admin_instance->get_order_bump_product_choices();
+$order_bump_product  = ! empty( $order_bump_settings['product_id'] ) && function_exists( 'wc_get_product' ) ? wc_get_product( absint( $order_bump_settings['product_id'] ) ) : null;
+$order_bump_product_label = $order_bump_product instanceof WC_Product ? sprintf( '#%1$d - %2$s', $order_bump_product->get_id(), $order_bump_product->get_name() ) : __( 'No product selected', 'checkflow' );
+$order_bump_product_status = $order_bump_product instanceof WC_Product && $order_bump_product->is_purchasable() && $order_bump_product->is_in_stock() ? __( 'Product ready', 'checkflow' ) : __( 'Needs product', 'checkflow' );
 $pixel_settings    = $admin_instance->get_pixel_settings();
 $pixel_events      = $admin_instance->get_recent_pixel_events( 8 );
 $pixel_analytics   = $admin_instance->get_pixel_event_analytics();
@@ -1132,14 +1135,21 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 					<div class="panel">
 						<div class="ph"><div class="pt">Order Bump offer</div><div class="pa">Rules ready</div></div>
 						<div class="pb">
+							<div class="cf-bump-status-strip">
+								<div><span>Current product</span><strong data-bump-product-label><?php echo esc_html( $order_bump_product_label ); ?></strong></div>
+								<em data-bump-product-status><?php echo esc_html( $order_bump_product_status ); ?></em>
+							</div>
 							<div class="cf-bump-form">
 								<label class="cf-field-switch"><span>Enable offer</span><input type="checkbox" data-bump-setting="enabled" <?php checked( ! empty( $order_bump_settings['enabled'] ) ); ?> /></label>
-								<label><span>Bump product ID</span><input type="number" min="0" data-bump-setting="product_id" list="cf-bump-products" value="<?php echo esc_attr( (string) $order_bump_settings['product_id'] ); ?>" placeholder="Product ID" /></label>
-								<datalist id="cf-bump-products">
+								<label><span>Bump product</span><select data-bump-setting="product_id" data-bump-product-select><option value="0">Select a product</option>
+									<?php if ( $order_bump_product instanceof WC_Product ) : ?>
+										<option value="<?php echo esc_attr( (string) $order_bump_product->get_id() ); ?>" selected><?php echo esc_html( $order_bump_product_label ); ?></option>
+									<?php endif; ?>
 									<?php foreach ( $order_bump_products as $choice ) : ?>
+										<?php if ( $order_bump_product instanceof WC_Product && absint( $choice['id'] ) === absint( $order_bump_product->get_id() ) ) { continue; } ?>
 										<option value="<?php echo esc_attr( $choice['id'] ); ?>"><?php echo esc_html( $choice['label'] ); ?></option>
 									<?php endforeach; ?>
-								</datalist>
+								</select></label>
 								<label><span>Offer title</span><input type="text" data-bump-setting="title" value="<?php echo esc_attr( $order_bump_settings['title'] ); ?>" /></label>
 								<label><span>Offer description</span><input type="text" data-bump-setting="description" value="<?php echo esc_attr( $order_bump_settings['description'] ); ?>" /></label>
 								<label><span>Badge</span><input type="text" data-bump-setting="badge" value="<?php echo esc_attr( $order_bump_settings['badge'] ); ?>" /></label>
@@ -1149,7 +1159,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								<span><?php echo esc_html( $order_bump_settings['badge'] ); ?></span>
 								<strong><?php echo esc_html( $order_bump_settings['title'] ); ?></strong>
 								<em><?php echo esc_html( $order_bump_settings['description'] ); ?></em>
-								<small>Frontend card updates after save and checkout refresh.</small>
+								<small data-bump-preview-meta>One-click add-on card preview. Frontend updates after save and checkout refresh.</small>
 							</div>
 						</div>
 					</div>
@@ -1165,6 +1175,14 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								<label><span>Countries</span><input type="text" data-bump-setting="countries" value="<?php echo esc_attr( $order_bump_settings['countries'] ); ?>" placeholder="BD,US" /></label>
 								<label><span>Payment methods</span><input type="text" data-bump-setting="payment_methods" value="<?php echo esc_attr( $order_bump_settings['payment_methods'] ); ?>" placeholder="cod,bacs" /></label>
 								<label><span>Customer</span><select data-bump-setting="customer_rule"><option value="all" <?php selected( $order_bump_settings['customer_rule'], 'all' ); ?>>All customers</option><option value="guest" <?php selected( $order_bump_settings['customer_rule'], 'guest' ); ?>>Guest only</option><option value="logged_in" <?php selected( $order_bump_settings['customer_rule'], 'logged_in' ); ?>>Logged-in only</option></select></label>
+							</div>
+							<div class="cf-bump-rule-summary" data-bump-rule-summary></div>
+							<div class="cf-bump-qa-list">
+								<strong>Lock checklist</strong>
+								<span data-bump-check-product>Product selected</span>
+								<span data-bump-check-copy>Offer copy ready</span>
+								<span data-bump-check-placement>Placement selected</span>
+								<span data-bump-check-rules>Rules reviewed</span>
 							</div>
 							<div class="cf-bump-save-row">
 								<div data-bump-save-status>Rules save to WordPress and apply on checkout refresh.</div>

@@ -284,6 +284,12 @@ final class CheckFlow_Admin {
 		$settings[ $key ] = $enabled;
 		update_option( self::SETTINGS_OPTION, $settings, false );
 
+		if ( 'order_bump' === $key ) {
+			$order_bump_settings            = $this->get_order_bump_settings();
+			$order_bump_settings['enabled'] = $enabled;
+			update_option( self::ORDER_BUMP_OPTION, $order_bump_settings, false );
+		}
+
 		wp_send_json_success(
 			array(
 				'message'  => __( 'Setting saved.', 'checkflow' ),
@@ -1023,6 +1029,10 @@ final class CheckFlow_Admin {
 
 		update_option( self::ORDER_BUMP_OPTION, $settings, false );
 		update_option( 'checkflow_order_bump_product_id', absint( $settings['product_id'] ), false );
+
+		$quick_settings                 = $this->get_quick_settings();
+		$quick_settings['order_bump']   = ! empty( $settings['enabled'] );
+		update_option( self::SETTINGS_OPTION, $quick_settings, false );
 
 		wp_send_json_success(
 			array(

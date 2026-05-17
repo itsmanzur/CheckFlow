@@ -1180,12 +1180,17 @@
 		if (!preview) {
 			return;
 		}
+		var settings = collectOrderBumpSettings();
 		var badge = document.querySelector('[data-bump-setting="badge"]');
 		var title = document.querySelector('[data-bump-setting="title"]');
 		var description = document.querySelector('[data-bump-setting="description"]');
+		var product = document.querySelector("[data-bump-product-select]");
+		var productLabel = document.querySelector("[data-bump-product-label]");
+		var productStatus = document.querySelector("[data-bump-product-status]");
 		var badgeEl = preview.querySelector("span");
 		var titleEl = preview.querySelector("strong");
 		var descEl = preview.querySelector("em");
+		var metaEl = preview.querySelector("[data-bump-preview-meta]");
 		if (badgeEl && badge) {
 			badgeEl.textContent = badge.value || "Recommended";
 		}
@@ -1195,6 +1200,72 @@
 		if (descEl && description) {
 			descEl.textContent = description.value || "One click add-on for this order.";
 		}
+		if (product && productLabel) {
+			productLabel.textContent = product.value && product.value !== "0" ? product.options[product.selectedIndex].text : "No product selected";
+		}
+		if (productStatus) {
+			productStatus.textContent = product && product.value && product.value !== "0" ? "Product selected" : "Needs product";
+		}
+		if (metaEl) {
+			metaEl.textContent = bumpRuleSummary(settings).join(" • ");
+		}
+		refreshOrderBumpRuleSummary(settings);
+	}
+
+	function bumpRuleSummary(settings) {
+		var summary = [];
+		if (!settings || !parseInt(settings.enabled || 0, 10)) {
+			summary.push("Offer disabled");
+		} else {
+			summary.push("Offer enabled");
+		}
+		summary.push("Placement: " + ((settings && settings.placement) || "after_summary").replace(/_/g, " "));
+		if (settings && settings.min_total) summary.push("Min total " + settings.min_total);
+		if (settings && settings.max_total) summary.push("Max total " + settings.max_total);
+		if (settings && settings.include_products) summary.push("Requires products " + settings.include_products);
+		if (settings && settings.exclude_products) summary.push("Excludes products " + settings.exclude_products);
+		if (settings && settings.include_categories) summary.push("Categories " + settings.include_categories);
+		if (settings && settings.countries) summary.push("Countries " + settings.countries.toUpperCase());
+		if (settings && settings.payment_methods) summary.push("Payments " + settings.payment_methods);
+		if (settings && settings.customer_rule && settings.customer_rule !== "all") summary.push("Customer: " + settings.customer_rule.replace(/_/g, " "));
+		if (summary.length <= 2) summary.push("No targeting rules: shows to all eligible carts");
+		return summary;
+	}
+
+	function refreshOrderBumpRuleSummary(settings) {
+		var summary = document.querySelector("[data-bump-rule-summary]");
+		if (summary) {
+			summary.innerHTML = bumpRuleSummary(settings || collectOrderBumpSettings())
+				.map(function (item) {
+					return "<span>" + escapeHtml(item) + "</span>";
+				})
+				.join("");
+		}
+		var productOk = settings && settings.product_id && settings.product_id !== "0";
+		var titleOk = settings && String(settings.title || "").trim();
+		var placementOk = settings && String(settings.placement || "").trim();
+		var hasRules =
+			settings &&
+			(settings.min_total ||
+				settings.max_total ||
+				settings.include_products ||
+				settings.exclude_products ||
+				settings.include_categories ||
+				settings.countries ||
+				settings.payment_methods ||
+				(settings.customer_rule && settings.customer_rule !== "all"));
+		setBumpCheck("[data-bump-check-product]", productOk);
+		setBumpCheck("[data-bump-check-copy]", titleOk);
+		setBumpCheck("[data-bump-check-placement]", placementOk);
+		setBumpCheck("[data-bump-check-rules]", true, hasRules ? "Rules reviewed" : "All-cart fallback");
+	}
+
+	function setBumpCheck(selector, ok, text) {
+		var el = document.querySelector(selector);
+		if (!el) return;
+		el.classList.toggle("is-ok", !!ok);
+		el.classList.toggle("is-warn", !ok);
+		if (text) el.textContent = text;
 	}
 
 	function prepareCourierDraft(buttonEl) {
@@ -3255,6 +3326,7 @@
 		restorePresetUi();
 		applyAdminTheme((window.checkflowAdmin && checkflowAdmin.adminTheme) || "dark");
 		applyOrderFilters();
+		refreshOrderBumpPreview();
 
 		window.addEventListener("beforeunload", function (event) {
 			if (!fieldEditorDirty) return;

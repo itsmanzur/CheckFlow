@@ -145,7 +145,7 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
   - `direct_checkout`: implemented; controls skip-cart redirect for non-AJAX and AJAX add-to-cart flows.
   - `guest_checkout`: implemented; maps to WooCommerce native guest checkout/registration-required behavior.
   - `urgency_timer`: implemented as a checkout countdown module controlled by the setting.
-  - `order_bump`: implemented as a configured-product engine; it only renders when `checkflow_order_bump_product_id` option/filter supplies a purchasable product.
+  - `order_bump`: implemented as a configured-product engine with admin product picker, offer preview, placement, targeting rules, live rule summary, and checkout-side add-to-cart guard.
   - `popup_checkout`: implemented as a storefront add-to-cart modal with checkout/cart/continue actions; it does not hijack final payment submission.
   - `slide_checkout`: implemented as a storefront side drawer. Conflict rule: Popup Checkout has priority; Slide-in Checkout runs only when Popup Checkout is off.
   - `recaptcha`: implemented for classic checkout when site/secret keys are configured via options or filters; with no keys it is a safe no-op and does not block orders.
@@ -165,7 +165,8 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
   - Interactive local tracking insights.
   - Real browser firing for Meta Pixel, Google Ads / GA4, and TikTok Pixel.
 - Meta CAPI, Google Enhanced Conversions, and TikTok Events API server-side firing are not implemented yet.
-- Order bump now has an admin settings foundation, offer copy, product ID selection, cart/customer/location/payment targeting rules, and frontend rule enforcement; upsell rules are still pending.
+- Order bump now has a lock-ready admin foundation: product picker, copy preview, placement, cart/customer/location/payment targeting rules, live rule summary, checklist cues, and frontend rule enforcement; upsell rules are still pending.
+- Order Bump checkout QA note: current saved rules require cart product `#162 - Download Natural`; with that product in cart and subtotal over the minimum, the configured `#155 - Gift Grey Gel` offer renders, AJAX-adds to the checkout cart, refresh hides the offer to prevent duplicate add, and the Quick Settings `order_bump` state now syncs with the dedicated Order Bump enable toggle.
 - Dashboard analytics foundation is implemented using WooCommerce order data and CheckFlow local event logs; dedicated analytics event tables are still pending.
 - Tests, security audit docs, checklist docs, screenshots, `.pot`/`.po` files are not implemented.
 - `checkflow.php` metadata still has placeholder Plugin URI and a mojibake dash in the description.
@@ -218,6 +219,8 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [x] Map Quick Settings to first-pass feature behavior: Direct Checkout, Guest Checkout, Urgency Timer.
 - [x] Wire Order Bump quick setting to a configured-product AJAX add-to-cart engine.
 - [x] Add Order Bump admin settings foundation with product, copy, placement, and targeting rules.
+- [x] Polish Order Bump admin UX with product dropdown, live preview, rule summary, and lock checklist.
+- [x] Browser-QA Order Bump checkout rule matching and AJAX add-to-cart with a configured required product.
 - [x] Add popup modal checkout.
 - [x] Add slide-in checkout.
 - [x] Add reCAPTCHA v3 module contract with safe no-op when keys are missing.
@@ -243,7 +246,7 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [ ] Courier integrations and order meta tracking IDs.
 - [x] Pixel Tracking local event log, advanced controls, and provider setup UI.
 - [ ] Server-side external tracking and retry queue.
-- [x] Order bump settings and first rules engine foundation.
+- [x] Order bump settings and lock-ready rules engine foundation.
 - [ ] Upsell rules engine and sales performance table.
 
 ### Milestone F - Hardening & Release

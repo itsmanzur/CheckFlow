@@ -447,13 +447,13 @@ final class CheckFlow_Frontend_Checkout {
 			return;
 		}
 
+		$settings  = CheckFlow_Admin::instance()->get_order_bump_settings();
 		$has_timer = $this->quick_setting_enabled( 'urgency_timer' );
-		$bump      = $this->quick_setting_enabled( 'order_bump' ) ? $this->get_order_bump_product() : null;
+		$bump      = ! empty( $settings['enabled'] ) ? $this->get_order_bump_product() : null;
 		if ( ! $has_timer && ! $bump ) {
 			return;
 		}
 
-		$settings = CheckFlow_Admin::instance()->get_order_bump_settings();
 		echo '<div class="checkflow-checkout-modules" data-checkflow-modules="1" data-checkflow-placement="' . esc_attr( $settings['placement'] ) . '">';
 		if ( $has_timer ) {
 			echo '<div class="checkflow-urgency-timer" data-checkflow-countdown-seconds="900">';

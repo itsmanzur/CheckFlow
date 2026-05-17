@@ -547,6 +547,10 @@
 			addOrderBump(productId)
 				.then(function (res) {
 					if (res && res.success) {
+						if (module) {
+							module.hidden = true;
+							module.setAttribute("data-checkflow-bump-added", "1");
+						}
 						refreshCheckoutSoon();
 						return;
 					}
