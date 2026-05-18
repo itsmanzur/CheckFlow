@@ -640,6 +640,10 @@
 	width: 100%;
 }
 
+.checkflow-checkout-modules:not([data-checkflow-positioned="1"]) {
+	display: none;
+}
+
 .checkflow-urgency-timer {
 	border: 1px solid #e5e7eb;
 	border-radius: var(--cf-radius);
@@ -733,6 +737,130 @@
 	line-height: 1.35;
 	color: #1d4ed8;
 	font-weight: 700;
+}
+
+.checkflow-upsell-module {
+	display: grid;
+	grid-template-columns: 56px minmax(0, 1fr);
+	gap: 12px;
+	padding: 14px;
+	border: 1px solid #dbeafe;
+	border-radius: var(--cf-radius);
+	background: linear-gradient(135deg, #f8fbff, #ffffff);
+	box-shadow: 0 12px 34px rgba(37, 99, 235, 0.09);
+	box-sizing: border-box;
+}
+
+.checkflow-upsell-module.is-loading {
+	opacity: 0.72;
+}
+
+.checkflow-upsell-module.is-downsell {
+	border-color: #fed7aa;
+	background: linear-gradient(135deg, #fff7ed, #ffffff);
+}
+
+.checkflow-upsell-module.is-post-purchase {
+	margin-top: 14px;
+}
+
+.checkflow-upsell-media img {
+	display: block;
+	width: 56px;
+	height: 56px;
+	border-radius: 10px;
+	object-fit: cover;
+}
+
+.checkflow-upsell-copy strong,
+.checkflow-upsell-copy small,
+.checkflow-upsell-copy em {
+	display: block;
+	font-style: normal;
+	letter-spacing: 0;
+}
+
+.checkflow-upsell-badge {
+	display: inline-flex;
+	width: max-content;
+	margin-bottom: 6px;
+	padding: 3px 8px;
+	border-radius: 999px;
+	background: #dbeafe;
+	color: #1d4ed8;
+	font-size: 11px;
+	font-weight: 800;
+}
+
+.checkflow-upsell-copy strong {
+	color: #111827;
+	font-size: 14px;
+	font-weight: 800;
+}
+
+.checkflow-upsell-copy small {
+	margin-top: 4px;
+	color: #64748b;
+	font-size: 12px;
+	line-height: 1.45;
+}
+
+.checkflow-upsell-copy em {
+	margin-top: 6px;
+	color: #059669;
+	font-size: 13px;
+	font-weight: 800;
+}
+
+.checkflow-upsell-actions {
+	grid-column: 1 / -1;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+}
+
+.checkflow-upsell-actions button {
+	min-height: 42px;
+	border-radius: 10px;
+	border: 1px solid #dbeafe;
+	font: inherit;
+	font-weight: 800;
+	cursor: pointer;
+	letter-spacing: 0;
+}
+
+.checkflow-upsell-accept {
+	background: #111827;
+	color: #fff;
+	border-color: #111827;
+}
+
+.checkflow-upsell-skip {
+	background: #fff;
+	color: #334155;
+}
+
+.checkflow-post-purchase-upsell {
+	max-width: 720px;
+	margin: 24px auto;
+	padding: 0 16px;
+	font-family: var(--cf-font);
+	box-sizing: border-box;
+}
+
+.checkflow-post-purchase-upsell h3 {
+	margin: 0 0 6px;
+	color: #111827;
+	font-size: 22px;
+	line-height: 1.2;
+	letter-spacing: 0;
+}
+
+.checkflow-post-purchase-upsell p {
+	margin: 0;
+	color: #64748b;
+	font-size: 14px;
+	line-height: 1.5;
 }
 
 .checkflow-popup-checkout {

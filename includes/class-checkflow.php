@@ -99,6 +99,8 @@ final class CheckFlow {
 		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_get_shipping_methods', $ajax, 'get_shipping_methods' );
 		$this->loader->add_action( 'wp_ajax_checkflow_add_order_bump', $ajax, 'add_order_bump' );
 		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_add_order_bump', $ajax, 'add_order_bump' );
+		$this->loader->add_action( 'wp_ajax_checkflow_accept_upsell', $ajax, 'accept_upsell' );
+		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_accept_upsell', $ajax, 'accept_upsell' );
 		$this->loader->add_action( 'wp_ajax_checkflow_place_order', $ajax, 'place_order' );
 		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_place_order', $ajax, 'place_order' );
 
@@ -106,6 +108,8 @@ final class CheckFlow {
 		$this->loader->add_filter( 'woocommerce_checkout_fields', $field_editor, 'apply_checkout_fields', 20 );
 		$this->loader->add_filter( 'woocommerce_get_country_locale_default', $field_editor, 'apply_blocks_default_locale', 30 );
 		$this->loader->add_filter( 'woocommerce_get_country_locale', $field_editor, 'apply_blocks_country_locales', 30 );
+		$this->loader->add_filter( 'woocommerce_checkout_posted_data', $field_editor, 'normalize_checkout_posted_data', 5 );
+		$this->loader->add_action( 'woocommerce_before_checkout_process', $field_editor, 'normalize_posted_checkout_fields', 5 );
 		$this->loader->add_action( 'woocommerce_after_checkout_validation', $field_editor, 'validate_checkout_fields', 15, 2 );
 		$this->loader->add_action( 'woocommerce_checkout_create_order', $field_editor, 'save_custom_order_meta', 20, 1 );
 		$this->loader->add_action( 'woocommerce_store_api_checkout_update_order_from_request', $field_editor, 'save_store_api_custom_order_meta', 20, 2 );
@@ -118,6 +122,7 @@ final class CheckFlow {
 		$this->loader->add_filter( 'the_content', $checkout, 'prepend_shell_intro_block_checkout', 12 );
 		$this->loader->add_action( 'wp_footer', $checkout, 'render_direct_checkout_script' );
 		$this->loader->add_action( 'wp_footer', $checkout, 'render_quick_setting_modules' );
+		$this->loader->add_action( 'wp_footer', $checkout, 'render_order_received_upsell' );
 		$this->loader->add_action( 'wp_footer', $checkout, 'render_recaptcha_script' );
 		$this->loader->add_action( 'wp_footer', $checkout, 'render_trust_badges' );
 

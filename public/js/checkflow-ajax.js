@@ -12,6 +12,7 @@
 	var removeReqInFlight = false;
 	var noticeTimer = null;
 	var validationTimers = {};
+	var lastValidatedValues = {};
 
 	function getCouponForm() {
 		return document.querySelector("form.checkout_coupon");
@@ -293,6 +294,13 @@
 		return postAction("checkflow_add_order_bump", { product_id: productId });
 	}
 
+	function acceptUpsell(productId, slot) {
+		return postAction("checkflow_accept_upsell", {
+			product_id: productId,
+			slot: slot || "main",
+		});
+	}
+
 	function getAjaxUrl() {
 		if (!window.checkflowCheckout || !checkflowCheckout.ajaxUrl) {
 			return "";
@@ -371,11 +379,17 @@
 	function validateCheckoutField(field) {
 		if (!shouldValidateField(field)) return;
 		var name = checkoutFieldName(field);
+		var value = field.value || "";
+		var cacheKey = name + "|" + value;
+		if (lastValidatedValues[name] === cacheKey) {
+			return;
+		}
 		window.clearTimeout(validationTimers[name]);
 		validationTimers[name] = window.setTimeout(function () {
+			lastValidatedValues[name] = cacheKey;
 			postAction("checkflow_validate_field", {
 				field: name,
-				value: field.value || "",
+				value: value,
 				type: checkoutFieldType(field),
 				required: isCheckoutFieldRequired(field) ? "1" : "0",
 			})
@@ -384,7 +398,7 @@
 					setFieldValidationState(field, !!res.success, normalizeFieldMessage(res, name, "Please check this field."));
 				})
 				.catch(function () {});
-		}, 280);
+		}, 700);
 	}
 
 	function addressPayload(form) {
@@ -486,6 +500,64 @@
 	document.addEventListener("click", function (e) {
 		var el = e.target;
 		if (!el) return;
+		var upsellAccept = el.closest ? el.closest(".checkflow-upsell-accept") : null;
+		if (upsellAccept) {
+			e.preventDefault();
+			var upsellModule = upsellAccept.closest(".checkflow-upsell-module");
+			var upsellProductId = upsellModule ? upsellModule.getAttribute("data-checkflow-upsell-product") : "";
+			var upsellSlot = upsellModule ? upsellModule.getAttribute("data-checkflow-upsell-slot") || "main" : "main";
+			var postPurchase = upsellModule && upsellModule.getAttribute("data-checkflow-post-purchase") === "1";
+			if (!upsellModule || !upsellProductId || upsellAccept.disabled) return;
+			var upsellButtons = upsellModule ? upsellModule.querySelectorAll("button") : [upsellAccept];
+			upsellButtons.forEach(function (button) {
+				button.disabled = true;
+			});
+			upsellModule.classList.add("is-loading");
+			acceptUpsell(upsellProductId, upsellSlot)
+				.then(function (res) {
+					if (res && res.success) {
+						upsellModule.hidden = true;
+						upsellModule.setAttribute("data-checkflow-upsell-added", "1");
+						if (postPurchase && res.data && res.data.checkout_url) {
+							window.location.href = res.data.checkout_url;
+							return;
+						}
+						showNotice("success", normalizeMessage(res, checkflowCheckout.strings && checkflowCheckout.strings.upsellAdded ? checkflowCheckout.strings.upsellAdded : "Offer added."));
+						refreshCheckoutSoon();
+						return;
+					}
+					showNotice("error", normalizeMessage(res, "Could not add offer."));
+					upsellButtons.forEach(function (button) {
+						button.disabled = false;
+					});
+					upsellModule.classList.remove("is-loading");
+				})
+				.catch(function () {
+					showNotice("error", "Network error. Please retry.");
+					upsellButtons.forEach(function (button) {
+						button.disabled = false;
+					});
+					upsellModule.classList.remove("is-loading");
+				});
+			return;
+		}
+		var upsellSkip = el.closest ? el.closest(".checkflow-upsell-skip") : null;
+		if (upsellSkip) {
+			e.preventDefault();
+			var skipped = upsellSkip.closest(".checkflow-upsell-module");
+			if (!skipped) return;
+			var slot = skipped.getAttribute("data-checkflow-upsell-slot") || "main";
+			skipped.hidden = true;
+			skipped.setAttribute("data-checkflow-upsell-manual-hidden", "1");
+			if (slot === "main" && skipped.parentNode) {
+				var downsell = skipped.parentNode.querySelector('.checkflow-upsell-module[data-checkflow-upsell-slot="downsell"]');
+				if (downsell) {
+					downsell.hidden = false;
+					downsell.removeAttribute("data-checkflow-upsell-manual-hidden");
+				}
+			}
+			return;
+		}
 		var link = el.closest ? el.closest("a.woocommerce-remove-coupon") : null;
 		if (!link) return;
 		e.preventDefault();
@@ -532,9 +604,13 @@
 			});
 	});
 
-	document.addEventListener("input", function (e) {
-		validateCheckoutField(e.target);
-	});
+	document.addEventListener(
+		"blur",
+		function (e) {
+			validateCheckoutField(e.target);
+		},
+		true
+	);
 
 	document.addEventListener("change", function (e) {
 		if (e.target && e.target.classList.contains("checkflow-order-bump-checkbox")) {
@@ -565,7 +641,9 @@
 				});
 			return;
 		}
-		validateCheckoutField(e.target);
+		if (e.target && /^(select|checkbox|radio)$/i.test(e.target.type || e.target.tagName || "")) {
+			validateCheckoutField(e.target);
+		}
 		maybeRefreshShipping(e.target);
 	});
 

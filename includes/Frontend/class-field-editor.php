@@ -117,6 +117,7 @@ final class CheckFlow_Field_Editor {
 				'validationMessage' => isset( $config['validation_message'] ) ? (string) $config['validation_message'] : '',
 				'condition'   => isset( $config['condition'] ) && is_array( $config['condition'] ) ? $config['condition'] : array(),
 				'type'        => isset( $config['type'] ) ? (string) $config['type'] : 'text',
+				'group'       => isset( $config['group'] ) ? (string) $config['group'] : '',
 				'custom'      => ! empty( $config['custom'] ) ? '1' : '0',
 			);
 		}
@@ -296,6 +297,9 @@ final class CheckFlow_Field_Editor {
 			if ( empty( $config['enabled'] ) && empty( $config['protected'] ) ) {
 				continue;
 			}
+			if ( 'shipping' === ( $config['group'] ?? '' ) && ! $this->should_validate_shipping_fields( $data ) ) {
+				continue;
+			}
 			if ( ! $this->field_condition_visible( $config, $data ) ) {
 				continue;
 			}
@@ -321,6 +325,166 @@ final class CheckFlow_Field_Editor {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Normalize template/Blocks aliases before WooCommerce reads checkout data.
+	 */
+	public function normalize_posted_checkout_fields() {
+		$core_fields = array(
+			'billing_first_name',
+			'billing_last_name',
+			'billing_company',
+			'billing_country',
+			'billing_address_1',
+			'billing_address_2',
+			'billing_city',
+			'billing_state',
+			'billing_postcode',
+			'billing_phone',
+			'billing_email',
+			'shipping_first_name',
+			'shipping_last_name',
+			'shipping_company',
+			'shipping_country',
+			'shipping_address_1',
+			'shipping_address_2',
+			'shipping_city',
+			'shipping_state',
+			'shipping_postcode',
+		);
+
+		foreach ( $core_fields as $field ) {
+			if ( ! empty( $_POST[ $field ] ) ) {
+				continue;
+			}
+			$value = $this->posted_field_alias_value( $field );
+			if ( '' !== $value ) {
+				$_POST[ $field ] = $value;
+			}
+		}
+
+		foreach ( array( 'first_name', 'last_name', 'company', 'country', 'address_1', 'address_2', 'city', 'state', 'postcode' ) as $suffix ) {
+			$billing_key  = 'billing_' . $suffix;
+			$shipping_key = 'shipping_' . $suffix;
+			if ( empty( $_POST[ $billing_key ] ) && ! empty( $_POST[ $shipping_key ] ) ) {
+				$_POST[ $billing_key ] = sanitize_text_field( wp_unslash( $_POST[ $shipping_key ] ) );
+			}
+		}
+	}
+
+	/**
+	 * Normalize WooCommerce posted data before its core required-field validation.
+	 *
+	 * @param array<string,mixed> $data Posted checkout data.
+	 * @return array<string,mixed>
+	 */
+	public function normalize_checkout_posted_data( $data ) {
+		if ( ! is_array( $data ) ) {
+			$data = array();
+		}
+
+		$this->normalize_posted_checkout_fields();
+
+		foreach ( array_keys( $this->get_default_fields() ) as $field ) {
+			if ( ! empty( $data[ $field ] ) ) {
+				continue;
+			}
+			if ( ! empty( $_POST[ $field ] ) ) {
+				$data[ $field ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
+				continue;
+			}
+			$value = $this->posted_field_alias_value( $field );
+			if ( '' !== $value ) {
+				$data[ $field ] = $value;
+			}
+		}
+
+		foreach ( array( 'first_name', 'last_name', 'company', 'country', 'address_1', 'address_2', 'city', 'state', 'postcode' ) as $suffix ) {
+			$billing_key  = 'billing_' . $suffix;
+			$shipping_key = 'shipping_' . $suffix;
+			if ( empty( $data[ $billing_key ] ) && ! empty( $data[ $shipping_key ] ) ) {
+				$data[ $billing_key ] = $data[ $shipping_key ];
+			}
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Shipping fields should only be validated when WooCommerce is actually
+	 * collecting a separate shipping address.
+	 *
+	 * @param array<string,mixed> $data Checkout data.
+	 * @return bool
+	 */
+	private function should_validate_shipping_fields( $data ) {
+		if ( ! function_exists( 'WC' ) || ! WC()->cart || ! WC()->cart->needs_shipping_address() ) {
+			return false;
+		}
+
+		$ship_to_different = false;
+		if ( isset( $data['ship_to_different_address'] ) ) {
+			$ship_to_different = wc_string_to_bool( $data['ship_to_different_address'] );
+		} elseif ( isset( $_POST['ship_to_different_address'] ) ) {
+			$ship_to_different = wc_string_to_bool( wp_unslash( $_POST['ship_to_different_address'] ) );
+		}
+
+		return $ship_to_different;
+	}
+
+	/**
+	 * @param string $field Canonical WooCommerce checkout field key.
+	 * @return array<int,string>
+	 */
+	private function checkout_field_aliases( $field ) {
+		$clean = sanitize_key( $field );
+		$groupless = preg_replace( '/^(billing|shipping)_/', '', $clean );
+		$dash = str_replace( '_', '-', $clean );
+		$groupless_dash = str_replace( '_', '-', (string) $groupless );
+		$group = preg_match( '/^(billing|shipping)_/', $clean, $matches ) ? $matches[1] : '';
+		return array_values(
+			array_unique(
+				array_filter(
+					array(
+						$groupless,
+						$groupless_dash,
+						$dash,
+						$group ? $group . '-' . $groupless : '',
+						$group ? $group . '[' . $groupless . ']' : '',
+						$group ? $group . '_' . $groupless_dash : '',
+						'checkout_' . $clean,
+						'checkflow_' . $clean,
+					)
+				)
+			)
+		);
+	}
+
+	/**
+	 * @param string $field Canonical WooCommerce checkout field key.
+	 * @return string
+	 */
+	private function posted_field_alias_value( $field ) {
+		foreach ( $this->checkout_field_aliases( $field ) as $alias ) {
+			if ( isset( $_POST[ $alias ] ) && '' !== trim( (string) wp_unslash( $_POST[ $alias ] ) ) ) {
+				return sanitize_text_field( wp_unslash( $_POST[ $alias ] ) );
+			}
+		}
+
+		$clean = sanitize_key( $field );
+		if ( preg_match( '/^(billing|shipping)_(.+)$/', $clean, $matches ) ) {
+			$group = $matches[1];
+			$key   = $matches[2];
+			if ( isset( $_POST[ $group ] ) && is_array( $_POST[ $group ] ) && isset( $_POST[ $group ][ $key ] ) ) {
+				$value = wp_unslash( $_POST[ $group ][ $key ] );
+				if ( '' !== trim( (string) $value ) ) {
+					return sanitize_text_field( $value );
+				}
+			}
+		}
+
+		return '';
 	}
 
 	/**

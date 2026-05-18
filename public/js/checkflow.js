@@ -47,6 +47,7 @@
 		return (
 			document.querySelector(".wc-block-checkout__sidebar") ||
 			document.querySelector(".wc-block-components-sidebar") ||
+			document.querySelector(".woocommerce-checkout-review-order") ||
 			document.querySelector("#order_review")
 		);
 	}
@@ -54,6 +55,7 @@
 	function orderReviewCard() {
 		return (
 			document.querySelector(".wc-block-components-sidebar") ||
+			document.querySelector(".woocommerce-checkout-review-order") ||
 			document.querySelector("#order_review") ||
 			document.querySelector(".wc-block-checkout__sidebar")
 		);
@@ -93,11 +95,13 @@
 		var payment = document.querySelector("#payment, .woocommerce-checkout-payment, .wc-block-checkout__payment-method");
 		if (placement === "before_payment" && payment && payment.parentNode) {
 			payment.parentNode.insertBefore(modules, payment);
+			modules.setAttribute("data-checkflow-positioned", "1");
 			refreshOrderBumpRules();
 			return;
 		}
 		if (placement === "after_payment" && payment && payment.parentNode) {
 			payment.parentNode.insertBefore(modules, payment.nextSibling);
+			modules.setAttribute("data-checkflow-positioned", "1");
 			refreshOrderBumpRules();
 			return;
 		}
@@ -113,6 +117,7 @@
 			review.appendChild(slot);
 		}
 		slot.appendChild(modules);
+		modules.setAttribute("data-checkflow-positioned", "1");
 		refreshOrderBumpRules();
 	}
 
@@ -141,6 +146,18 @@
 		document.querySelectorAll(".checkflow-order-bump-module").forEach(function (module) {
 			var paymentRules = csvRules(module.getAttribute("data-checkflow-bump-payments"));
 			var countryRules = csvRules(module.getAttribute("data-checkflow-bump-countries"));
+			var payment = selectedPaymentMethod();
+			var country = selectedCheckoutCountry();
+			var paymentOk = !paymentRules.length || !payment || paymentRules.indexOf(payment) !== -1;
+			var countryOk = !countryRules.length || !country || countryRules.indexOf(country) !== -1;
+			module.hidden = !(paymentOk && countryOk);
+		});
+		document.querySelectorAll(".checkflow-upsell-module").forEach(function (module) {
+			if (module.getAttribute("data-checkflow-upsell-manual-hidden") === "1") {
+				return;
+			}
+			var paymentRules = csvRules(module.getAttribute("data-checkflow-upsell-payments"));
+			var countryRules = csvRules(module.getAttribute("data-checkflow-upsell-countries"));
 			var payment = selectedPaymentMethod();
 			var country = selectedCheckoutCountry();
 			var paymentOk = !paymentRules.length || !payment || paymentRules.indexOf(payment) !== -1;
@@ -274,8 +291,18 @@
 		return [clean, dash, stripped, strippedDash, "checkflow/" + custom].filter(Boolean);
 	}
 
+	function controlIsUsable(control) {
+		if (!control || control.disabled) return false;
+		if (control.type === "hidden") return false;
+		var wrapper = fieldWrapper(control);
+		if (wrapper && wrapper.offsetParent === null) return false;
+		if (control.offsetParent === null && control.type !== "radio" && control.type !== "checkbox") return false;
+		return true;
+	}
+
 	function findFieldControl(key) {
 		var candidates = fieldCandidates(key);
+		var fallback = null;
 		for (var i = 0; i < candidates.length; i += 1) {
 			var value = candidates[i];
 			var selector =
@@ -292,12 +319,97 @@
 				'"], textarea[id="' +
 				cssEscape(value) +
 				'"]';
-			var control = document.querySelector(selector);
-			if (control) {
-				return control;
+			var controls = Array.prototype.slice.call(document.querySelectorAll(selector));
+			for (var j = 0; j < controls.length; j += 1) {
+				var control = controls[j];
+				if (!fallback && control.type !== "hidden") {
+					fallback = control;
+				}
+				if (controlIsUsable(control) && String(control.value || "").trim()) {
+					return control;
+				}
+			}
+			for (var k = 0; k < controls.length; k += 1) {
+				if (controlIsUsable(controls[k])) {
+					return controls[k];
+				}
 			}
 		}
-		return null;
+		return fallback;
+	}
+
+	function findFilledFieldControl(key) {
+		var candidates = fieldCandidates(key);
+		var fallback = null;
+		for (var i = 0; i < candidates.length; i += 1) {
+			var value = candidates[i];
+			var selector =
+				'input[name="' +
+				cssEscape(value) +
+				'"], select[name="' +
+				cssEscape(value) +
+				'"], textarea[name="' +
+				cssEscape(value) +
+				'"], input[id="' +
+				cssEscape(value) +
+				'"], select[id="' +
+				cssEscape(value) +
+				'"], textarea[id="' +
+				cssEscape(value) +
+				'"]';
+			var controls = Array.prototype.slice.call(document.querySelectorAll(selector));
+			for (var j = 0; j < controls.length; j += 1) {
+				var control = controls[j];
+				if (!fallback && control.type !== "hidden") fallback = control;
+				if (controlIsUsable(control) && String(control.value || "").trim()) {
+					return control;
+				}
+			}
+		}
+		return fallback;
+	}
+
+	function syncCanonicalCheckoutFields() {
+		var form = checkoutForm();
+		if (!form) return;
+		var coreFields = [
+			"billing_first_name",
+			"billing_last_name",
+			"billing_company",
+			"billing_country",
+			"billing_address_1",
+			"billing_address_2",
+			"billing_city",
+			"billing_state",
+			"billing_postcode",
+			"billing_phone",
+			"billing_email",
+			"shipping_first_name",
+			"shipping_last_name",
+			"shipping_company",
+			"shipping_country",
+			"shipping_address_1",
+			"shipping_address_2",
+			"shipping_city",
+			"shipping_state",
+			"shipping_postcode",
+		];
+		coreFields.forEach(function (key) {
+			var canonical = form.querySelector('[name="' + cssEscape(key) + '"]');
+			var source = findFilledFieldControl(key);
+			var sourceValue = source ? String(source.value || "").trim() : "";
+			if (!sourceValue || (canonical && String(canonical.value || "").trim())) {
+				return;
+			}
+			if (!canonical) {
+				canonical = document.createElement("input");
+				canonical.type = "hidden";
+				canonical.name = key;
+				canonical.setAttribute("data-checkflow-canonical-sync", "1");
+				form.appendChild(canonical);
+			}
+			canonical.value = sourceValue;
+		});
 	}
 
 	function fieldWrapper(control) {
@@ -428,6 +540,11 @@
 			var config = meta[key] || {};
 			var control = findFieldControl(key);
 			if (!control) return;
+			var shipDifferent = document.querySelector('input[name="ship_to_different_address"]');
+			if (config.group === "shipping" && shipDifferent && !shipDifferent.checked) {
+				clearFieldError(control);
+				return;
+			}
 			if (fieldIsConditionHidden(control)) {
 				clearFieldError(control);
 				return;
@@ -688,6 +805,7 @@
 		}
 		placeOrder.setAttribute("data-checkflow-bound", "1");
 		placeOrder.addEventListener("click", function (event) {
+			syncCanonicalCheckoutFields();
 			if (!validateAdvancedFields(true)) {
 				event.preventDefault();
 				event.stopPropagation();
@@ -716,6 +834,7 @@
 				ensureQuickModulesPlacement();
 				refreshOrderBumpRules();
 				applyAdvancedFieldSettings();
+				syncCanonicalCheckoutFields();
 				repairCheckoutMojibake(checkoutRoot() || document.body);
 			})
 			.on("checkout_error", function () {
@@ -747,6 +866,7 @@
 		refreshOrderBumpRules();
 		initCountdowns();
 		applyAdvancedFieldSettings();
+		syncCanonicalCheckoutFields();
 		repairCheckoutMojibake(form);
 		bindConditionalRefresh();
 	}
@@ -768,6 +888,7 @@
 		initCountdowns();
 		enhancePlaceOrder(root);
 		applyAdvancedFieldSettings();
+		syncCanonicalCheckoutFields();
 		repairCheckoutMojibake(root);
 		bindConditionalRefresh();
 		observeCheckoutEvents();
@@ -796,6 +917,7 @@
 				refreshOrderBumpRules();
 				initCountdowns();
 				applyAdvancedFieldSettings();
+				syncCanonicalCheckoutFields();
 				repairCheckoutMojibake(checkoutRoot() || document.body);
 			}, 250);
 			window.setTimeout(function () {
@@ -804,6 +926,7 @@
 				refreshOrderBumpRules();
 				initCountdowns();
 				applyAdvancedFieldSettings();
+				syncCanonicalCheckoutFields();
 				repairCheckoutMojibake(checkoutRoot() || document.body);
 			}, 1000);
 			return;
@@ -815,6 +938,7 @@
 			refreshOrderBumpRules();
 			initCountdowns();
 			applyAdvancedFieldSettings();
+			syncCanonicalCheckoutFields();
 			repairCheckoutMojibake(checkoutRoot() || document.body);
 		}, 250);
 	}
@@ -845,6 +969,15 @@
 			window.setTimeout(refreshOrderBumpRules, 20);
 		}
 	});
+	document.addEventListener(
+		"submit",
+		function (event) {
+			if (event.target && event.target.matches && event.target.matches("form.checkout")) {
+				syncCanonicalCheckoutFields();
+			}
+		},
+		true
+	);
 
 	window.checkflowCheckoutApp = window.checkflowCheckoutApp || {};
 	window.checkflowCheckoutApp.goToStep = goToStep;

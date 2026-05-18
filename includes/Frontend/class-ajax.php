@@ -279,6 +279,71 @@ final class CheckFlow_Frontend_Ajax {
 	}
 
 	/**
+	 * Add the configured upsell/downsell product to cart.
+	 */
+	public function accept_upsell() {
+		$this->guard_request( 'accept_upsell' );
+
+		if ( ! $this->cart_available() || ! function_exists( 'wc_get_product' ) ) {
+			$this->send_error( __( 'Cart unavailable.', 'checkflow' ), array(), 400 );
+		}
+
+		$settings = CheckFlow_Admin::instance()->get_upsell_settings();
+		$slot     = isset( $_POST['slot'] ) ? sanitize_key( wp_unslash( $_POST['slot'] ) ) : 'main';
+		$slot     = in_array( $slot, array( 'main', 'downsell' ), true ) ? $slot : 'main';
+		$product_id = 'downsell' === $slot ? absint( $settings['downsell_product_id'] ) : absint( $settings['offer_product_id'] );
+		$posted_id  = isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0;
+
+		if ( empty( $settings['enabled'] ) || ! $product_id || $posted_id !== $product_id ) {
+			$this->send_error( __( 'Upsell offer is not configured.', 'checkflow' ), array( 'product_id' ), 400 );
+		}
+		if ( 'pre_purchase' === $settings['flow_type'] && ! $this->upsell_rules_match( $settings ) ) {
+			$this->send_error( __( 'This upsell offer is not available for the current cart.', 'checkflow' ), array( 'product_id' ), 400 );
+		}
+
+		$product = wc_get_product( $product_id );
+		if ( ! $product || ! $product->is_purchasable() || ! $product->is_in_stock() ) {
+			$this->send_error( __( 'Upsell product is unavailable.', 'checkflow' ), array( 'product_id' ), 400 );
+		}
+
+		foreach ( WC()->cart->get_cart() as $cart_item ) {
+			if ( absint( $cart_item['product_id'] ) === $product_id ) {
+				WC()->cart->calculate_totals();
+				$this->send_success(
+					array_merge(
+						$this->build_checkout_payload(),
+						array(
+							'checkout_url' => function_exists( 'wc_get_checkout_url' ) ? wc_get_checkout_url() : '',
+							'slot'         => $slot,
+						)
+					),
+					__( 'Upsell offer already added.', 'checkflow' )
+				);
+			}
+		}
+
+		$added = WC()->cart->add_to_cart( $product_id, 1 );
+		if ( ! $added ) {
+			$this->send_error( __( 'Could not add upsell offer.', 'checkflow' ), array( 'product_id' ), 400 );
+		}
+		if ( WC()->session ) {
+			WC()->session->set( 'checkflow_upsell_' . $slot . '_accepted', time() );
+		}
+
+		WC()->cart->calculate_totals();
+		$this->send_success(
+			array_merge(
+				$this->build_checkout_payload(),
+				array(
+					'checkout_url' => function_exists( 'wc_get_checkout_url' ) ? wc_get_checkout_url() : '',
+					'slot'         => $slot,
+				)
+			),
+			__( 'Upsell offer added.', 'checkflow' )
+		);
+	}
+
+	/**
 	 * @param array<string,mixed> $settings Order bump settings.
 	 * @return bool
 	 */
@@ -302,6 +367,45 @@ final class CheckFlow_Frontend_Ajax {
 		}
 		$include_categories = $this->csv_to_ints( $settings['include_categories'] );
 		if ( $include_categories && ! $this->cart_has_categories( $include_categories ) ) {
+			return false;
+		}
+		$countries = $this->csv_to_strings( $settings['countries'] );
+		if ( $countries && ! in_array( $this->checkout_country(), $countries, true ) ) {
+			return false;
+		}
+		$payment_methods = $this->csv_to_strings( $settings['payment_methods'] );
+		if ( $payment_methods && ! in_array( $this->chosen_payment_method(), $payment_methods, true ) ) {
+			return false;
+		}
+		if ( 'guest' === $settings['customer_rule'] && is_user_logged_in() ) {
+			return false;
+		}
+		if ( 'logged_in' === $settings['customer_rule'] && ! is_user_logged_in() ) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * @param array<string,mixed> $settings Upsell settings.
+	 * @return bool
+	 */
+	private function upsell_rules_match( $settings ) {
+		$total = (float) WC()->cart->get_subtotal();
+		if ( '' !== (string) $settings['trigger_min_total'] && $total < (float) $settings['trigger_min_total'] ) {
+			return false;
+		}
+		if ( '' !== (string) $settings['trigger_max_total'] && $total > (float) $settings['trigger_max_total'] ) {
+			return false;
+		}
+
+		$cart_product_ids = $this->cart_product_ids();
+		$trigger_products = $this->csv_to_ints( $settings['trigger_products'] );
+		if ( $trigger_products && ! array_intersect( $trigger_products, $cart_product_ids ) ) {
+			return false;
+		}
+		$trigger_categories = $this->csv_to_ints( $settings['trigger_categories'] );
+		if ( $trigger_categories && ! $this->cart_has_categories( $trigger_categories ) ) {
 			return false;
 		}
 		$countries = $this->csv_to_strings( $settings['countries'] );
@@ -443,8 +547,9 @@ final class CheckFlow_Frontend_Ajax {
 	private function check_rate_limit( $action ) {
 		$key   = 'checkflow_rate_' . md5( $this->client_fingerprint() . '|' . sanitize_key( $action ) );
 		$count = absint( get_transient( $key ) );
+		$limit = 'validate_field' === $action ? 60 : self::RATE_LIMIT;
 
-		if ( $count >= self::RATE_LIMIT ) {
+		if ( $count >= $limit ) {
 			return false;
 		}
 

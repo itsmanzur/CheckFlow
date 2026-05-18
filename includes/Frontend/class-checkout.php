@@ -156,6 +156,130 @@ final class CheckFlow_Frontend_Checkout {
 	}
 
 	/**
+	 * @param string $slot Offer slot: main or downsell.
+	 * @return WC_Product|null
+	 */
+	private function get_upsell_product( $slot = 'main' ) {
+		if ( ! function_exists( 'wc_get_product' ) ) {
+			return null;
+		}
+		$settings = CheckFlow_Admin::instance()->get_upsell_settings();
+		if ( empty( $settings['enabled'] ) ) {
+			return null;
+		}
+		$product_id = 'downsell' === $slot ? absint( $settings['downsell_product_id'] ) : absint( $settings['offer_product_id'] );
+		if ( ! $product_id || $this->cart_has_product( $product_id ) ) {
+			return null;
+		}
+		$product = wc_get_product( $product_id );
+		if ( ! $product || ! $product->is_purchasable() || ! $product->is_in_stock() ) {
+			return null;
+		}
+		return $product;
+	}
+
+	/**
+	 * @param array<string,mixed> $settings Upsell settings.
+	 * @param WC_Product          $product Upsell product.
+	 * @param string              $slot Offer slot.
+	 * @param bool                $hidden Whether to render hidden.
+	 * @param bool                $post_purchase Whether this is an order-received offer.
+	 * @return string
+	 */
+	private function get_upsell_offer_markup( $settings, $product, $slot = 'main', $hidden = false, $post_purchase = false ) {
+		$title = '' !== $settings['title'] ? $settings['title'] : $product->get_name();
+		if ( 'downsell' === $slot ) {
+			$title = sprintf(
+				/* translators: %s: upsell title. */
+				__( 'Last chance: %s', 'checkflow' ),
+				$title
+			);
+		}
+		$description = '' !== $settings['description'] ? $settings['description'] : __( 'Add this matched offer to your order.', 'checkflow' );
+		$country_rules = $this->csv_to_strings( $settings['countries'] );
+		$payment_rules = $this->csv_to_strings( $settings['payment_methods'] );
+		$classes = array( 'checkflow-upsell-module' );
+		if ( 'downsell' === $slot ) {
+			$classes[] = 'is-downsell';
+		}
+		if ( $post_purchase ) {
+			$classes[] = 'is-post-purchase';
+		}
+
+		ob_start();
+		echo '<div class="' . esc_attr( implode( ' ', $classes ) ) . '" data-checkflow-upsell-product="' . esc_attr( (string) $product->get_id() ) . '" data-checkflow-upsell-slot="' . esc_attr( $slot ) . '" data-checkflow-upsell-countries="' . esc_attr( implode( ',', $country_rules ) ) . '" data-checkflow-upsell-payments="' . esc_attr( implode( ',', $payment_rules ) ) . '"';
+		if ( $hidden ) {
+			echo ' hidden data-checkflow-upsell-manual-hidden="1"';
+		}
+		if ( $post_purchase ) {
+			echo ' data-checkflow-post-purchase="1"';
+		}
+		echo '>';
+		echo '<div class="checkflow-upsell-media">' . wp_kses_post( $product->get_image( 'woocommerce_thumbnail' ) ) . '</div>';
+		echo '<div class="checkflow-upsell-copy">';
+		echo '<span class="checkflow-upsell-badge">' . esc_html( 'downsell' === $slot ? __( 'Alternative offer', 'checkflow' ) : __( 'Special offer', 'checkflow' ) ) . '</span>';
+		echo '<strong>' . esc_html( $title ) . '</strong>';
+		echo '<small>' . esc_html( $description ) . '</small>';
+		echo '<em>' . wp_kses_post( $product->get_price_html() ) . '</em>';
+		echo '</div>';
+		echo '<div class="checkflow-upsell-actions">';
+		echo '<button type="button" class="checkflow-upsell-accept">' . esc_html__( 'Add offer', 'checkflow' ) . '</button>';
+		echo '<button type="button" class="checkflow-upsell-skip">' . esc_html__( 'No thanks', 'checkflow' ) . '</button>';
+		echo '</div>';
+		echo '</div>';
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * @param array<string,mixed> $settings Upsell settings.
+	 * @param bool                $check_dynamic Whether to check payment/country session state.
+	 * @return bool
+	 */
+	private function upsell_rules_match( $settings, $check_dynamic = true ) {
+		if ( ! function_exists( 'WC' ) || ! WC()->cart ) {
+			return false;
+		}
+
+		$total = (float) WC()->cart->get_subtotal();
+		if ( '' !== (string) $settings['trigger_min_total'] && $total < (float) $settings['trigger_min_total'] ) {
+			return false;
+		}
+		if ( '' !== (string) $settings['trigger_max_total'] && $total > (float) $settings['trigger_max_total'] ) {
+			return false;
+		}
+
+		$cart_product_ids = $this->cart_product_ids();
+		$trigger_products = $this->csv_to_ints( $settings['trigger_products'] );
+		if ( $trigger_products && ! array_intersect( $trigger_products, $cart_product_ids ) ) {
+			return false;
+		}
+		$trigger_categories = $this->csv_to_ints( $settings['trigger_categories'] );
+		if ( $trigger_categories && ! $this->cart_has_categories( $trigger_categories ) ) {
+			return false;
+		}
+
+		if ( $check_dynamic ) {
+			$countries = $this->csv_to_strings( $settings['countries'] );
+			if ( $countries && ! in_array( $this->checkout_country(), $countries, true ) ) {
+				return false;
+			}
+			$payment_methods = $this->csv_to_strings( $settings['payment_methods'] );
+			if ( $payment_methods && ! in_array( $this->chosen_payment_method(), $payment_methods, true ) ) {
+				return false;
+			}
+		}
+
+		if ( 'guest' === $settings['customer_rule'] && is_user_logged_in() ) {
+			return false;
+		}
+		if ( 'logged_in' === $settings['customer_rule'] && ! is_user_logged_in() ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
 	 * @param array<string,mixed> $settings Order bump settings.
 	 * @param bool                $check_dynamic Whether to check payment/country session state.
 	 * @return bool
@@ -448,9 +572,12 @@ final class CheckFlow_Frontend_Checkout {
 		}
 
 		$settings  = CheckFlow_Admin::instance()->get_order_bump_settings();
+		$upsell_settings = CheckFlow_Admin::instance()->get_upsell_settings();
 		$has_timer = $this->quick_setting_enabled( 'urgency_timer' );
 		$bump      = ! empty( $settings['enabled'] ) ? $this->get_order_bump_product() : null;
-		if ( ! $has_timer && ! $bump ) {
+		$upsell    = ! empty( $upsell_settings['enabled'] ) && 'pre_purchase' === $upsell_settings['flow_type'] && $this->upsell_rules_match( $upsell_settings, false ) ? $this->get_upsell_product( 'main' ) : null;
+		$downsell  = $upsell ? $this->get_upsell_product( 'downsell' ) : null;
+		if ( ! $has_timer && ! $bump && ! $upsell ) {
 			return;
 		}
 
@@ -476,6 +603,37 @@ final class CheckFlow_Frontend_Checkout {
 			echo '</label>';
 			echo '</div>';
 		}
+		if ( $upsell ) {
+			echo $this->get_upsell_offer_markup( $upsell_settings, $upsell, 'main' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			if ( $downsell ) {
+				echo $this->get_upsell_offer_markup( $upsell_settings, $downsell, 'downsell', true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			}
+		}
+		echo '</div>';
+	}
+
+	/**
+	 * Render a safe post-purchase upsell slot on the order-received page.
+	 */
+	public function render_order_received_upsell() {
+		if ( is_admin() || wp_doing_ajax() || ! function_exists( 'is_order_received_page' ) || ! is_order_received_page() ) {
+			return;
+		}
+
+		$settings = CheckFlow_Admin::instance()->get_upsell_settings();
+		if ( empty( $settings['enabled'] ) || 'post_purchase' !== $settings['flow_type'] ) {
+			return;
+		}
+
+		$product = $this->get_upsell_product( 'main' );
+		if ( ! $product ) {
+			return;
+		}
+
+		echo '<div class="checkflow-post-purchase-upsell">';
+		echo '<h3>' . esc_html__( 'Before you go', 'checkflow' ) . '</h3>';
+		echo '<p>' . esc_html__( 'Add this offer to a new checkout. Your completed order stays unchanged.', 'checkflow' ) . '</p>';
+		echo $this->get_upsell_offer_markup( $settings, $product, 'main', false, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		echo '</div>';
 	}
 

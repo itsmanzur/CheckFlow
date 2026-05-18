@@ -54,9 +54,11 @@ final class CheckFlow_Frontend_Assets {
 	 */
 	public function enqueue() {
 		$settings          = CheckFlow_Admin::instance()->get_quick_settings();
+		$upsell_settings   = CheckFlow_Admin::instance()->get_upsell_settings();
 		$is_checkout_page  = $this->is_checkout_request();
 		$is_order_received = function_exists( 'is_order_received_page' ) && is_order_received_page();
 		$is_checkout       = $is_checkout_page && ! $is_order_received;
+		$has_order_upsell  = $is_order_received && ! empty( $upsell_settings['enabled'] ) && 'post_purchase' === $upsell_settings['flow_type'];
 		$storefront_mode   = '';
 
 		if ( ! $is_checkout_page ) {
@@ -67,7 +69,7 @@ final class CheckFlow_Frontend_Assets {
 			}
 		}
 
-		if ( ! $is_checkout && '' === $storefront_mode ) {
+		if ( ! $is_checkout && ! $has_order_upsell && '' === $storefront_mode ) {
 			return;
 		}
 
@@ -113,7 +115,7 @@ final class CheckFlow_Frontend_Assets {
 			);
 		}
 
-		if ( ! $is_checkout ) {
+		if ( ! $is_checkout && ! $has_order_upsell ) {
 			return;
 		}
 
@@ -141,8 +143,10 @@ final class CheckFlow_Frontend_Assets {
 				'nonce'   => wp_create_nonce( 'checkflow-checkout' ),
 				'fieldMeta' => class_exists( 'CheckFlow_Field_Editor' ) ? CheckFlow_Field_Editor::instance()->get_checkout_field_meta() : array(),
 				'cartContext' => class_exists( 'CheckFlow_Field_Editor' ) ? CheckFlow_Field_Editor::instance()->get_cart_context() : array(),
+				'checkoutUrl' => function_exists( 'wc_get_checkout_url' ) ? wc_get_checkout_url() : home_url( '/checkout/' ),
 				'strings' => array(
 					'updating' => __( 'Updating total...', 'checkflow' ),
+					'upsellAdded' => __( 'Offer added. Redirecting to checkout...', 'checkflow' ),
 				),
 			)
 		);
