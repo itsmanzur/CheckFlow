@@ -326,6 +326,7 @@ final class CheckFlow_Frontend_Ajax {
 		if ( ! $added ) {
 			$this->send_error( __( 'Could not add upsell offer.', 'checkflow' ), array( 'product_id' ), 400 );
 		}
+		$this->record_upsell_event( 'downsell' === $slot ? 'downsell_accepted' : 'accepted' );
 		if ( WC()->session ) {
 			WC()->session->set( 'checkflow_upsell_' . $slot . '_accepted', time() );
 		}
@@ -341,6 +342,42 @@ final class CheckFlow_Frontend_Ajax {
 			),
 			__( 'Upsell offer added.', 'checkflow' )
 		);
+	}
+
+	/**
+	 * Track lightweight local upsell events for admin performance cards.
+	 */
+	public function track_upsell_event() {
+		$this->guard_request( 'track_upsell_event' );
+
+		$event = isset( $_POST['event'] ) ? sanitize_key( wp_unslash( $_POST['event'] ) ) : '';
+		if ( ! in_array( $event, array( 'shown', 'skipped', 'downsell_shown' ), true ) ) {
+			$this->send_error( __( 'Invalid upsell event.', 'checkflow' ), array( 'event' ), 400 );
+		}
+
+		$stats = $this->record_upsell_event( $event );
+		$this->send_success(
+			array(
+				'event' => $event,
+				'stats' => $stats,
+			),
+			__( 'Upsell event tracked.', 'checkflow' )
+		);
+	}
+
+	/**
+	 * @param string $event Event key.
+	 * @return array<string,int>
+	 */
+	private function record_upsell_event( $event ) {
+		$allowed = array( 'shown', 'accepted', 'skipped', 'downsell_shown', 'downsell_accepted' );
+		if ( ! in_array( $event, $allowed, true ) ) {
+			return CheckFlow_Admin::instance()->get_upsell_stats();
+		}
+		$stats = CheckFlow_Admin::instance()->get_upsell_stats();
+		$stats[ $event ] = isset( $stats[ $event ] ) ? absint( $stats[ $event ] ) + 1 : 1;
+		update_option( CheckFlow_Admin::UPSELL_STATS_OPTION, $stats, false );
+		return $stats;
 	}
 
 	/**
@@ -547,7 +584,7 @@ final class CheckFlow_Frontend_Ajax {
 	private function check_rate_limit( $action ) {
 		$key   = 'checkflow_rate_' . md5( $this->client_fingerprint() . '|' . sanitize_key( $action ) );
 		$count = absint( get_transient( $key ) );
-		$limit = 'validate_field' === $action ? 60 : self::RATE_LIMIT;
+		$limit = in_array( $action, array( 'validate_field', 'track_upsell_event' ), true ) ? 60 : self::RATE_LIMIT;
 
 		if ( $count >= $limit ) {
 			return false;

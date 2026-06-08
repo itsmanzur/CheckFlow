@@ -301,6 +301,33 @@
 		});
 	}
 
+	function trackUpsellEvent(eventName, module) {
+		if (!eventName || !module) return;
+		var productId = module.getAttribute("data-checkflow-upsell-product") || "";
+		var slot = module.getAttribute("data-checkflow-upsell-slot") || "main";
+		var key = "checkflow_upsell_" + eventName + "_" + slot + "_" + productId;
+		try {
+			if (eventName === "shown" || eventName === "downsell_shown") {
+				var seenAt = window.sessionStorage ? sessionStorage.getItem(key) : "";
+				if (seenAt) return;
+				if (window.sessionStorage) sessionStorage.setItem(key, String(Date.now()));
+			}
+		} catch (e) {}
+		postAction("checkflow_track_upsell_event", {
+			event: eventName,
+			product_id: productId,
+			slot: slot,
+		}).catch(function () {});
+	}
+
+	function trackVisibleUpsells() {
+		document.querySelectorAll(".checkflow-upsell-module").forEach(function (module) {
+			if (module.hidden) return;
+			var slot = module.getAttribute("data-checkflow-upsell-slot") || "main";
+			trackUpsellEvent(slot === "downsell" ? "downsell_shown" : "shown", module);
+		});
+	}
+
 	function getAjaxUrl() {
 		if (!window.checkflowCheckout || !checkflowCheckout.ajaxUrl) {
 			return "";
@@ -547,6 +574,9 @@
 			var skipped = upsellSkip.closest(".checkflow-upsell-module");
 			if (!skipped) return;
 			var slot = skipped.getAttribute("data-checkflow-upsell-slot") || "main";
+			if (slot === "main") {
+				trackUpsellEvent("skipped", skipped);
+			}
 			skipped.hidden = true;
 			skipped.setAttribute("data-checkflow-upsell-manual-hidden", "1");
 			if (slot === "main" && skipped.parentNode) {
@@ -554,6 +584,7 @@
 				if (downsell) {
 					downsell.hidden = false;
 					downsell.removeAttribute("data-checkflow-upsell-manual-hidden");
+					trackUpsellEvent("downsell_shown", downsell);
 				}
 			}
 			return;
@@ -656,5 +687,7 @@
 		maybeRefreshShipping(form.querySelector('[name="billing_country"], [name="shipping_country"]'));
 	};
 	window.checkflowCheckoutEngine.placeOrder = placeOrder;
+	window.setTimeout(trackVisibleUpsells, 800);
+	window.setTimeout(trackVisibleUpsells, 1800);
 
 })();

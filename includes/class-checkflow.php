@@ -101,6 +101,8 @@ final class CheckFlow {
 		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_add_order_bump', $ajax, 'add_order_bump' );
 		$this->loader->add_action( 'wp_ajax_checkflow_accept_upsell', $ajax, 'accept_upsell' );
 		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_accept_upsell', $ajax, 'accept_upsell' );
+		$this->loader->add_action( 'wp_ajax_checkflow_track_upsell_event', $ajax, 'track_upsell_event' );
+		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_track_upsell_event', $ajax, 'track_upsell_event' );
 		$this->loader->add_action( 'wp_ajax_checkflow_place_order', $ajax, 'place_order' );
 		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_place_order', $ajax, 'place_order' );
 

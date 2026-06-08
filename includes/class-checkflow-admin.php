@@ -30,6 +30,8 @@ final class CheckFlow_Admin {
 
 	const UPSELL_OPTION = 'checkflow_upsell_settings';
 
+	const UPSELL_STATS_OPTION = 'checkflow_upsell_stats';
+
 	/** @var self|null */
 	private static $instance;
 
@@ -1505,6 +1507,25 @@ final class CheckFlow_Admin {
 		$settings['display_timing'] = in_array( $settings['display_timing'], array( 'before_payment', 'after_checkout', 'order_received' ), true ) ? $settings['display_timing'] : 'after_checkout';
 
 		return $settings;
+	}
+
+	/**
+	 * @return array<string,int>
+	 */
+	public function get_upsell_stats() {
+		$defaults = array(
+			'shown'             => 0,
+			'accepted'          => 0,
+			'skipped'           => 0,
+			'downsell_shown'    => 0,
+			'downsell_accepted' => 0,
+		);
+		$saved = get_option( self::UPSELL_STATS_OPTION, array() );
+		$stats = wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+		foreach ( $defaults as $key => $value ) {
+			$stats[ $key ] = absint( $stats[ $key ] );
+		}
+		return $stats;
 	}
 
 	/**

@@ -168,6 +168,7 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - Order bump now has a lock-ready admin foundation: product picker, copy preview, placement, cart/customer/location/payment targeting rules, live rule summary, checklist cues, and frontend rule enforcement.
 - Order Bump checkout QA note: current saved rules require cart product `#162 - Download Natural`; with that product in cart and subtotal over the minimum, the configured `#155 - Gift Grey Gel` offer renders, AJAX-adds to the checkout cart, refresh hides the offer to prevent duplicate add, and the Quick Settings `order_bump` state now syncs with the dedicated Order Bump enable toggle.
 - Upsell Funnel now has a saved admin rules UI foundation and a safe customer-facing execution engine: pre-purchase checkout offers, optional downsell reveal after skip, AJAX add-to-cart, dynamic country/payment visibility, and a post-purchase order-received offer that starts a new checkout without changing the completed order.
+- Upsell Funnel local performance tracking is implemented for shown, accepted, skipped, downsell shown, and downsell accepted events, with the admin performance card showing real local counts and take rates.
 - Upsell discount fields are still placeholders; real discount/coupon application and performance reporting need a dedicated pass.
 - Dashboard analytics foundation is implemented using WooCommerce order data and CheckFlow local event logs; dedicated analytics event tables are still pending.
 - Tests, security audit docs, checklist docs, screenshots, `.pot`/`.po` files are not implemented.
@@ -226,6 +227,7 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [x] Add Upsell Funnel pre/post-purchase rules UI foundation with AJAX save.
 - [x] Polish Upsell Funnel admin QA states: save feedback, disabled discount input, safe-mode guidance, and live summary.
 - [x] Add Upsell Funnel customer-facing execution engine without hijacking WooCommerce payment submission.
+- [x] Add Upsell Funnel local performance tracking and admin analytics cards.
 - [x] Add popup modal checkout.
 - [x] Add slide-in checkout.
 - [x] Add reCAPTCHA v3 module contract with safe no-op when keys are missing.
@@ -253,7 +255,8 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [ ] Server-side external tracking and retry queue.
 - [x] Order bump settings and lock-ready rules engine foundation.
 - [x] Upsell customer-facing execution engine.
-- [ ] Upsell sales performance table.
+- [x] Upsell local performance counters and take-rate cards.
+- [ ] Upsell detailed sales performance table.
 
 ### Milestone F - Hardening & Release
 
