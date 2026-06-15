@@ -322,11 +322,22 @@ final class CheckFlow_Frontend_Ajax {
 			}
 		}
 
-		$added = WC()->cart->add_to_cart( $product_id, 1 );
+		$base_price       = (float) $product->get_price();
+		$discounted_price = $this->discounted_upsell_price( $base_price, (string) $settings['discount_type'], (float) $settings['discount_value'] );
+		$cart_item_data   = array(
+			'checkflow_upsell'                => true,
+			'checkflow_upsell_slot'           => $slot,
+			'checkflow_upsell_discount_type'  => (string) $settings['discount_type'],
+			'checkflow_upsell_discount_value' => (string) $settings['discount_value'],
+			'checkflow_upsell_original_price' => (string) $base_price,
+			'checkflow_upsell_discount_price' => (string) $discounted_price,
+		);
+
+		$added = WC()->cart->add_to_cart( $product_id, 1, 0, array(), $cart_item_data );
 		if ( ! $added ) {
 			$this->send_error( __( 'Could not add upsell offer.', 'checkflow' ), array( 'product_id' ), 400 );
 		}
-		$this->record_upsell_event( 'downsell' === $slot ? 'downsell_accepted' : 'accepted' );
+		$this->record_upsell_acceptance( 'downsell' === $slot ? 'downsell_accepted' : 'accepted', $base_price, $discounted_price );
 		if ( WC()->session ) {
 			WC()->session->set( 'checkflow_upsell_' . $slot . '_accepted', time() );
 		}
@@ -378,6 +389,46 @@ final class CheckFlow_Frontend_Ajax {
 		$stats[ $event ] = isset( $stats[ $event ] ) ? absint( $stats[ $event ] ) + 1 : 1;
 		update_option( CheckFlow_Admin::UPSELL_STATS_OPTION, $stats, false );
 		return $stats;
+	}
+
+	/**
+	 * Track an accepted offer with lightweight money metrics for the admin cards.
+	 *
+	 * @param string $event Accepted event key.
+	 * @param float  $base_price Original unit price.
+	 * @param float  $discounted_price Final unit price.
+	 * @return array<string,int>
+	 */
+	private function record_upsell_acceptance( $event, $base_price, $discounted_price ) {
+		$stats = $this->record_upsell_event( $event );
+		$revenue_cents  = max( 0, (int) round( $discounted_price * 100 ) );
+		$discount_cents = max( 0, (int) round( ( $base_price - $discounted_price ) * 100 ) );
+
+		$stats['revenue_cents'] = isset( $stats['revenue_cents'] ) ? absint( $stats['revenue_cents'] ) + $revenue_cents : $revenue_cents;
+		$stats['discount_cents'] = isset( $stats['discount_cents'] ) ? absint( $stats['discount_cents'] ) + $discount_cents : $discount_cents;
+		update_option( CheckFlow_Admin::UPSELL_STATS_OPTION, $stats, false );
+
+		return $stats;
+	}
+
+	/**
+	 * @param float  $base_price Base unit price.
+	 * @param string $discount_type Discount type.
+	 * @param float  $discount_value Discount value.
+	 * @return float
+	 */
+	private function discounted_upsell_price( $base_price, $discount_type, $discount_value ) {
+		if ( $base_price <= 0 || $discount_value <= 0 ) {
+			return $base_price;
+		}
+		if ( 'percent' === $discount_type ) {
+			$discount_value = min( 100, max( 0, $discount_value ) );
+			return max( 0, $base_price - ( $base_price * ( $discount_value / 100 ) ) );
+		}
+		if ( 'fixed' === $discount_type ) {
+			return max( 0, $base_price - $discount_value );
+		}
+		return $base_price;
 	}
 
 	/**

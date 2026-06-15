@@ -1519,6 +1519,8 @@ final class CheckFlow_Admin {
 			'skipped'           => 0,
 			'downsell_shown'    => 0,
 			'downsell_accepted' => 0,
+			'revenue_cents'     => 0,
+			'discount_cents'    => 0,
 		);
 		$saved = get_option( self::UPSELL_STATS_OPTION, array() );
 		$stats = wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );

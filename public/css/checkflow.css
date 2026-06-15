@@ -812,6 +812,18 @@
 	font-weight: 800;
 }
 
+.checkflow-upsell-copy em del {
+	margin-right: 6px;
+	color: #94a3b8;
+	font-weight: 700;
+	text-decoration-thickness: 1px;
+}
+
+.checkflow-upsell-copy em ins {
+	color: #059669;
+	text-decoration: none;
+}
+
 .checkflow-upsell-actions {
 	grid-column: 1 / -1;
 	display: grid;

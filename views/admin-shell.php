@@ -65,6 +65,10 @@ $upsell_downsell_shown = absint( $upsell_stats['downsell_shown'] );
 $upsell_downsell_accepted = absint( $upsell_stats['downsell_accepted'] );
 $upsell_take_rate = $upsell_shown > 0 ? round( ( $upsell_accepted / $upsell_shown ) * 100 ) : 0;
 $upsell_downsell_rate = $upsell_downsell_shown > 0 ? round( ( $upsell_downsell_accepted / $upsell_downsell_shown ) * 100 ) : 0;
+$upsell_revenue = isset( $upsell_stats['revenue_cents'] ) ? absint( $upsell_stats['revenue_cents'] ) / 100 : 0;
+$upsell_discount = isset( $upsell_stats['discount_cents'] ) ? absint( $upsell_stats['discount_cents'] ) / 100 : 0;
+$upsell_revenue_label = function_exists( 'wc_price' ) ? wp_strip_all_tags( wc_price( $upsell_revenue ) ) : number_format_i18n( $upsell_revenue, 2 );
+$upsell_discount_label = function_exists( 'wc_price' ) ? wp_strip_all_tags( wc_price( $upsell_discount ) ) : number_format_i18n( $upsell_discount, 2 );
 $upsell_products = $order_bump_products;
 $upsell_offer_product = ! empty( $upsell_settings['offer_product_id'] ) && function_exists( 'wc_get_product' ) ? wc_get_product( absint( $upsell_settings['offer_product_id'] ) ) : null;
 $upsell_offer_label = $upsell_offer_product instanceof WC_Product ? sprintf( '#%1$d - %2$s', $upsell_offer_product->get_id(), $upsell_offer_product->get_name() ) : __( 'No offer product selected', 'checkflow' );
@@ -1340,6 +1344,8 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								<div class="cf-mini-card"><strong><?php echo esc_html( (string) $upsell_take_rate ); ?>%</strong><span>Take rate</span></div>
 							</div>
 							<div class="cf-module-list cf-upsell-performance-list">
+								<div><strong>Upsell revenue</strong><span><?php echo esc_html( $upsell_revenue_label ); ?> tracked from accepted offers</span></div>
+								<div><strong>Discount given</strong><span><?php echo esc_html( $upsell_discount_label ); ?> applied through CheckFlow item pricing</span></div>
 								<div><strong>Skipped</strong><span><?php echo esc_html( (string) $upsell_skipped ); ?> shoppers declined the main offer</span></div>
 								<div><strong>Downsell shown</strong><span><?php echo esc_html( (string) $upsell_downsell_shown ); ?> secondary offers displayed</span></div>
 								<div><strong>Downsell accepted</strong><span><?php echo esc_html( (string) $upsell_downsell_accepted ); ?> accepted • <?php echo esc_html( (string) $upsell_downsell_rate ); ?>% rate</span></div>

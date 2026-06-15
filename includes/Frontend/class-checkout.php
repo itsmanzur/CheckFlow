@@ -198,6 +198,7 @@ final class CheckFlow_Frontend_Checkout {
 		$description = '' !== $settings['description'] ? $settings['description'] : __( 'Add this matched offer to your order.', 'checkflow' );
 		$country_rules = $this->csv_to_strings( $settings['countries'] );
 		$payment_rules = $this->csv_to_strings( $settings['payment_methods'] );
+		$price_html = $this->get_upsell_price_html( $product, $settings );
 		$classes = array( 'checkflow-upsell-module' );
 		if ( 'downsell' === $slot ) {
 			$classes[] = 'is-downsell';
@@ -220,7 +221,7 @@ final class CheckFlow_Frontend_Checkout {
 		echo '<span class="checkflow-upsell-badge">' . esc_html( 'downsell' === $slot ? __( 'Alternative offer', 'checkflow' ) : __( 'Special offer', 'checkflow' ) ) . '</span>';
 		echo '<strong>' . esc_html( $title ) . '</strong>';
 		echo '<small>' . esc_html( $description ) . '</small>';
-		echo '<em>' . wp_kses_post( $product->get_price_html() ) . '</em>';
+		echo '<em>' . wp_kses_post( $price_html ) . '</em>';
 		echo '</div>';
 		echo '<div class="checkflow-upsell-actions">';
 		echo '<button type="button" class="checkflow-upsell-accept">' . esc_html__( 'Add offer', 'checkflow' ) . '</button>';
@@ -228,6 +229,100 @@ final class CheckFlow_Frontend_Checkout {
 		echo '</div>';
 		echo '</div>';
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Build a clear offer price preview when an upsell discount is configured.
+	 *
+	 * @param WC_Product          $product Product.
+	 * @param array<string,mixed> $settings Upsell settings.
+	 * @return string
+	 */
+	private function get_upsell_price_html( $product, $settings ) {
+		$base_price = (float) $product->get_price();
+		if ( $base_price <= 0 || empty( $settings['discount_type'] ) || 'none' === $settings['discount_type'] || '' === (string) $settings['discount_value'] ) {
+			return $product->get_price_html();
+		}
+
+		$discounted = $this->discounted_upsell_price( $base_price, (string) $settings['discount_type'], (float) $settings['discount_value'] );
+		if ( $discounted >= $base_price ) {
+			return $product->get_price_html();
+		}
+
+		return sprintf(
+			'<del>%1$s</del> <ins>%2$s</ins>',
+			wc_price( $base_price ),
+			wc_price( $discounted )
+		);
+	}
+
+	/**
+	 * @param float  $base_price Base unit price.
+	 * @param string $discount_type Discount type.
+	 * @param float  $discount_value Discount value.
+	 * @return float
+	 */
+	private function discounted_upsell_price( $base_price, $discount_type, $discount_value ) {
+		if ( $base_price <= 0 || $discount_value <= 0 ) {
+			return $base_price;
+		}
+		if ( 'percent' === $discount_type ) {
+			$discount_value = min( 100, max( 0, $discount_value ) );
+			return max( 0, $base_price - ( $base_price * ( $discount_value / 100 ) ) );
+		}
+		if ( 'fixed' === $discount_type ) {
+			return max( 0, $base_price - $discount_value );
+		}
+		return $base_price;
+	}
+
+	/**
+	 * Apply accepted upsell item discounts without creating coupons or touching payment submission.
+	 *
+	 * @param WC_Cart $cart Cart object.
+	 */
+	public function apply_upsell_cart_discounts( $cart ) {
+		if ( is_admin() && ! wp_doing_ajax() ) {
+			return;
+		}
+		if ( ! $cart || ! is_callable( array( $cart, 'get_cart' ) ) ) {
+			return;
+		}
+
+		foreach ( $cart->get_cart() as $cart_item ) {
+			if ( empty( $cart_item['checkflow_upsell'] ) || empty( $cart_item['data'] ) || ! is_object( $cart_item['data'] ) ) {
+				continue;
+			}
+			$original = isset( $cart_item['checkflow_upsell_original_price'] ) ? (float) $cart_item['checkflow_upsell_original_price'] : (float) $cart_item['data']->get_regular_price();
+			if ( $original <= 0 ) {
+				$original = (float) $cart_item['data']->get_price();
+			}
+			$type  = isset( $cart_item['checkflow_upsell_discount_type'] ) ? (string) $cart_item['checkflow_upsell_discount_type'] : 'none';
+			$value = isset( $cart_item['checkflow_upsell_discount_value'] ) ? (float) $cart_item['checkflow_upsell_discount_value'] : 0;
+			$price = $this->discounted_upsell_price( $original, $type, $value );
+			$cart_item['data']->set_price( $price );
+		}
+	}
+
+	/**
+	 * Preserve upsell attribution and discount details on the WooCommerce order line item.
+	 *
+	 * @param WC_Order_Item_Product $item Order item.
+	 * @param string                $cart_item_key Cart item key.
+	 * @param array<string,mixed>   $values Cart item values.
+	 * @param WC_Order              $order Order.
+	 */
+	public function save_upsell_order_item_meta( $item, $cart_item_key, $values, $order ) {
+		if ( empty( $values['checkflow_upsell'] ) || ! is_object( $item ) ) {
+			return;
+		}
+		$item->add_meta_data( '_checkflow_upsell', 'yes', true );
+		$item->add_meta_data( '_checkflow_upsell_slot', isset( $values['checkflow_upsell_slot'] ) ? sanitize_key( (string) $values['checkflow_upsell_slot'] ) : 'main', true );
+		if ( ! empty( $values['checkflow_upsell_discount_type'] ) && 'none' !== $values['checkflow_upsell_discount_type'] ) {
+			$item->add_meta_data( '_checkflow_upsell_discount_type', sanitize_key( (string) $values['checkflow_upsell_discount_type'] ), true );
+			$item->add_meta_data( '_checkflow_upsell_discount_value', wc_format_decimal( (string) $values['checkflow_upsell_discount_value'] ), true );
+			$item->add_meta_data( '_checkflow_upsell_original_price', wc_format_decimal( (string) $values['checkflow_upsell_original_price'] ), true );
+		}
 	}
 
 	/**

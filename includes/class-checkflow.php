@@ -115,6 +115,8 @@ final class CheckFlow {
 		$this->loader->add_action( 'woocommerce_after_checkout_validation', $field_editor, 'validate_checkout_fields', 15, 2 );
 		$this->loader->add_action( 'woocommerce_checkout_create_order', $field_editor, 'save_custom_order_meta', 20, 1 );
 		$this->loader->add_action( 'woocommerce_store_api_checkout_update_order_from_request', $field_editor, 'save_store_api_custom_order_meta', 20, 2 );
+		$this->loader->add_action( 'woocommerce_before_calculate_totals', $checkout, 'apply_upsell_cart_discounts', 20 );
+		$this->loader->add_action( 'woocommerce_checkout_create_order_line_item', $checkout, 'save_upsell_order_item_meta', 20, 4 );
 		$this->loader->add_filter( 'woocommerce_add_to_cart_redirect', $checkout, 'maybe_direct_checkout_redirect', 20 );
 		$this->loader->add_filter( 'option_woocommerce_enable_guest_checkout', $checkout, 'filter_guest_checkout_option', 20 );
 		$this->loader->add_filter( 'woocommerce_checkout_registration_required', $checkout, 'filter_checkout_registration_required', 20 );
