@@ -258,7 +258,7 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [x] Order bump settings and lock-ready rules engine foundation.
 - [x] Upsell customer-facing execution engine.
 - [x] Upsell local performance counters, take-rate cards, accepted revenue, discount totals, and item-level discount attribution.
-- [ ] Upsell detailed sales performance table.
+- [x] Upsell detailed sales performance table.
 
 ### Milestone F - Hardening & Release
 

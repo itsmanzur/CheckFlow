@@ -1531,6 +1531,89 @@ final class CheckFlow_Admin {
 	}
 
 	/**
+	 * Get recent WooCommerce order items accepted through the CheckFlow upsell engine.
+	 *
+	 * @param int $limit Maximum rows to return.
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function get_upsell_sales_performance( $limit = 12 ) {
+		if ( ! function_exists( 'wc_get_orders' ) ) {
+			return array();
+		}
+
+		$limit  = max( 1, absint( $limit ) );
+		$orders = wc_get_orders(
+			array(
+				'limit'   => 100,
+				'orderby' => 'date',
+				'order'   => 'DESC',
+				'return'  => 'objects',
+				'status'  => function_exists( 'wc_get_order_statuses' ) ? array_keys( wc_get_order_statuses() ) : 'any',
+			)
+		);
+		$rows   = array();
+
+		foreach ( $orders as $order ) {
+			if ( ! $order instanceof WC_Order ) {
+				continue;
+			}
+
+			foreach ( $order->get_items( 'line_item' ) as $item ) {
+				if ( ! $item instanceof WC_Order_Item_Product ) {
+					continue;
+				}
+				if ( 'yes' !== (string) $item->get_meta( '_checkflow_upsell', true ) ) {
+					continue;
+				}
+
+				$slot           = sanitize_key( (string) $item->get_meta( '_checkflow_upsell_slot', true ) );
+				$slot           = '' !== $slot ? $slot : 'main';
+				$quantity       = max( 1, absint( $item->get_quantity() ) );
+				$line_total     = (float) $item->get_total();
+				$line_subtotal  = (float) $item->get_subtotal();
+				$original_price = (float) $item->get_meta( '_checkflow_upsell_original_price', true );
+				$discount_total = max( 0, $line_subtotal - $line_total );
+				$original_total = $line_subtotal;
+
+				if ( $original_price > 0 ) {
+					$original_total = $original_price * $quantity;
+					$discount_total = max( 0, ( $original_price * $quantity ) - $line_total );
+				}
+
+				$rows[] = array(
+					'order_id'       => (string) $order->get_id(),
+					'order'          => '#' . $order->get_order_number(),
+					'edit_url'       => $order->get_edit_order_url(),
+					'customer'       => $this->order_customer_name( $order ),
+					'product'        => wp_strip_all_tags( $item->get_name() ),
+					'quantity'       => $quantity,
+					'slot'           => $slot,
+					'slot_label'     => 'downsell' === $slot ? __( 'Downsell', 'checkflow' ) : __( 'Main offer', 'checkflow' ),
+					'slot_class'     => 'downsell' === $slot ? 'is-downsell' : 'is-main',
+					'discount_type'  => sanitize_key( (string) $item->get_meta( '_checkflow_upsell_discount_type', true ) ),
+					'discount_value' => (string) $item->get_meta( '_checkflow_upsell_discount_value', true ),
+					'original_raw'   => $original_total,
+					'revenue_raw'    => $line_total,
+					'discount_raw'   => $discount_total,
+					'original'       => $this->format_money_amount( $original_total, $order->get_currency() ),
+					'revenue'        => $this->format_money_amount( $line_total, $order->get_currency() ),
+					'discount'       => $this->format_money_amount( $discount_total, $order->get_currency() ),
+					'status'         => wc_get_order_status_name( $order->get_status() ),
+					'status_class'   => $this->order_status_class( (string) $order->get_status() ),
+					'date'           => $order->get_date_created() ? $order->get_date_created()->date_i18n( 'M j, H:i' ) : '',
+					'timestamp'      => $order->get_date_created() ? $order->get_date_created()->getTimestamp() : 0,
+				);
+
+				if ( count( $rows ) >= $limit ) {
+					return $rows;
+				}
+			}
+		}
+
+		return $rows;
+	}
+
+	/**
 	 * @param mixed $value Raw decimal value.
 	 * @return string
 	 */
@@ -1897,6 +1980,24 @@ final class CheckFlow_Admin {
 		$text = html_entity_decode( wp_strip_all_tags( (string) $value ), ENT_QUOTES | ENT_HTML5, get_bloginfo( 'charset' ) );
 		$text = str_replace( "\xc2\xa0", ' ', $text );
 		return trim( preg_replace( '/\s+/', ' ', $text ) );
+	}
+
+	/**
+	 * Format a numeric amount for compact admin tables.
+	 *
+	 * @param float  $amount Amount.
+	 * @param string $currency Currency code.
+	 * @return string
+	 */
+	private function format_money_amount( $amount, $currency = '' ) {
+		if ( function_exists( 'wc_price' ) ) {
+			$args = array();
+			if ( '' !== $currency ) {
+				$args['currency'] = $currency;
+			}
+			return $this->clean_money_text( wc_price( (float) $amount, $args ) );
+		}
+		return number_format_i18n( (float) $amount, 2 );
 	}
 
 	/**

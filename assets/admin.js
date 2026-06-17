@@ -750,6 +750,157 @@
 		showToast("Selected orders exported");
 	}
 
+	function csvCell(value) {
+		return '"' + String(value == null ? "" : value).replace(/"/g, '""') + '"';
+	}
+
+	function getUpsellSaleRows(includeHidden) {
+		var root = document.getElementById("checkflow-admin");
+		if (!root) {
+			return [];
+		}
+		var rows = Array.prototype.slice.call(root.querySelectorAll("[data-upsell-sale-row]"));
+		if (includeHidden) {
+			return rows;
+		}
+		return rows.filter(function (row) {
+			return !row.hidden;
+		});
+	}
+
+	function applyUpsellSalesFilters() {
+		var root = document.getElementById("checkflow-admin");
+		if (!root) {
+			return;
+		}
+		var search = root.querySelector("[data-upsell-sales-search]");
+		var active = root.querySelector("[data-upsell-sales-filter] button.is-active");
+		var query = search ? search.value.trim().toLowerCase() : "";
+		var filter = active ? active.getAttribute("data-upsell-sales-slot") || "all" : "all";
+		var now = Math.floor(Date.now() / 1000);
+		var dayAgo = now - 86400;
+		var weekAgo = now - 604800;
+		var visible = 0;
+
+		getUpsellSaleRows(true).forEach(function (row) {
+			var slot = row.getAttribute("data-upsell-sale-slot") || "";
+			var timestamp = parseInt(row.getAttribute("data-upsell-sale-timestamp") || "0", 10);
+			var searchable = row.getAttribute("data-upsell-sale-search") || row.textContent.toLowerCase();
+			var filterOk = filter === "all" || slot === filter;
+			if (filter === "today") {
+				filterOk = timestamp >= dayAgo;
+			}
+			if (filter === "week") {
+				filterOk = timestamp >= weekAgo;
+			}
+			var searchOk = !query || searchable.indexOf(query) !== -1;
+			var show = filterOk && searchOk;
+			row.hidden = !show;
+			if (show) {
+				visible += 1;
+			}
+		});
+
+		var empty = root.querySelector(".cf-upsell-sales-no-results");
+		if (empty) {
+			empty.hidden = getUpsellSaleRows(true).length === 0 || visible > 0;
+		}
+	}
+
+	function parseUpsellSaleDetail(row) {
+		if (!row) {
+			return null;
+		}
+		try {
+			return JSON.parse(row.getAttribute("data-upsell-sale-detail") || "{}");
+		} catch (e) {
+			return null;
+		}
+	}
+
+	function openUpsellSaleDrawer(row) {
+		var root = document.getElementById("checkflow-admin");
+		var data = parseUpsellSaleDetail(row);
+		if (!root || !data) {
+			showToast("Sale details unavailable", "error");
+			return;
+		}
+		var drawer = root.querySelector("[data-upsell-sale-drawer]");
+		if (!drawer) {
+			return;
+		}
+		var setText = function (selector, value) {
+			var el = drawer.querySelector(selector);
+			if (el) {
+				el.textContent = value || "-";
+			}
+		};
+		var rule = data.discountType && data.discountType !== "none" ? data.discountType + (data.discountValue ? " " + data.discountValue : "") : "No discount";
+		setText("[data-upsell-sale-drawer-title]", data.order || "Upsell sale");
+		setText("[data-upsell-sale-customer]", data.customer);
+		setText("[data-upsell-sale-product]", data.product);
+		setText("[data-upsell-sale-slot]", data.slot);
+		setText("[data-upsell-sale-quantity]", data.quantity ? "Qty " + data.quantity : "");
+		setText("[data-upsell-sale-original]", data.original);
+		setText("[data-upsell-sale-revenue]", data.revenue);
+		setText("[data-upsell-sale-discount]", data.discount);
+		setText("[data-upsell-sale-discount-rule]", rule);
+		setText("[data-upsell-sale-status]", data.status);
+		setText("[data-upsell-sale-date]", data.date);
+		var link = drawer.querySelector("[data-upsell-sale-edit]");
+		if (link) {
+			link.href = data.editUrl || "#";
+		}
+		drawer.hidden = false;
+		drawer.classList.add("is-open");
+		row.classList.add("is-selected");
+		getUpsellSaleRows(true).forEach(function (saleRow) {
+			if (saleRow !== row) {
+				saleRow.classList.remove("is-selected");
+			}
+		});
+	}
+
+	function closeUpsellSaleDrawer() {
+		var root = document.getElementById("checkflow-admin");
+		if (!root) {
+			return;
+		}
+		var drawer = root.querySelector("[data-upsell-sale-drawer]");
+		if (drawer) {
+			drawer.classList.remove("is-open");
+			drawer.hidden = true;
+		}
+		getUpsellSaleRows(true).forEach(function (row) {
+			row.classList.remove("is-selected");
+		});
+	}
+
+	function exportUpsellSales() {
+		var rows = getUpsellSaleRows(false);
+		if (!rows.length) {
+			showToast("No upsell sales to export", "error");
+			return;
+		}
+		var headers = ["Order", "Customer", "Product", "Quantity", "Slot", "Original", "Revenue", "Discount", "Discount rule", "Status", "Date"];
+		var lines = [headers.map(csvCell).join(",")];
+		rows.forEach(function (row) {
+			var data = parseUpsellSaleDetail(row) || {};
+			var rule = data.discountType && data.discountType !== "none" ? data.discountType + (data.discountValue ? " " + data.discountValue : "") : "No discount";
+			lines.push([data.order, data.customer, data.product, data.quantity, data.slot, data.original, data.revenue, data.discount, rule, data.status, data.date].map(csvCell).join(","));
+		});
+		var blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+		var url = URL.createObjectURL(blob);
+		var a = document.createElement("a");
+		a.href = url;
+		a.download = "checkflow-upsell-sales.csv";
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+		showToast("Upsell sales exported");
+	}
+
 	function handleOrderBulkAction(action) {
 		var count = selectedOrderDetails().length;
 		if (!count) {
@@ -3468,6 +3619,32 @@
 				field.value = flow;
 			}
 			refreshUpsellPreview();
+		});
+
+		$(document).on("input", "[data-upsell-sales-search]", function () {
+			applyUpsellSalesFilters();
+		});
+
+		$(document).on("click", "[data-upsell-sales-slot]", function () {
+			var group = this.closest("[data-upsell-sales-filter]");
+			if (group) {
+				group.querySelectorAll("button").forEach(function (button) {
+					button.classList.toggle("is-active", button === this);
+				}, this);
+			}
+			applyUpsellSalesFilters();
+		});
+
+		$(document).on("click", "[data-upsell-sale-open]", function () {
+			openUpsellSaleDrawer(this.closest("[data-upsell-sale-row]"));
+		});
+
+		$(document).on("click", "[data-upsell-sale-close]", function () {
+			closeUpsellSaleDrawer();
+		});
+
+		$(document).on("click", "[data-upsell-sales-export]", function () {
+			exportUpsellSales();
 		});
 
 		$(document).on("click", "[data-save-pixel-settings]", function () {

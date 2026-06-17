@@ -69,6 +69,22 @@ $upsell_revenue = isset( $upsell_stats['revenue_cents'] ) ? absint( $upsell_stat
 $upsell_discount = isset( $upsell_stats['discount_cents'] ) ? absint( $upsell_stats['discount_cents'] ) / 100 : 0;
 $upsell_revenue_label = function_exists( 'wc_price' ) ? wp_strip_all_tags( wc_price( $upsell_revenue ) ) : number_format_i18n( $upsell_revenue, 2 );
 $upsell_discount_label = function_exists( 'wc_price' ) ? wp_strip_all_tags( wc_price( $upsell_discount ) ) : number_format_i18n( $upsell_discount, 2 );
+$upsell_sales_rows = $admin_instance->get_upsell_sales_performance( 12 );
+$upsell_sales_revenue = 0;
+$upsell_sales_discount = 0;
+$upsell_sales_main = 0;
+$upsell_sales_downsell = 0;
+foreach ( $upsell_sales_rows as $upsell_sales_row ) {
+	$upsell_sales_revenue += isset( $upsell_sales_row['revenue_raw'] ) ? (float) $upsell_sales_row['revenue_raw'] : 0;
+	$upsell_sales_discount += isset( $upsell_sales_row['discount_raw'] ) ? (float) $upsell_sales_row['discount_raw'] : 0;
+	if ( isset( $upsell_sales_row['slot'] ) && 'downsell' === $upsell_sales_row['slot'] ) {
+		++$upsell_sales_downsell;
+	} else {
+		++$upsell_sales_main;
+	}
+}
+$upsell_sales_revenue_label = function_exists( 'wc_price' ) ? wp_strip_all_tags( wc_price( $upsell_sales_revenue ) ) : number_format_i18n( $upsell_sales_revenue, 2 );
+$upsell_sales_discount_label = function_exists( 'wc_price' ) ? wp_strip_all_tags( wc_price( $upsell_sales_discount ) ) : number_format_i18n( $upsell_sales_discount, 2 );
 $upsell_products = $order_bump_products;
 $upsell_offer_product = ! empty( $upsell_settings['offer_product_id'] ) && function_exists( 'wc_get_product' ) ? wc_get_product( absint( $upsell_settings['offer_product_id'] ) ) : null;
 $upsell_offer_label = $upsell_offer_product instanceof WC_Product ? sprintf( '#%1$d - %2$s', $upsell_offer_product->get_id(), $upsell_offer_product->get_name() ) : __( 'No offer product selected', 'checkflow' );
@@ -1349,6 +1365,113 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								<div><strong>Skipped</strong><span><?php echo esc_html( (string) $upsell_skipped ); ?> shoppers declined the main offer</span></div>
 								<div><strong>Downsell shown</strong><span><?php echo esc_html( (string) $upsell_downsell_shown ); ?> secondary offers displayed</span></div>
 								<div><strong>Downsell accepted</strong><span><?php echo esc_html( (string) $upsell_downsell_accepted ); ?> accepted • <?php echo esc_html( (string) $upsell_downsell_rate ); ?>% rate</span></div>
+							</div>
+						</div>
+					</div>
+					<div class="panel cf-upsell-sales-panel">
+						<div class="ph"><div class="pt">Sales performance</div><div class="pa">Accepted offer orders</div></div>
+						<div class="pb">
+							<div class="cf-upsell-sales-head">
+								<div><strong><?php echo esc_html( (string) count( $upsell_sales_rows ) ); ?></strong><span>Recent accepted items</span></div>
+								<div><strong><?php echo esc_html( $upsell_sales_revenue_label ); ?></strong><span>Recent upsell revenue</span></div>
+								<div><strong><?php echo esc_html( $upsell_sales_discount_label ); ?></strong><span>Discount given</span></div>
+								<div><strong><?php echo esc_html( (string) $upsell_sales_main ); ?> / <?php echo esc_html( (string) $upsell_sales_downsell ); ?></strong><span>Main / downsell split</span></div>
+							</div>
+							<div class="cf-upsell-sales-controls">
+								<input type="search" data-upsell-sales-search placeholder="Search order, customer, product" />
+								<div class="cf-upsell-sales-filter" data-upsell-sales-filter>
+									<button type="button" class="is-active" data-upsell-sales-slot="all">All</button>
+									<button type="button" data-upsell-sales-slot="main">Main offer</button>
+									<button type="button" data-upsell-sales-slot="downsell">Downsell</button>
+									<button type="button" data-upsell-sales-slot="today">Today</button>
+									<button type="button" data-upsell-sales-slot="week">This week</button>
+								</div>
+								<button type="button" class="cf-btn-ghost" data-upsell-sales-export>Export CSV</button>
+							</div>
+							<div class="cf-upsell-sales-table-wrap">
+								<table class="cf-upsell-sales-table">
+									<thead>
+										<tr>
+											<th>Order</th>
+											<th>Offer item</th>
+											<th>Slot</th>
+											<th>Customer</th>
+											<th>Revenue</th>
+											<th>Discount</th>
+											<th>Status</th>
+											<th>Date</th>
+											<th>Details</th>
+										</tr>
+									</thead>
+									<tbody>
+										<?php if ( ! empty( $upsell_sales_rows ) ) : ?>
+											<?php foreach ( $upsell_sales_rows as $sales_row ) : ?>
+												<?php
+												$sales_detail = array(
+													'order'          => $sales_row['order'],
+													'editUrl'        => $sales_row['edit_url'],
+													'customer'       => $sales_row['customer'],
+													'product'        => $sales_row['product'],
+													'quantity'       => $sales_row['quantity'],
+													'slot'           => $sales_row['slot_label'],
+													'original'       => $sales_row['original'],
+													'revenue'        => $sales_row['revenue'],
+													'discount'       => $sales_row['discount'],
+													'discountType'   => $sales_row['discount_type'],
+													'discountValue'  => $sales_row['discount_value'],
+													'status'         => $sales_row['status'],
+													'date'           => $sales_row['date'],
+												);
+												?>
+												<tr data-upsell-sale-row data-upsell-sale-slot="<?php echo esc_attr( $sales_row['slot'] ); ?>" data-upsell-sale-timestamp="<?php echo esc_attr( (string) absint( $sales_row['timestamp'] ) ); ?>" data-upsell-sale-search="<?php echo esc_attr( strtolower( $sales_row['order'] . ' ' . $sales_row['customer'] . ' ' . $sales_row['product'] . ' ' . $sales_row['status'] ) ); ?>" data-upsell-sale-detail="<?php echo esc_attr( wp_json_encode( $sales_detail ) ); ?>">
+													<td><a href="<?php echo esc_url( $sales_row['edit_url'] ); ?>"><?php echo esc_html( $sales_row['order'] ); ?></a></td>
+													<td>
+														<strong><?php echo esc_html( $sales_row['product'] ); ?></strong>
+														<span><?php echo esc_html( sprintf( 'Qty %d', absint( $sales_row['quantity'] ) ) ); ?></span>
+													</td>
+													<td><span class="cf-upsell-slot-pill <?php echo esc_attr( $sales_row['slot_class'] ); ?>"><?php echo esc_html( $sales_row['slot_label'] ); ?></span></td>
+													<td><?php echo esc_html( $sales_row['customer'] ); ?></td>
+													<td class="is-money"><?php echo esc_html( $sales_row['revenue'] ); ?></td>
+													<td><?php echo esc_html( $sales_row['discount'] ); ?></td>
+													<td><span class="status-badge <?php echo esc_attr( $sales_row['status_class'] ); ?>"><?php echo esc_html( $sales_row['status'] ); ?></span></td>
+													<td><?php echo esc_html( $sales_row['date'] ); ?></td>
+													<td><button type="button" class="cf-upsell-detail-btn" data-upsell-sale-open>View</button></td>
+												</tr>
+											<?php endforeach; ?>
+										<?php else : ?>
+											<tr>
+												<td colspan="9" class="cf-upsell-sales-empty">No accepted upsell orders yet. Accept an offer from checkout, then refresh this screen.</td>
+											</tr>
+										<?php endif; ?>
+										<tr class="cf-upsell-sales-no-results" hidden>
+											<td colspan="9" class="cf-upsell-sales-empty">No upsell sales match this filter.</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div class="cf-upsell-sale-drawer" data-upsell-sale-drawer hidden>
+								<div class="cf-upsell-sale-drawer-card">
+									<div class="cf-upsell-sale-drawer-head">
+										<div>
+											<span>Upsell sale details</span>
+											<strong data-upsell-sale-drawer-title>Select a sale</strong>
+										</div>
+										<button type="button" data-upsell-sale-close aria-label="Close upsell sale details">x</button>
+									</div>
+									<div class="cf-upsell-sale-drawer-grid">
+										<div><span>Customer</span><strong data-upsell-sale-customer>-</strong></div>
+										<div><span>Offer item</span><strong data-upsell-sale-product>-</strong></div>
+										<div><span>Slot</span><strong data-upsell-sale-slot>-</strong></div>
+										<div><span>Quantity</span><strong data-upsell-sale-quantity>-</strong></div>
+										<div><span>Original total</span><strong data-upsell-sale-original>-</strong></div>
+										<div><span>Final revenue</span><strong data-upsell-sale-revenue>-</strong></div>
+										<div><span>Discount given</span><strong data-upsell-sale-discount>-</strong></div>
+										<div><span>Discount rule</span><strong data-upsell-sale-discount-rule>-</strong></div>
+										<div><span>Status</span><strong data-upsell-sale-status>-</strong></div>
+										<div><span>Date</span><strong data-upsell-sale-date>-</strong></div>
+									</div>
+									<a href="#" class="btn-p" data-upsell-sale-edit>Open Woo order</a>
+								</div>
 							</div>
 						</div>
 					</div>

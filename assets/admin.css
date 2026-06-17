@@ -845,6 +845,226 @@ body.checkflow-admin-screen.checkflow-admin-theme-light #wpbody-content {
 	cursor: not-allowed;
 	opacity: 0.62;
 }
+#checkflow-admin.checkflow-root .cf-upsell-sales-panel {
+	grid-column: 1 / -1;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-head {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 10px;
+	margin-bottom: 14px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-head > div {
+	display: grid;
+	gap: 4px;
+	min-width: 0;
+	border: 1px solid var(--bd);
+	border-radius: 12px;
+	background: var(--s2);
+	padding: 12px 14px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-head strong {
+	overflow: hidden;
+	color: var(--tx);
+	font-size: 18px;
+	font-weight: 900;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-head span {
+	color: var(--tx3);
+	font-size: 11px;
+	font-weight: 700;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-controls {
+	display: grid;
+	grid-template-columns: minmax(220px, 1fr) auto auto;
+	gap: 10px;
+	align-items: center;
+	margin-bottom: 14px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-controls input {
+	width: 100%;
+	min-height: 42px;
+	border: 1px solid var(--bd);
+	border-radius: 10px;
+	background: var(--s1);
+	color: var(--tx);
+	padding: 0 12px;
+	font-weight: 700;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-filter {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	justify-content: flex-end;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-filter button,
+#checkflow-admin.checkflow-root .cf-upsell-detail-btn {
+	min-height: 34px;
+	border: 1px solid var(--bd);
+	border-radius: 999px;
+	background: var(--s2);
+	color: var(--tx2);
+	cursor: pointer;
+	font-size: 11px;
+	font-weight: 900;
+	padding: 0 12px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-filter button.is-active,
+#checkflow-admin.checkflow-root .cf-upsell-detail-btn:hover {
+	border-color: transparent;
+	background: var(--pr);
+	color: #fff;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-table-wrap {
+	overflow-x: auto;
+	border: 1px solid var(--bd);
+	border-radius: 12px;
+	background: var(--s1);
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-table {
+	width: 100%;
+	min-width: 860px;
+	border-collapse: collapse;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-table th,
+#checkflow-admin.checkflow-root .cf-upsell-sales-table td {
+	border-bottom: 1px solid var(--bd);
+	padding: 12px 14px;
+	text-align: left;
+	vertical-align: middle;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-table th {
+	color: var(--tx3);
+	font-size: 10px;
+	font-weight: 900;
+	letter-spacing: 0;
+	text-transform: uppercase;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-table td {
+	color: var(--tx2);
+	font-size: 12px;
+	font-weight: 700;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-table tbody tr:last-child td {
+	border-bottom: 0;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-table tbody tr.is-selected td {
+	background: var(--pr-d);
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-table a,
+#checkflow-admin.checkflow-root .cf-upsell-sales-table .is-money {
+	color: var(--pr);
+	font-weight: 900;
+	text-decoration: none;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-table td strong {
+	display: block;
+	max-width: 250px;
+	overflow: hidden;
+	color: var(--tx);
+	font-size: 12.5px;
+	font-weight: 900;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-table td span {
+	display: inline-flex;
+	margin-top: 3px;
+	color: var(--tx3);
+	font-size: 10.5px;
+	font-weight: 800;
+}
+#checkflow-admin.checkflow-root .cf-upsell-slot-pill {
+	align-items: center;
+	border: 1px solid rgba(16, 185, 129, 0.22);
+	border-radius: 999px;
+	background: rgba(16, 185, 129, 0.12);
+	color: var(--gr);
+	padding: 4px 8px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-slot-pill.is-downsell {
+	border-color: rgba(245, 158, 11, 0.28);
+	background: rgba(245, 158, 11, 0.12);
+	color: var(--or);
+}
+#checkflow-admin.checkflow-root .cf-upsell-sales-empty {
+	color: var(--tx3);
+	text-align: center;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sale-drawer {
+	margin-top: 14px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sale-drawer-card {
+	border: 1px solid var(--bd);
+	border-radius: 14px;
+	background: linear-gradient(135deg, rgba(45, 124, 255, 0.1), rgba(45, 212, 191, 0.06)), var(--s1);
+	padding: 14px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sale-drawer-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sale-drawer-head div {
+	display: grid;
+	gap: 4px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sale-drawer-head span {
+	color: var(--tx3);
+	font-size: 10px;
+	font-weight: 900;
+	text-transform: uppercase;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sale-drawer-head strong {
+	color: var(--tx);
+	font-size: 16px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sale-drawer-head button {
+	width: 34px;
+	height: 34px;
+	border: 1px solid var(--bd);
+	border-radius: 999px;
+	background: var(--s2);
+	color: var(--tx);
+	cursor: pointer;
+	font-size: 20px;
+	font-weight: 800;
+	line-height: 1;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sale-drawer-grid {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 10px;
+	margin-bottom: 14px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sale-drawer-grid > div {
+	display: grid;
+	gap: 4px;
+	min-width: 0;
+	border: 1px solid var(--bd);
+	border-radius: 10px;
+	background: var(--s2);
+	padding: 10px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sale-drawer-grid span {
+	color: var(--tx3);
+	font-size: 10px;
+	font-weight: 900;
+	text-transform: uppercase;
+}
+#checkflow-admin.checkflow-root .cf-upsell-sale-drawer-grid strong {
+	overflow: hidden;
+	color: var(--tx);
+	font-size: 12px;
+	font-weight: 900;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
 
 #checkflow-admin.checkflow-root .g2 {
 	display: grid;
@@ -4220,9 +4440,15 @@ html.cf-field-dragging body {
 	}
 	#checkflow-admin.checkflow-root .cf-bump-layout,
 	#checkflow-admin.checkflow-root .cf-upsell-layout,
+	#checkflow-admin.checkflow-root .cf-upsell-sales-head,
+	#checkflow-admin.checkflow-root .cf-upsell-sales-controls,
+	#checkflow-admin.checkflow-root .cf-upsell-sale-drawer-grid,
 	#checkflow-admin.checkflow-root .cf-bump-form,
 	#checkflow-admin.checkflow-root .cf-bump-rules-grid {
 		grid-template-columns: 1fr;
+	}
+	#checkflow-admin.checkflow-root .cf-upsell-sales-filter {
+		justify-content: flex-start;
 	}
 	#checkflow-admin.checkflow-root .g2,
 	#checkflow-admin.checkflow-root .g3 {
@@ -4280,6 +4506,7 @@ html.cf-field-dragging body {
 	#checkflow-admin.checkflow-root .cf-pixel-event-list button,
 	#checkflow-admin.checkflow-root .cf-pixel-event-controls,
 	#checkflow-admin.checkflow-root .cf-pixel-advanced-grid,
+	#checkflow-admin.checkflow-root .cf-upsell-sale-drawer-grid,
 	#checkflow-admin.checkflow-root .cf-bump-form,
 	#checkflow-admin.checkflow-root .cf-bump-rules-grid {
 		grid-template-columns: 1fr;
