@@ -49,6 +49,7 @@ $admin_instance = CheckFlow_Admin::instance();
 $order_rows     = $admin_instance->get_recent_orders( 12 );
 $order_metrics  = $admin_instance->get_order_metrics();
 $dashboard_analytics = $admin_instance->get_dashboard_analytics( '7d' );
+$checkout_analytics_visibility = $admin_instance->get_checkout_analytics_visibility();
 $courier_providers = $admin_instance->get_courier_providers();
 $courier_settings  = $admin_instance->get_courier_settings();
 $order_bump_settings = $admin_instance->get_order_bump_settings();
@@ -347,6 +348,47 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 									<div class="cc"><div class="ccn">RedX</div><div class="cco"><?php echo esc_html( (string) absint( $dashboard_analytics['couriers']['redx'] ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div>
 									<div class="cc"><div class="ccn">Steadfast</div><div class="cco"><?php echo esc_html( (string) absint( $dashboard_analytics['couriers']['steadfast'] ) ); ?></div><div class="ccl"><?php echo esc_html( checkflow_str( 'courier.orders' ) ); ?></div></div>
 								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="panel cf-analytics-visibility-panel">
+					<div class="ph">
+						<div class="pt">Checkout analytics visibility</div>
+						<div class="pa">checkflow_analytics_events</div>
+					</div>
+					<div class="pb">
+						<div class="cf-analytics-visibility-kpis">
+							<div><span>Total events</span><strong><?php echo esc_html( (string) absint( $checkout_analytics_visibility['total'] ) ); ?></strong></div>
+							<div><span>Checkout views</span><strong><?php echo esc_html( (string) absint( $checkout_analytics_visibility['counts']['checkout_view'] ) ); ?></strong></div>
+							<div><span>Started</span><strong><?php echo esc_html( (string) absint( $checkout_analytics_visibility['counts']['checkout_started'] ) ); ?></strong></div>
+							<div><span>Orders placed</span><strong><?php echo esc_html( (string) absint( $checkout_analytics_visibility['counts']['order_placed'] ) ); ?></strong></div>
+						</div>
+						<div class="cf-analytics-visibility-grid">
+							<div class="cf-analytics-bars">
+								<?php foreach ( $checkout_analytics_visibility['counts'] as $event_name => $total ) : ?>
+									<?php $width = max( 4, round( ( absint( $total ) / max( 1, absint( $checkout_analytics_visibility['max'] ) ) ) * 100 ) ); ?>
+									<div class="cf-analytics-bar-row">
+										<span><?php echo esc_html( ucwords( str_replace( '_', ' ', $event_name ) ) ); ?></span>
+										<i><b style="width: <?php echo esc_attr( (string) $width ); ?>%"></b></i>
+										<strong><?php echo esc_html( (string) absint( $total ) ); ?></strong>
+									</div>
+								<?php endforeach; ?>
+							</div>
+							<div class="cf-analytics-recent">
+								<strong>Recent checkout events</strong>
+								<?php if ( empty( $checkout_analytics_visibility['recent'] ) ) : ?>
+									<div class="cf-analytics-empty">No checkout analytics events yet. Visit checkout and interact with the form to start logging.</div>
+								<?php else : ?>
+									<?php foreach ( $checkout_analytics_visibility['recent'] as $event ) : ?>
+										<div>
+											<span><?php echo esc_html( ucwords( str_replace( '_', ' ', $event['event_name'] ) ) ); ?></span>
+											<em><?php echo esc_html( $event['summary'] ); ?></em>
+											<small><?php echo esc_html( $event['source'] ); ?> - <?php echo esc_html( $event['created_at'] ); ?></small>
+										</div>
+									<?php endforeach; ?>
+								<?php endif; ?>
 							</div>
 						</div>
 					</div>

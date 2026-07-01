@@ -2814,6 +2814,100 @@ body.checkflow-admin-screen.checkflow-admin-theme-light #wpbody-content {
 	border: none;
 	padding-bottom: 0;
 }
+#checkflow-admin.checkflow-root .cf-analytics-visibility-panel {
+	margin-bottom: 22px;
+}
+#checkflow-admin.checkflow-root .cf-analytics-visibility-kpis {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 10px;
+	margin-bottom: 14px;
+}
+#checkflow-admin.checkflow-root .cf-analytics-visibility-kpis > div {
+	display: grid;
+	gap: 4px;
+	border: 1px solid var(--bd);
+	border-radius: 12px;
+	background: var(--s2);
+	padding: 12px 14px;
+}
+#checkflow-admin.checkflow-root .cf-analytics-visibility-kpis span,
+#checkflow-admin.checkflow-root .cf-analytics-bar-row span,
+#checkflow-admin.checkflow-root .cf-analytics-recent small {
+	color: var(--tx3);
+	font-size: 10.5px;
+	font-weight: 900;
+	text-transform: uppercase;
+}
+#checkflow-admin.checkflow-root .cf-analytics-visibility-kpis strong {
+	color: var(--tx);
+	font-size: 20px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-analytics-visibility-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+	gap: 14px;
+}
+#checkflow-admin.checkflow-root .cf-analytics-bars,
+#checkflow-admin.checkflow-root .cf-analytics-recent {
+	display: grid;
+	gap: 8px;
+}
+#checkflow-admin.checkflow-root .cf-analytics-bar-row {
+	display: grid;
+	grid-template-columns: 150px minmax(0, 1fr) 34px;
+	gap: 10px;
+	align-items: center;
+	border: 1px solid var(--bd);
+	border-radius: 10px;
+	background: var(--s1);
+	padding: 10px 12px;
+}
+#checkflow-admin.checkflow-root .cf-analytics-bar-row i {
+	display: block;
+	height: 8px;
+	overflow: hidden;
+	border-radius: 999px;
+	background: var(--s3);
+}
+#checkflow-admin.checkflow-root .cf-analytics-bar-row b {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: linear-gradient(90deg, var(--pr), var(--gr));
+}
+#checkflow-admin.checkflow-root .cf-analytics-bar-row strong {
+	color: var(--tx);
+	font-size: 13px;
+	font-weight: 900;
+	text-align: right;
+}
+#checkflow-admin.checkflow-root .cf-analytics-recent > strong {
+	color: var(--tx);
+	font-size: 12px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-analytics-recent > div {
+	display: grid;
+	gap: 3px;
+	border: 1px solid var(--bd);
+	border-radius: 10px;
+	background: var(--s1);
+	padding: 10px 12px;
+}
+#checkflow-admin.checkflow-root .cf-analytics-recent span {
+	color: var(--tx);
+	font-size: 12px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-analytics-recent em,
+#checkflow-admin.checkflow-root .cf-analytics-empty {
+	color: var(--tx2);
+	font-size: 11.5px;
+	font-style: normal;
+	font-weight: 700;
+}
 #checkflow-admin.checkflow-root .sinf {
 	flex: 1;
 }
@@ -4429,6 +4523,10 @@ html.cf-field-dragging body {
 	#checkflow-admin.checkflow-root .cf-orders-layout > .gcol {
 		grid-template-columns: 1fr;
 	}
+	#checkflow-admin.checkflow-root .cf-analytics-visibility-kpis,
+	#checkflow-admin.checkflow-root .cf-analytics-visibility-grid {
+		grid-template-columns: 1fr;
+	}
 	#checkflow-admin.checkflow-root .cf-pixel-provider-grid {
 		grid-template-columns: 1fr;
 	}
@@ -4540,6 +4638,12 @@ html.cf-field-dragging body {
 	}
 	#checkflow-admin.checkflow-root .cf-template-pairing button {
 		width: 100%;
+	}
+	#checkflow-admin.checkflow-root .cf-analytics-bar-row {
+		grid-template-columns: 1fr;
+	}
+	#checkflow-admin.checkflow-root .cf-analytics-bar-row strong {
+		text-align: left;
 	}
 	#checkflow-admin.checkflow-root .cf-template-pairing-actions,
 	#checkflow-admin.checkflow-root .cf-template-auto-pair {

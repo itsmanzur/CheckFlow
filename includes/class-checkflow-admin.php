@@ -2286,6 +2286,60 @@ final class CheckFlow_Admin {
 	}
 
 	/**
+	 * @return array<string,mixed>
+	 */
+	public function get_checkout_analytics_visibility() {
+		global $wpdb;
+
+		$table = CheckFlow_Activator::analytics_events_table_name();
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+			CheckFlow_Activator::create_analytics_events_table();
+		}
+
+		$counts = array(
+			'checkout_view'    => 0,
+			'checkout_started' => 0,
+			'payment_selected' => 0,
+			'coupon_applied'   => 0,
+			'coupon_removed'   => 0,
+			'add_to_cart'      => 0,
+			'order_placed'     => 0,
+		);
+		$count_rows = $wpdb->get_results( "SELECT event_name, COUNT(*) AS total FROM {$table} GROUP BY event_name", ARRAY_A );
+		if ( is_array( $count_rows ) ) {
+			foreach ( $count_rows as $row ) {
+				$name = sanitize_key( (string) $row['event_name'] );
+				if ( isset( $counts[ $name ] ) ) {
+					$counts[ $name ] = absint( $row['total'] );
+				}
+			}
+		}
+
+		$recent = $wpdb->get_results(
+			"SELECT event_name, source, order_id, value, currency, context, created_at FROM {$table} ORDER BY id DESC LIMIT 8",
+			ARRAY_A
+		);
+
+		return array(
+			'total'  => array_sum( $counts ),
+			'counts' => $counts,
+			'max'    => max( 1, max( $counts ) ),
+			'recent' => is_array( $recent ) ? array_map(
+				function ( $row ) {
+					$context = json_decode( (string) $row['context'], true );
+					return array(
+						'event_name' => sanitize_key( (string) $row['event_name'] ),
+						'source'     => sanitize_key( (string) $row['source'] ),
+						'summary'    => $this->analytics_event_summary( is_array( $context ) ? $context : array(), $row ),
+						'created_at' => mysql2date( 'M j, H:i', (string) $row['created_at'] ),
+					);
+				},
+				$recent
+			) : array(),
+		);
+	}
+
+	/**
 	 * @param array<string,mixed> $context Event context.
 	 * @return string
 	 */
@@ -2300,6 +2354,30 @@ final class CheckFlow_Admin {
 			return sprintf( '%d item(s)', absint( $context['num_items'] ) );
 		}
 		return __( 'Browser event', 'checkflow' );
+	}
+
+	/**
+	 * @param array<string,mixed> $context Event context.
+	 * @param array<string,mixed> $row DB row.
+	 * @return string
+	 */
+	private function analytics_event_summary( $context, $row ) {
+		if ( ! empty( $row['order_id'] ) ) {
+			return sprintf( 'Order #%d', absint( $row['order_id'] ) );
+		}
+		if ( ! empty( $context['payment_method'] ) ) {
+			return sprintf( 'Payment: %s', sanitize_text_field( (string) $context['payment_method'] ) );
+		}
+		if ( ! empty( $context['coupon'] ) ) {
+			return sprintf( 'Coupon: %s', sanitize_text_field( (string) $context['coupon'] ) );
+		}
+		if ( ! empty( $context['item_count'] ) ) {
+			return sprintf( '%d cart item(s)', absint( $context['item_count'] ) );
+		}
+		if ( ! empty( $context['product_ids'] ) && is_array( $context['product_ids'] ) ) {
+			return sprintf( '%d product(s)', count( $context['product_ids'] ) );
+		}
+		return __( 'Checkout event', 'checkflow' );
 	}
 
 	/**

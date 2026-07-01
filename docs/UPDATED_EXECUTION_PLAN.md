@@ -131,7 +131,7 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - Admin dashboard cards, funnel, payment mix, courier snapshot, mini chart, and recent orders now read from WooCommerce orders plus CheckFlow local event data.
 - Quick setting toggles now save via `wp_ajax_checkflow_toggle_setting`, but each setting still needs explicit feature wiring before it can be treated as production-complete.
 - `checkflow_get_stats` AJAX now returns WooCommerce-backed daily order chart data.
-- Activator now creates the CheckFlow local pixel event log table, but remaining planned tables are not implemented:
+- Activator now creates the CheckFlow local pixel event log table and the first checkout analytics event table:
   - `checkflow_analytics_events`
   - `checkflow_payment_logs`
   - `checkflow_sales_performance`
@@ -171,7 +171,7 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - Upsell Funnel local performance tracking is implemented for shown, accepted, skipped, downsell shown, and downsell accepted events, with the admin performance card showing real local counts, take rates, accepted-offer revenue, and discount totals.
 - Upsell discounts now apply as per-item cart pricing when a customer accepts an upsell/downsell offer; the discount metadata is preserved on order line items without creating coupons or hijacking payment submission.
 - Upsell detailed sales performance table and discount/coupon campaign reporting still need a dedicated pass.
-- Dashboard analytics foundation is implemented using WooCommerce order data and CheckFlow local event logs; dedicated analytics event tables are still pending.
+- Dashboard analytics foundation is implemented using WooCommerce order data and CheckFlow local event logs; dedicated checkout analytics event capture has started with the `checkflow_analytics_events` table.
 - Tests, security audit docs, checklist docs, screenshots, `.pot`/`.po` files are not implemented.
 - `checkflow.php` metadata still has placeholder Plugin URI and a mojibake dash in the description.
 - `Domain Path` says `/languages`, but translations are currently JSON in `/i18n`.
@@ -202,6 +202,7 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 - [ ] Fix plugin metadata, Plugin URI, Requires WP/Woo details, and text domain paths.
 - [ ] Add real helper methods to `class-security.php` and `class-logger.php`.
 - [x] Add first DB table creation to activator using `dbDelta` for CheckFlow local pixel event log.
+- [x] Add first checkout analytics DB table using `dbDelta`.
 - [ ] Add remaining planned DB tables using `dbDelta`.
 - [ ] Add uninstall cleanup policy/options.
 
@@ -238,9 +239,10 @@ Reason for putting Prompt 11 early: the approved admin panel must be implemented
 ### Milestone D - Analytics Foundation
 
 - [x] Create CheckFlow local pixel event log table.
-- [ ] Create `checkflow_analytics_events`.
-- [ ] Track checkout view, started, payment selected, coupon applied, order placed, abandoned.
-- [ ] Keep PII out of analytics metadata.
+- [x] Create `checkflow_analytics_events`.
+- [x] Track checkout view, checkout started, payment selected, coupon applied/removed, add-to-cart, and order placed foundation.
+- [x] Keep PII out of analytics metadata.
+- [ ] Add abandoned checkout lifecycle and recovery state.
 - [x] Connect admin dashboard cards/funnel/payment breakdown to WooCommerce and CheckFlow local event data.
 - [x] Add Pixel Tracking CSV export, retention control, and local event log controls.
 - [ ] Add analytics CSV export and date range filters after base analytics data is reliable.

@@ -14,6 +14,7 @@ require_once CHECKFLOW_PATH . 'includes/Frontend/class-ajax.php';
 require_once CHECKFLOW_PATH . 'includes/Frontend/class-checkout.php';
 require_once CHECKFLOW_PATH . 'includes/Frontend/class-field-editor.php';
 require_once CHECKFLOW_PATH . 'includes/Frontend/class-pixel-tracking.php';
+require_once CHECKFLOW_PATH . 'includes/Frontend/class-analytics.php';
 
 final class CheckFlow {
 
@@ -48,6 +49,7 @@ final class CheckFlow {
 		$checkout = CheckFlow_Frontend_Checkout::instance();
 		$field_editor = CheckFlow_Field_Editor::instance();
 		$pixel_tracking = CheckFlow_Pixel_Tracking::instance();
+		$analytics = CheckFlow_Analytics::instance();
 
 		$this->loader->add_action( 'init', $i18n, 'load_textdomain' );
 		$this->loader->add_action( 'wp_ajax_checkflow_set_admin_locale', $i18n, 'ajax_set_admin_locale' );
@@ -82,9 +84,12 @@ final class CheckFlow {
 		$this->loader->add_action( 'admin_notices', $this, 'render_wc_notice' );
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $assets, 'enqueue' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $analytics, 'enqueue' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $pixel_tracking, 'enqueue' );
 		$this->loader->add_action( 'wp_ajax_checkflow_log_pixel_event', $pixel_tracking, 'ajax_log_event' );
 		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_log_pixel_event', $pixel_tracking, 'ajax_log_event' );
+		$this->loader->add_action( 'wp_ajax_checkflow_log_analytics_event', $analytics, 'ajax_log_event' );
+		$this->loader->add_action( 'wp_ajax_nopriv_checkflow_log_analytics_event', $analytics, 'ajax_log_event' );
 		$this->loader->add_filter( 'body_class', $checkout, 'body_class' );
 
 		$this->loader->add_action( 'wp_ajax_checkflow_update_order_review', $ajax, 'update_order_review' );
@@ -121,6 +126,9 @@ final class CheckFlow {
 		$this->loader->add_filter( 'option_woocommerce_enable_guest_checkout', $checkout, 'filter_guest_checkout_option', 20 );
 		$this->loader->add_filter( 'woocommerce_checkout_registration_required', $checkout, 'filter_checkout_registration_required', 20 );
 		$this->loader->add_action( 'woocommerce_after_checkout_validation', $checkout, 'validate_recaptcha', 20, 2 );
+		$this->loader->add_action( 'woocommerce_applied_coupon', $analytics, 'track_coupon_applied', 20, 1 );
+		$this->loader->add_action( 'woocommerce_removed_coupon', $analytics, 'track_coupon_removed', 20, 1 );
+		$this->loader->add_action( 'woocommerce_checkout_order_processed', $analytics, 'track_order_placed', 20, 1 );
 		$this->loader->add_action( 'woocommerce_before_checkout_form', $checkout, 'render_checkout_shell_intro', 5 );
 		// Block checkout skips classic template hooks; prepend intro after blocks/shortcodes render.
 		$this->loader->add_filter( 'the_content', $checkout, 'prepend_shell_intro_block_checkout', 12 );
