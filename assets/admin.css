@@ -36,6 +36,36 @@ body.checkflow-admin-screen #wpwrap {
 body.checkflow-admin-screen #wpadminbar {
 	z-index: 100000;
 }
+body.checkflow-admin-screen #adminmenumain {
+	transition: transform 0.22s ease, opacity 0.18s ease;
+}
+body.checkflow-admin-screen #wpcontent,
+body.checkflow-admin-screen #wpfooter {
+	transition: margin-left 0.22s ease;
+}
+body.checkflow-admin-screen.checkflow-focus-mode #adminmenumain {
+	opacity: 0;
+	pointer-events: none;
+	transform: translateX(-100%);
+}
+body.checkflow-admin-screen.checkflow-focus-mode #wpcontent,
+body.checkflow-admin-screen.checkflow-focus-mode #wpfooter {
+	margin-left: 0 !important;
+}
+body.checkflow-admin-screen.checkflow-focus-mode #wpbody-content {
+	width: 100% !important;
+}
+body.checkflow-admin-screen.checkflow-focus-mode #checkflow-admin.checkflow-root {
+	position: fixed;
+	top: 32px;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	z-index: 99999;
+	width: 100vw;
+	height: auto;
+	min-height: 0;
+}
 body.checkflow-admin-screen.checkflow-admin-theme-light #wpcontent,
 body.checkflow-admin-screen.checkflow-admin-theme-light #wpbody,
 body.checkflow-admin-screen.checkflow-admin-theme-light #wpbody-content {
@@ -294,6 +324,52 @@ body.checkflow-admin-screen.checkflow-admin-theme-light #wpbody-content {
 	font-weight: 400;
 	font-size: 13px;
 	margin-left: 6px;
+}
+#checkflow-admin.checkflow-root .cf-focus-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	min-height: 34px;
+	border: 1px solid var(--bd2);
+	border-radius: 999px;
+	background: var(--s2);
+	color: var(--tx2);
+	padding: 6px 10px;
+	font: 800 11px var(--font);
+	cursor: pointer;
+	white-space: nowrap;
+	transition: border-color 0.15s, color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+#checkflow-admin.checkflow-root .cf-focus-toggle:hover,
+#checkflow-admin.checkflow-root .cf-focus-toggle:focus-visible {
+	border-color: var(--pr);
+	color: var(--tx);
+	outline: none;
+	box-shadow: 0 0 0 3px var(--pr-d);
+}
+#checkflow-admin.checkflow-root .cf-focus-toggle-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--gn);
+	box-shadow: 0 0 0 0 rgba(45, 217, 143, 0.36);
+	animation: cf-focus-pulse 1.7s ease-out infinite;
+}
+body.checkflow-admin-screen:not(.checkflow-focus-mode) #checkflow-admin.checkflow-root .cf-focus-toggle-dot {
+	background: var(--or);
+	box-shadow: none;
+	animation: none;
+}
+@keyframes cf-focus-pulse {
+	0% {
+		box-shadow: 0 0 0 0 rgba(45, 217, 143, 0.36);
+	}
+	70% {
+		box-shadow: 0 0 0 8px rgba(45, 217, 143, 0);
+	}
+	100% {
+		box-shadow: 0 0 0 0 rgba(45, 217, 143, 0);
+	}
 }
 #checkflow-admin.checkflow-root .tb-acts {
 	display: flex;
@@ -4554,9 +4630,33 @@ html.cf-field-dragging body {
 	}
 }
 
+@media (max-width: 960px) {
+	body.checkflow-admin-screen #adminmenumain {
+		opacity: 0;
+		pointer-events: none;
+		transform: translateX(-100%);
+	}
+	body.checkflow-admin-screen #wpcontent,
+	body.checkflow-admin-screen #wpfooter {
+		margin-left: 0 !important;
+	}
+}
+
 @media (max-width: 782px) {
 	body.checkflow-admin-screen #wpwrap {
 		padding-top: 46px;
+	}
+	body.checkflow-admin-screen.checkflow-focus-mode #checkflow-admin.checkflow-root {
+		top: 46px;
+	}
+	body.checkflow-admin-screen #adminmenumain {
+		opacity: 0;
+		pointer-events: none;
+		transform: translateX(-100%);
+	}
+	body.checkflow-admin-screen #wpcontent,
+	body.checkflow-admin-screen #wpfooter {
+		margin-left: 0 !important;
 	}
 	#checkflow-admin.checkflow-root {
 		display: block;

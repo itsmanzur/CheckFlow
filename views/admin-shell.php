@@ -224,6 +224,10 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 
 	<div class="main">
 		<div class="topbar">
+			<button type="button" class="cf-focus-toggle" data-focus-mode-toggle aria-pressed="true" title="Show WordPress menu">
+				<span class="cf-focus-toggle-dot" aria-hidden="true"></span>
+				<span data-focus-mode-label>WP Menu</span>
+			</button>
 			<div class="tb-title" id="cf-ttl"><?php echo esc_html( checkflow_str( $title_keys[0] ) ); ?> <span><?php echo esc_html( checkflow_str( $title_keys[1] ) ); ?></span></div>
 			<div class="tb-acts">
 				<div class="cf-locale-select">

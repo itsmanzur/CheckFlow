@@ -168,6 +168,38 @@
 			});
 	}
 
+	function getFocusModePreference() {
+		try {
+			return window.localStorage.getItem("checkflow_focus_mode") || "focus";
+		} catch (e) {
+			return "focus";
+		}
+	}
+
+	function setFocusModePreference(mode) {
+		try {
+			window.localStorage.setItem("checkflow_focus_mode", mode);
+		} catch (e) {}
+	}
+
+	function applyFocusMode(mode) {
+		var root = document.getElementById("checkflow-admin");
+		var next = mode === "wp" ? "wp" : "focus";
+		var button = document.querySelector("[data-focus-mode-toggle]");
+		var label = document.querySelector("[data-focus-mode-label]");
+		if (root) {
+			root.setAttribute("data-focus-mode", next);
+		}
+		document.body.classList.toggle("checkflow-focus-mode", next === "focus");
+		if (button) {
+			button.setAttribute("aria-pressed", next === "focus" ? "true" : "false");
+			button.setAttribute("title", next === "focus" ? "Show WordPress menu" : "Hide WordPress menu");
+		}
+		if (label) {
+			label.textContent = next === "focus" ? "WP Menu" : "Focus";
+		}
+	}
+
 	function applyOrderFilters() {
 		var root = document.getElementById("checkflow-admin");
 		if (!root) {
@@ -3589,6 +3621,12 @@
 			saveAdminTheme(current === "light" ? "dark" : "light", this);
 		});
 
+		$(document).on("click", "[data-focus-mode-toggle]", function () {
+			var next = document.body.classList.contains("checkflow-focus-mode") ? "wp" : "focus";
+			applyFocusMode(next);
+			setFocusModePreference(next);
+		});
+
 		$(document).on("click", "[data-save-courier-settings]", function () {
 			saveCourierSettings(this);
 		});
@@ -3697,6 +3735,7 @@
 		setupPixelInsights();
 		restorePresetUi();
 		applyAdminTheme((window.checkflowAdmin && checkflowAdmin.adminTheme) || "dark");
+		applyFocusMode(getFocusModePreference());
 		applyOrderFilters();
 		refreshOrderBumpPreview();
 		refreshUpsellPreview();

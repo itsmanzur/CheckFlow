@@ -201,7 +201,7 @@ final class CheckFlow_Admin {
 		if ( 'admin.php' === $hook && isset( $_GET['page'] ) ) {
 			$page = sanitize_key( wp_unslash( $_GET['page'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			if ( 0 === strpos( $page, 'checkflow' ) ) {
-				return $cls . ' checkflow-admin-screen checkflow-admin-theme-' . sanitize_html_class( $this->get_admin_theme() ) . ' checkflow-page-' . sanitize_html_class( $page );
+				return $cls . ' checkflow-admin-screen checkflow-focus-mode checkflow-admin-theme-' . sanitize_html_class( $this->get_admin_theme() ) . ' checkflow-page-' . sanitize_html_class( $page );
 			}
 		}
 		return $cls;
