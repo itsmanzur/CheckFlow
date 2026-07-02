@@ -190,6 +190,31 @@
 		});
 	}
 
+	function bindUpsellImageFallbacks() {
+		document.querySelectorAll(".checkflow-upsell-media img").forEach(function (image) {
+			var media = image.closest ? image.closest(".checkflow-upsell-media") : null;
+			if (!media) {
+				return;
+			}
+			if (image.complete && image.naturalWidth === 0) {
+				media.classList.add("has-image-error");
+				return;
+			}
+			if (image.getAttribute("data-checkflow-fallback-bound")) {
+				return;
+			}
+			image.setAttribute("data-checkflow-fallback-bound", "1");
+			image.addEventListener("error", function () {
+				media.classList.add("has-image-error");
+			});
+			image.addEventListener("load", function () {
+				if (image.naturalWidth > 0) {
+					media.classList.remove("has-image-error");
+				}
+			});
+		});
+	}
+
 	function cssEscape(value) {
 		if (window.CSS && window.CSS.escape) {
 			return window.CSS.escape(value);
@@ -833,6 +858,7 @@
 				enhancePlaceOrder(checkoutForm() || document);
 				ensureQuickModulesPlacement();
 				refreshOrderBumpRules();
+				bindUpsellImageFallbacks();
 				applyAdvancedFieldSettings();
 				syncCanonicalCheckoutFields();
 				repairCheckoutMojibake(checkoutRoot() || document.body);
@@ -916,6 +942,7 @@
 				ensureQuickModulesPlacement();
 				refreshOrderBumpRules();
 				initCountdowns();
+				bindUpsellImageFallbacks();
 				applyAdvancedFieldSettings();
 				syncCanonicalCheckoutFields();
 				repairCheckoutMojibake(checkoutRoot() || document.body);
@@ -925,6 +952,7 @@
 				ensureQuickModulesPlacement();
 				refreshOrderBumpRules();
 				initCountdowns();
+				bindUpsellImageFallbacks();
 				applyAdvancedFieldSettings();
 				syncCanonicalCheckoutFields();
 				repairCheckoutMojibake(checkoutRoot() || document.body);
@@ -937,6 +965,7 @@
 			ensureQuickModulesPlacement();
 			refreshOrderBumpRules();
 			initCountdowns();
+			bindUpsellImageFallbacks();
 			applyAdvancedFieldSettings();
 			syncCanonicalCheckoutFields();
 			repairCheckoutMojibake(checkoutRoot() || document.body);

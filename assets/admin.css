@@ -727,6 +727,87 @@ body.checkflow-admin-screen:not(.checkflow-focus-mode) #checkflow-admin.checkflo
 	padding: 0;
 	accent-color: var(--pr);
 }
+#checkflow-admin.checkflow-root .cf-bump-form .cf-field-switch:has(input:checked) {
+	background: var(--pr-d);
+	border-color: rgba(79, 142, 255, 0.38);
+	color: var(--pr);
+}
+#checkflow-admin.checkflow-root .cf-upsell-enable-switch span {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-enable-switch input[type="checkbox"] {
+	display: none !important;
+	position: absolute;
+	width: 1px !important;
+	min-width: 1px !important;
+	height: 1px !important;
+	min-height: 1px !important;
+	opacity: 0 !important;
+	pointer-events: none;
+}
+#checkflow-admin.checkflow-root .cf-upsell-enable-switch .cf-upsell-toggle-track {
+	position: relative;
+	display: inline-flex;
+	flex: 0 0 46px;
+	width: 46px;
+	height: 26px;
+	border: 1px solid var(--bd);
+	border-radius: 999px;
+	background: var(--s3);
+	box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.14);
+	transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+#checkflow-admin.checkflow-root .cf-upsell-enable-switch .cf-upsell-toggle-track:before {
+	content: "";
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 18px;
+	height: 18px;
+	border-radius: 999px;
+	background: var(--tx2);
+	box-shadow: 0 2px 7px rgba(0, 0, 0, 0.22);
+	transition: transform 0.18s ease, background 0.18s ease;
+}
+#checkflow-admin.checkflow-root .cf-upsell-enable-switch:has(input:checked) .cf-upsell-toggle-track {
+	border-color: rgba(31, 191, 122, 0.4);
+	background: linear-gradient(135deg, rgba(31, 191, 122, 0.95), rgba(47, 111, 237, 0.95));
+	box-shadow: 0 8px 20px rgba(31, 191, 122, 0.2);
+}
+#checkflow-admin.checkflow-root .cf-upsell-enable-switch.is-enabled .cf-upsell-toggle-track {
+	border-color: rgba(31, 191, 122, 0.4);
+	background: linear-gradient(135deg, rgba(31, 191, 122, 0.95), rgba(47, 111, 237, 0.95));
+	box-shadow: 0 8px 20px rgba(31, 191, 122, 0.2);
+}
+#checkflow-admin.checkflow-root .cf-upsell-enable-switch:has(input:checked) .cf-upsell-toggle-track:before {
+	transform: translateX(20px);
+	background: #fff;
+}
+#checkflow-admin.checkflow-root .cf-upsell-enable-switch.is-enabled .cf-upsell-toggle-track:before {
+	transform: translateX(20px);
+	background: #fff;
+}
+#checkflow-admin.checkflow-root .cf-upsell-enable-switch:focus-within .cf-upsell-toggle-track {
+	box-shadow: 0 0 0 3px var(--pr-d);
+}
+#checkflow-admin.checkflow-root .cf-upsell-enable-switch em {
+	display: inline-flex;
+	align-items: center;
+	border-radius: 999px;
+	background: rgba(255, 92, 92, 0.12);
+	color: var(--rd);
+	padding: 3px 7px;
+	font-size: 9px;
+	font-style: normal;
+	font-weight: 900;
+	letter-spacing: 0.4px;
+}
+#checkflow-admin.checkflow-root .cf-upsell-enable-switch:has(input:checked) em {
+	background: var(--gn-d);
+	color: var(--gn);
+}
 #checkflow-admin.checkflow-root .cf-bump-form input,
 #checkflow-admin.checkflow-root .cf-bump-form select,
 #checkflow-admin.checkflow-root .cf-bump-rules-grid input,
@@ -863,6 +944,17 @@ body.checkflow-admin-screen:not(.checkflow-focus-mode) #checkflow-admin.checkflo
 	border-radius: 12px;
 	background: rgba(245, 158, 11, 0.08);
 }
+#checkflow-admin.checkflow-root .cf-upsell-safe-note.is-active {
+	border-color: rgba(45, 217, 143, 0.24);
+	background: rgba(45, 217, 143, 0.08);
+}
+#checkflow-admin.checkflow-root .cf-upsell-safe-note.is-active strong {
+	color: var(--gn);
+}
+#checkflow-admin.checkflow-root .cf-upsell-safe-note.is-paused {
+	border-color: rgba(245, 158, 11, 0.26);
+	background: rgba(245, 158, 11, 0.08);
+}
 #checkflow-admin.checkflow-root .cf-upsell-safe-note strong {
 	color: var(--or);
 	font-size: 12px;
@@ -920,6 +1012,41 @@ body.checkflow-admin-screen:not(.checkflow-focus-mode) #checkflow-admin.checkflo
 #checkflow-admin.checkflow-root .cf-upsell-form input:disabled {
 	cursor: not-allowed;
 	opacity: 0.62;
+}
+#checkflow-admin.checkflow-root .cf-upsell-performance-note {
+	margin-bottom: 12px;
+	color: var(--tx2);
+	font-size: 12px;
+	line-height: 1.45;
+}
+#checkflow-admin.checkflow-root [data-save-upsell]:disabled,
+#checkflow-admin.checkflow-root [data-save-upsell].is-disabled {
+	cursor: not-allowed;
+	opacity: 0.62;
+	box-shadow: none;
+}
+#checkflow-admin.checkflow-root .cf-upsell-visibility-note {
+	display: grid;
+	gap: 6px;
+	margin: 12px 0 4px;
+	padding: 12px 14px;
+	border: 1px solid rgba(79, 142, 255, 0.22);
+	border-radius: 12px;
+	background: rgba(79, 142, 255, 0.07);
+}
+#checkflow-admin.checkflow-root .cf-upsell-visibility-note.is-blocked {
+	border-color: rgba(245, 158, 11, 0.28);
+	background: rgba(245, 158, 11, 0.08);
+}
+#checkflow-admin.checkflow-root .cf-upsell-visibility-note strong {
+	color: var(--tx);
+	font-size: 12px;
+	font-weight: 900;
+}
+#checkflow-admin.checkflow-root .cf-upsell-visibility-note span {
+	color: var(--tx2);
+	font-size: 12px;
+	line-height: 1.45;
 }
 #checkflow-admin.checkflow-root .cf-upsell-sales-panel {
 	grid-column: 1 / -1;

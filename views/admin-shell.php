@@ -1289,9 +1289,9 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								</div>
 								<em data-upsell-product-status><?php echo $upsell_offer_product instanceof WC_Product ? esc_html__( 'Offer selected', 'checkflow' ) : esc_html__( 'Needs offer', 'checkflow' ); ?></em>
 							</div>
-							<div class="cf-upsell-safe-note">
-								<strong>Execution mode</strong>
-								<span>Customer-facing offers are active. Shown, accepted, skipped, and downsell events are tracked locally without touching payment submission.</span>
+							<div class="cf-upsell-safe-note <?php echo ! empty( $upsell_settings['enabled'] ) ? 'is-active' : 'is-paused'; ?>" data-upsell-state-note>
+								<strong data-upsell-state-title><?php echo ! empty( $upsell_settings['enabled'] ) ? esc_html__( 'Execution active', 'checkflow' ) : esc_html__( 'Funnel paused', 'checkflow' ); ?></strong>
+								<span data-upsell-state-copy><?php echo ! empty( $upsell_settings['enabled'] ) ? esc_html__( 'Customer-facing offers are active. Shown, accepted, skipped, and downsell events are tracked locally without touching payment submission.', 'checkflow' ) : esc_html__( 'Customer-facing offers are currently off. Performance cards still show historical local activity from earlier tests.', 'checkflow' ); ?></span>
 							</div>
 							<div class="cf-upsell-flow-tabs" data-upsell-flow-tabs>
 								<button type="button" data-upsell-flow="pre_purchase" class="<?php echo 'pre_purchase' === $upsell_settings['flow_type'] ? 'is-active' : ''; ?>">Pre-purchase</button>
@@ -1299,7 +1299,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 							</div>
 							<input type="hidden" data-upsell-setting="flow_type" value="<?php echo esc_attr( $upsell_settings['flow_type'] ); ?>" />
 							<div class="cf-bump-form cf-upsell-form">
-								<label class="cf-field-switch"><span>Enable funnel</span><input type="checkbox" data-upsell-setting="enabled" <?php checked( $upsell_settings['enabled'] ); ?> /></label>
+								<label class="cf-field-switch cf-upsell-enable-switch <?php echo ! empty( $upsell_settings['enabled'] ) ? 'is-enabled' : 'is-disabled'; ?>"><span>Enable funnel <em data-upsell-enabled-state><?php echo ! empty( $upsell_settings['enabled'] ) ? esc_html__( 'ON', 'checkflow' ) : esc_html__( 'OFF', 'checkflow' ); ?></em></span><input class="cf-upsell-toggle-native" type="checkbox" data-upsell-setting="enabled" <?php checked( $upsell_settings['enabled'] ); ?> /><span class="cf-upsell-toggle-track" aria-hidden="true"></span></label>
 								<label><span>Offer product</span>
 									<select data-upsell-setting="offer_product_id" data-upsell-product-select>
 										<option value="0"><?php esc_html_e( 'Select offer product', 'checkflow' ); ?></option>
@@ -1380,6 +1380,10 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								<span data-upsell-check-flow>Flow selected</span>
 								<span data-upsell-check-rules>Rules reviewed</span>
 							</div>
+							<div class="cf-upsell-visibility-note" data-upsell-visibility-note>
+								<strong>Checkout visibility</strong>
+								<span data-upsell-visibility-copy>Turn the funnel on, use a cart that does not already contain the offer product, and make sure cart rules match.</span>
+							</div>
 							<div class="cf-bump-save-row">
 								<div class="cf-upsell-save-status" data-upsell-save-status>Settings save now; checkout execution and local performance tracking are active.</div>
 								<button type="button" class="btn-p" data-save-upsell>Save funnel</button>
@@ -1400,8 +1404,9 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 					<div class="panel">
 						<div class="ph"><div class="pt">Performance</div><div class="pa">Local data</div></div>
 						<div class="pb">
+							<p class="cf-upsell-performance-note" data-upsell-performance-context><?php echo ! empty( $upsell_settings['enabled'] ) ? esc_html__( 'Live funnel activity plus historical local events.', 'checkflow' ) : esc_html__( 'Funnel is paused. Numbers below are historical local events, not current live exposure.', 'checkflow' ); ?></p>
 							<div class="cf-mini-grid">
-								<div class="cf-mini-card"><strong><?php echo esc_html( (string) $upsell_shown ); ?></strong><span>Shown</span></div>
+								<div class="cf-mini-card"><strong><?php echo esc_html( (string) $upsell_shown ); ?></strong><span>Shown history</span></div>
 								<div class="cf-mini-card"><strong><?php echo esc_html( (string) $upsell_accepted ); ?></strong><span>Accepted</span></div>
 								<div class="cf-mini-card"><strong><?php echo esc_html( (string) $upsell_take_rate ); ?>%</strong><span>Take rate</span></div>
 							</div>

@@ -320,9 +320,18 @@
 		}).catch(function () {});
 	}
 
+	function isUpsellActuallyVisible(module) {
+		if (!module || module.hidden) return false;
+		var style = window.getComputedStyle ? window.getComputedStyle(module) : null;
+		if (style && (style.display === "none" || style.visibility === "hidden" || style.opacity === "0")) {
+			return false;
+		}
+		return !!(module.offsetWidth || module.offsetHeight || (module.getClientRects && module.getClientRects().length));
+	}
+
 	function trackVisibleUpsells() {
 		document.querySelectorAll(".checkflow-upsell-module").forEach(function (module) {
-			if (module.hidden) return;
+			if (!isUpsellActuallyVisible(module)) return;
 			var slot = module.getAttribute("data-checkflow-upsell-slot") || "main";
 			trackUpsellEvent(slot === "downsell" ? "downsell_shown" : "shown", module);
 		});

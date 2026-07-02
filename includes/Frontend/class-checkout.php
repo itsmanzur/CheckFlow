@@ -14,6 +14,9 @@ final class CheckFlow_Frontend_Checkout {
 	/** @var self|null */
 	private static $instance = null;
 
+	/** @var bool */
+	private $quick_modules_rendered = false;
+
 	private function __construct() {}
 
 	/**
@@ -216,7 +219,12 @@ final class CheckFlow_Frontend_Checkout {
 			echo ' data-checkflow-post-purchase="1"';
 		}
 		echo '>';
-		echo '<div class="checkflow-upsell-media">' . wp_kses_post( $product->get_image( 'woocommerce_thumbnail' ) ) . '</div>';
+		$product_name   = wp_strip_all_tags( $product->get_name() );
+		$fallback_label = function_exists( 'mb_substr' ) ? mb_substr( $product_name, 0, 1 ) : substr( $product_name, 0, 1 );
+		if ( '' === $fallback_label ) {
+			$fallback_label = '✓';
+		}
+		echo '<div class="checkflow-upsell-media">' . wp_kses_post( $product->get_image( 'woocommerce_thumbnail' ) ) . '<span class="checkflow-upsell-media-fallback">' . esc_html( $fallback_label ) . '</span></div>';
 		echo '<div class="checkflow-upsell-copy">';
 		echo '<span class="checkflow-upsell-badge">' . esc_html( 'downsell' === $slot ? __( 'Alternative offer', 'checkflow' ) : __( 'Special offer', 'checkflow' ) ) . '</span>';
 		echo '<strong>' . esc_html( $title ) . '</strong>';
@@ -661,7 +669,10 @@ final class CheckFlow_Frontend_Checkout {
 	/**
 	 * Render checkout modules controlled by quick settings.
 	 */
-	public function render_quick_setting_modules() {
+	public function render_quick_setting_modules( $inline = false ) {
+		if ( $this->quick_modules_rendered ) {
+			return;
+		}
 		if ( ! $this->trust_badges_context_ok() ) {
 			return;
 		}
@@ -676,7 +687,9 @@ final class CheckFlow_Frontend_Checkout {
 			return;
 		}
 
-		echo '<div class="checkflow-checkout-modules" data-checkflow-modules="1" data-checkflow-placement="' . esc_attr( $settings['placement'] ) . '">';
+		$this->quick_modules_rendered = true;
+		$positioned = $inline ? ' data-checkflow-positioned="1"' : '';
+		echo '<div class="checkflow-checkout-modules" data-checkflow-modules="1" data-checkflow-placement="' . esc_attr( $settings['placement'] ) . '"' . $positioned . '>';
 		if ( $has_timer ) {
 			echo '<div class="checkflow-urgency-timer" data-checkflow-countdown-seconds="900">';
 			echo '<span>' . esc_html__( 'Your checkout session is reserved', 'checkflow' ) . '</span>';
@@ -705,6 +718,13 @@ final class CheckFlow_Frontend_Checkout {
 			}
 		}
 		echo '</div>';
+	}
+
+	/**
+	 * Render pre-payment checkout modules directly inside classic checkout markup.
+	 */
+	public function render_inline_quick_setting_modules() {
+		$this->render_quick_setting_modules( true );
 	}
 
 	/**

@@ -1460,7 +1460,54 @@
 			}
 			data[key] = field.type === "checkbox" ? (field.checked ? 1 : 0) : field.value;
 		});
+		var upsellToggle = document.querySelector('.cf-upsell-enable-switch [data-upsell-setting="enabled"]');
+		var upsellSwitch = document.querySelector(".cf-upsell-enable-switch");
+		if (upsellSwitch) {
+			data.enabled = upsellSwitch.classList.contains("is-enabled") ? 1 : 0;
+			if (upsellToggle) {
+				upsellToggle.checked = data.enabled === 1;
+			}
+		} else if (upsellToggle) {
+			data.enabled = upsellToggle.checked ? 1 : 0;
+		}
 		return data;
+	}
+
+	var upsellSavedFingerprint = "";
+
+	function upsellSettingsFingerprint(settings) {
+		var source = settings || collectUpsellSettings();
+		var copy = {};
+		Object.keys(source)
+			.sort()
+			.forEach(function (key) {
+				copy[key] = String(source[key] == null ? "" : source[key]);
+			});
+		return JSON.stringify(copy);
+	}
+
+	function setUpsellSaveDirty(isDirty) {
+		var button = document.querySelector("[data-save-upsell]");
+		if (!button) return;
+		button.disabled = !isDirty;
+		button.classList.toggle("is-disabled", !isDirty);
+		if (!isDirty) {
+			button.textContent = "Saved";
+		} else if (button.textContent === "Saved") {
+			button.textContent = "Save funnel";
+		}
+	}
+
+	function refreshUpsellDirtyState() {
+		if (!upsellSavedFingerprint) {
+			upsellSavedFingerprint = upsellSettingsFingerprint();
+		}
+		setUpsellSaveDirty(upsellSettingsFingerprint() !== upsellSavedFingerprint);
+	}
+
+	function markUpsellSaved(settings) {
+		upsellSavedFingerprint = upsellSettingsFingerprint(settings || collectUpsellSettings());
+		setUpsellSaveDirty(false);
 	}
 
 	function saveUpsellSettings(buttonEl) {
@@ -1500,6 +1547,8 @@
 						status.classList.remove("is-saving", "is-error");
 						status.classList.add("is-saved");
 					}
+					refreshUpsellPreview();
+					markUpsellSaved(saved);
 					showToast(res.data.message || "Upsell funnel saved");
 					return;
 				}
@@ -1521,9 +1570,9 @@
 			})
 			.always(function () {
 				if (button) {
-					button.disabled = false;
 					button.textContent = button.getAttribute("data-original-text") || "Save funnel";
 				}
+				refreshUpsellDirtyState();
 			});
 	}
 
@@ -1563,7 +1612,67 @@
 			discountValue.disabled = settings.discount_type === "none";
 			discountValue.placeholder = settings.discount_type === "percent" ? "10%" : settings.discount_type === "fixed" ? "100" : "No discount";
 		}
+		refreshUpsellState(settings);
+		refreshUpsellVisibilityNote(settings);
 		refreshUpsellRuleSummary(settings);
+	}
+
+	function refreshUpsellState(settings) {
+		var enabled = !!(settings && parseInt(settings.enabled || 0, 10));
+		var state = document.querySelector("[data-upsell-enabled-state]");
+		var note = document.querySelector("[data-upsell-state-note]");
+		var title = document.querySelector("[data-upsell-state-title]");
+		var copy = document.querySelector("[data-upsell-state-copy]");
+		var performance = document.querySelector("[data-upsell-performance-context]");
+		var switchWrap = document.querySelector(".cf-upsell-enable-switch");
+		if (state) {
+			state.textContent = enabled ? "ON" : "OFF";
+		}
+		if (switchWrap) {
+			switchWrap.classList.toggle("is-enabled", enabled);
+			switchWrap.classList.toggle("is-disabled", !enabled);
+		}
+		if (note) {
+			note.classList.toggle("is-active", enabled);
+			note.classList.toggle("is-paused", !enabled);
+		}
+		if (title) {
+			title.textContent = enabled ? "Execution active" : "Funnel paused";
+		}
+		if (copy) {
+			copy.textContent = enabled
+				? "Customer-facing offers are active. Shown, accepted, skipped, and downsell events are tracked locally without touching payment submission."
+				: "Customer-facing offers are currently off. Performance cards still show historical local activity from earlier tests.";
+		}
+		if (performance) {
+			performance.textContent = enabled ? "Live funnel activity plus historical local events." : "Funnel is paused. Numbers below are historical local events, not current live exposure.";
+		}
+	}
+
+	function refreshUpsellVisibilityNote(settings) {
+		var box = document.querySelector("[data-upsell-visibility-note]");
+		var copy = document.querySelector("[data-upsell-visibility-copy]");
+		if (!box || !copy) return;
+		var enabled = !!(settings && parseInt(settings.enabled || 0, 10));
+		var flow = settings && settings.flow_type ? String(settings.flow_type) : "pre_purchase";
+		var productId = settings && settings.offer_product_id ? String(settings.offer_product_id) : "0";
+		var blockers = [];
+		if (!enabled) blockers.push("Funnel is OFF, so no customer-facing offer will show.");
+		if (flow !== "pre_purchase") blockers.push("Post-purchase offers appear after checkout/order flow, not inside the checkout form.");
+		if (!productId || productId === "0") blockers.push("Select a main offer product.");
+		if (settings && settings.trigger_min_total) blockers.push("Cart subtotal must be at least " + settings.trigger_min_total + ".");
+		if (settings && settings.trigger_max_total) blockers.push("Cart subtotal must stay under " + settings.trigger_max_total + ".");
+		if (settings && settings.trigger_products) blockers.push("Cart must contain one of these required product IDs: " + settings.trigger_products + ".");
+		if (settings && settings.trigger_categories) blockers.push("Cart must match category IDs: " + settings.trigger_categories + ".");
+		if (settings && settings.countries) blockers.push("Checkout country must match: " + String(settings.countries).toUpperCase() + ".");
+		if (settings && settings.payment_methods) blockers.push("Selected payment method must match: " + settings.payment_methods + ".");
+		if (!blockers.length) {
+			blockers.push("Ready for checkout. Test with a cart that does not already contain the offer product #" + productId + ".");
+		} else {
+			blockers.push("Also: if the cart already contains offer product #" + productId + ", CheckFlow hides the upsell to avoid duplicate items.");
+		}
+		box.classList.toggle("is-blocked", blockers.length > 1 || !enabled || flow !== "pre_purchase" || !productId || productId === "0");
+		copy.textContent = blockers.join(" ");
 	}
 
 	function upsellSaveSummary(settings) {
@@ -3643,8 +3752,20 @@
 			saveUpsellSettings(this);
 		});
 
+		$(document).on("click", ".cf-upsell-enable-switch", function (event) {
+			event.preventDefault();
+			var input = this.querySelector('[data-upsell-setting="enabled"]');
+			if (!input) return;
+			input.checked = !input.checked;
+			this.classList.toggle("is-enabled", input.checked);
+			this.classList.toggle("is-disabled", !input.checked);
+			refreshUpsellPreview();
+			refreshUpsellDirtyState();
+		});
+
 		$(document).on("input change", "[data-upsell-setting]", function () {
 			refreshUpsellPreview();
+			refreshUpsellDirtyState();
 		});
 
 		$(document).on("click", "[data-upsell-flow]", function () {
@@ -3657,6 +3778,7 @@
 				field.value = flow;
 			}
 			refreshUpsellPreview();
+			refreshUpsellDirtyState();
 		});
 
 		$(document).on("input", "[data-upsell-sales-search]", function () {
@@ -3739,6 +3861,7 @@
 		applyOrderFilters();
 		refreshOrderBumpPreview();
 		refreshUpsellPreview();
+		markUpsellSaved();
 
 		window.addEventListener("beforeunload", function (event) {
 			if (!fieldEditorDirty) return;
