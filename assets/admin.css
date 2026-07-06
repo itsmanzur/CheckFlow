@@ -1053,7 +1053,7 @@ body.checkflow-admin-screen:not(.checkflow-focus-mode) #checkflow-admin.checkflo
 }
 #checkflow-admin.checkflow-root .cf-upsell-sales-head {
 	display: grid;
-	grid-template-columns: repeat(4, minmax(0, 1fr));
+	grid-template-columns: repeat(5, minmax(0, 1fr));
 	gap: 10px;
 	margin-bottom: 14px;
 }
@@ -1128,7 +1128,7 @@ body.checkflow-admin-screen:not(.checkflow-focus-mode) #checkflow-admin.checkflo
 }
 #checkflow-admin.checkflow-root .cf-upsell-sales-table {
 	width: 100%;
-	min-width: 860px;
+	min-width: 980px;
 	border-collapse: collapse;
 }
 #checkflow-admin.checkflow-root .cf-upsell-sales-table th,
@@ -1191,6 +1191,16 @@ body.checkflow-admin-screen:not(.checkflow-focus-mode) #checkflow-admin.checkflo
 	border-color: rgba(245, 158, 11, 0.28);
 	background: rgba(245, 158, 11, 0.12);
 	color: var(--or);
+}
+#checkflow-admin.checkflow-root .cf-upsell-slot-pill.is-post {
+	border-color: rgba(37, 99, 235, 0.28);
+	background: rgba(37, 99, 235, 0.12);
+	color: var(--pr);
+}
+#checkflow-admin.checkflow-root .cf-upsell-slot-pill.is-legacy {
+	border-color: rgba(148, 163, 184, 0.32);
+	background: rgba(148, 163, 184, 0.12);
+	color: var(--tx3);
 }
 #checkflow-admin.checkflow-root .cf-upsell-sales-empty {
 	color: var(--tx3);

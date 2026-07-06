@@ -64,6 +64,11 @@ $upsell_accepted = absint( $upsell_stats['accepted'] );
 $upsell_skipped = absint( $upsell_stats['skipped'] );
 $upsell_downsell_shown = absint( $upsell_stats['downsell_shown'] );
 $upsell_downsell_accepted = absint( $upsell_stats['downsell_accepted'] );
+$upsell_pre_shown = absint( $upsell_stats['shown_pre_purchase'] );
+$upsell_post_shown = absint( $upsell_stats['shown_post_purchase'] );
+$upsell_pre_accepted = absint( $upsell_stats['accepted_pre_purchase'] );
+$upsell_post_accepted = absint( $upsell_stats['accepted_post_purchase'] );
+$upsell_post_skipped = absint( $upsell_stats['skipped_post_purchase'] );
 $upsell_take_rate = $upsell_shown > 0 ? round( ( $upsell_accepted / $upsell_shown ) * 100 ) : 0;
 $upsell_downsell_rate = $upsell_downsell_shown > 0 ? round( ( $upsell_downsell_accepted / $upsell_downsell_shown ) * 100 ) : 0;
 $upsell_revenue = isset( $upsell_stats['revenue_cents'] ) ? absint( $upsell_stats['revenue_cents'] ) / 100 : 0;
@@ -75,6 +80,9 @@ $upsell_sales_revenue = 0;
 $upsell_sales_discount = 0;
 $upsell_sales_main = 0;
 $upsell_sales_downsell = 0;
+$upsell_sales_pre = 0;
+$upsell_sales_post = 0;
+$upsell_sales_legacy = 0;
 foreach ( $upsell_sales_rows as $upsell_sales_row ) {
 	$upsell_sales_revenue += isset( $upsell_sales_row['revenue_raw'] ) ? (float) $upsell_sales_row['revenue_raw'] : 0;
 	$upsell_sales_discount += isset( $upsell_sales_row['discount_raw'] ) ? (float) $upsell_sales_row['discount_raw'] : 0;
@@ -82,6 +90,13 @@ foreach ( $upsell_sales_rows as $upsell_sales_row ) {
 		++$upsell_sales_downsell;
 	} else {
 		++$upsell_sales_main;
+	}
+	if ( isset( $upsell_sales_row['flow'] ) && 'post_purchase' === $upsell_sales_row['flow'] ) {
+		++$upsell_sales_post;
+	} elseif ( isset( $upsell_sales_row['flow'] ) && 'pre_purchase' === $upsell_sales_row['flow'] ) {
+		++$upsell_sales_pre;
+	} else {
+		++$upsell_sales_legacy;
 	}
 }
 $upsell_sales_revenue_label = function_exists( 'wc_price' ) ? wp_strip_all_tags( wc_price( $upsell_sales_revenue ) ) : number_format_i18n( $upsell_sales_revenue, 2 );
@@ -1411,6 +1426,8 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								<div class="cf-mini-card"><strong><?php echo esc_html( (string) $upsell_take_rate ); ?>%</strong><span>Take rate</span></div>
 							</div>
 							<div class="cf-module-list cf-upsell-performance-list">
+								<div><strong>Pre-purchase</strong><span><?php echo esc_html( (string) $upsell_pre_shown ); ?> shown - <?php echo esc_html( (string) $upsell_pre_accepted ); ?> accepted</span></div>
+								<div><strong>Post-purchase</strong><span><?php echo esc_html( (string) $upsell_post_shown ); ?> shown - <?php echo esc_html( (string) $upsell_post_accepted ); ?> accepted - <?php echo esc_html( (string) $upsell_post_skipped ); ?> skipped</span></div>
 								<div><strong>Upsell revenue</strong><span><?php echo esc_html( $upsell_revenue_label ); ?> tracked from accepted offers</span></div>
 								<div><strong>Discount given</strong><span><?php echo esc_html( $upsell_discount_label ); ?> applied through CheckFlow item pricing</span></div>
 								<div><strong>Skipped</strong><span><?php echo esc_html( (string) $upsell_skipped ); ?> shoppers declined the main offer</span></div>
@@ -1427,6 +1444,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 								<div><strong><?php echo esc_html( $upsell_sales_revenue_label ); ?></strong><span>Recent upsell revenue</span></div>
 								<div><strong><?php echo esc_html( $upsell_sales_discount_label ); ?></strong><span>Discount given</span></div>
 								<div><strong><?php echo esc_html( (string) $upsell_sales_main ); ?> / <?php echo esc_html( (string) $upsell_sales_downsell ); ?></strong><span>Main / downsell split</span></div>
+								<div><strong><?php echo esc_html( (string) $upsell_sales_pre ); ?> / <?php echo esc_html( (string) $upsell_sales_post ); ?> / <?php echo esc_html( (string) $upsell_sales_legacy ); ?></strong><span>Pre / post / legacy</span></div>
 							</div>
 							<div class="cf-upsell-sales-controls">
 								<input type="search" data-upsell-sales-search placeholder="Search order, customer, product" />
@@ -1434,6 +1452,9 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 									<button type="button" class="is-active" data-upsell-sales-slot="all">All</button>
 									<button type="button" data-upsell-sales-slot="main">Main offer</button>
 									<button type="button" data-upsell-sales-slot="downsell">Downsell</button>
+									<button type="button" data-upsell-sales-slot="pre_purchase">Pre-purchase</button>
+									<button type="button" data-upsell-sales-slot="post_purchase">Post-purchase</button>
+									<button type="button" data-upsell-sales-slot="legacy">Legacy</button>
 									<button type="button" data-upsell-sales-slot="today">Today</button>
 									<button type="button" data-upsell-sales-slot="week">This week</button>
 								</div>
@@ -1446,6 +1467,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 											<th>Order</th>
 											<th>Offer item</th>
 											<th>Slot</th>
+											<th>Flow</th>
 											<th>Customer</th>
 											<th>Revenue</th>
 											<th>Discount</th>
@@ -1465,6 +1487,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 													'product'        => $sales_row['product'],
 													'quantity'       => $sales_row['quantity'],
 													'slot'           => $sales_row['slot_label'],
+													'flow'           => $sales_row['flow_label'],
 													'original'       => $sales_row['original'],
 													'revenue'        => $sales_row['revenue'],
 													'discount'       => $sales_row['discount'],
@@ -1474,13 +1497,14 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 													'date'           => $sales_row['date'],
 												);
 												?>
-												<tr data-upsell-sale-row data-upsell-sale-slot="<?php echo esc_attr( $sales_row['slot'] ); ?>" data-upsell-sale-timestamp="<?php echo esc_attr( (string) absint( $sales_row['timestamp'] ) ); ?>" data-upsell-sale-search="<?php echo esc_attr( strtolower( $sales_row['order'] . ' ' . $sales_row['customer'] . ' ' . $sales_row['product'] . ' ' . $sales_row['status'] ) ); ?>" data-upsell-sale-detail="<?php echo esc_attr( wp_json_encode( $sales_detail ) ); ?>">
+												<tr data-upsell-sale-row data-upsell-sale-slot="<?php echo esc_attr( $sales_row['slot'] ); ?>" data-upsell-sale-flow="<?php echo esc_attr( $sales_row['flow'] ); ?>" data-upsell-sale-timestamp="<?php echo esc_attr( (string) absint( $sales_row['timestamp'] ) ); ?>" data-upsell-sale-search="<?php echo esc_attr( strtolower( $sales_row['order'] . ' ' . $sales_row['customer'] . ' ' . $sales_row['product'] . ' ' . $sales_row['status'] . ' ' . $sales_row['flow_label'] ) ); ?>" data-upsell-sale-detail="<?php echo esc_attr( wp_json_encode( $sales_detail ) ); ?>">
 													<td><a href="<?php echo esc_url( $sales_row['edit_url'] ); ?>"><?php echo esc_html( $sales_row['order'] ); ?></a></td>
 													<td>
 														<strong><?php echo esc_html( $sales_row['product'] ); ?></strong>
 														<span><?php echo esc_html( sprintf( 'Qty %d', absint( $sales_row['quantity'] ) ) ); ?></span>
 													</td>
 													<td><span class="cf-upsell-slot-pill <?php echo esc_attr( $sales_row['slot_class'] ); ?>"><?php echo esc_html( $sales_row['slot_label'] ); ?></span></td>
+													<td><span class="cf-upsell-slot-pill <?php echo esc_attr( $sales_row['flow_class'] ); ?>"><?php echo esc_html( $sales_row['flow_label'] ); ?></span></td>
 													<td><?php echo esc_html( $sales_row['customer'] ); ?></td>
 													<td class="is-money"><?php echo esc_html( $sales_row['revenue'] ); ?></td>
 													<td><?php echo esc_html( $sales_row['discount'] ); ?></td>
@@ -1491,11 +1515,11 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 											<?php endforeach; ?>
 										<?php else : ?>
 											<tr>
-												<td colspan="9" class="cf-upsell-sales-empty">No accepted upsell orders yet. Accept an offer from checkout, then refresh this screen.</td>
+												<td colspan="10" class="cf-upsell-sales-empty">No accepted upsell orders yet. Accept an offer from checkout, then refresh this screen.</td>
 											</tr>
 										<?php endif; ?>
 										<tr class="cf-upsell-sales-no-results" hidden>
-											<td colspan="9" class="cf-upsell-sales-empty">No upsell sales match this filter.</td>
+											<td colspan="10" class="cf-upsell-sales-empty">No upsell sales match this filter.</td>
 										</tr>
 									</tbody>
 								</table>
@@ -1513,6 +1537,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 										<div><span>Customer</span><strong data-upsell-sale-customer>-</strong></div>
 										<div><span>Offer item</span><strong data-upsell-sale-product>-</strong></div>
 										<div><span>Slot</span><strong data-upsell-sale-slot>-</strong></div>
+										<div><span>Flow</span><strong data-upsell-sale-flow>-</strong></div>
 										<div><span>Quantity</span><strong data-upsell-sale-quantity>-</strong></div>
 										<div><span>Original total</span><strong data-upsell-sale-original>-</strong></div>
 										<div><span>Final revenue</span><strong data-upsell-sale-revenue>-</strong></div>

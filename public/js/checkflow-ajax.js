@@ -294,10 +294,11 @@
 		return postAction("checkflow_add_order_bump", { product_id: productId });
 	}
 
-	function acceptUpsell(productId, slot) {
+	function acceptUpsell(productId, slot, flow) {
 		return postAction("checkflow_accept_upsell", {
 			product_id: productId,
 			slot: slot || "main",
+			flow: flow || "pre_purchase",
 		});
 	}
 
@@ -305,7 +306,8 @@
 		if (!eventName || !module) return;
 		var productId = module.getAttribute("data-checkflow-upsell-product") || "";
 		var slot = module.getAttribute("data-checkflow-upsell-slot") || "main";
-		var key = "checkflow_upsell_" + eventName + "_" + slot + "_" + productId;
+		var flow = module.getAttribute("data-checkflow-upsell-flow") || "pre_purchase";
+		var key = "checkflow_upsell_" + eventName + "_" + flow + "_" + slot + "_" + productId;
 		try {
 			if (eventName === "shown" || eventName === "downsell_shown") {
 				var seenAt = window.sessionStorage ? sessionStorage.getItem(key) : "";
@@ -317,6 +319,7 @@
 			event: eventName,
 			product_id: productId,
 			slot: slot,
+			flow: flow,
 		}).catch(function () {});
 	}
 
@@ -542,6 +545,7 @@
 			var upsellModule = upsellAccept.closest(".checkflow-upsell-module");
 			var upsellProductId = upsellModule ? upsellModule.getAttribute("data-checkflow-upsell-product") : "";
 			var upsellSlot = upsellModule ? upsellModule.getAttribute("data-checkflow-upsell-slot") || "main" : "main";
+			var upsellFlow = upsellModule ? upsellModule.getAttribute("data-checkflow-upsell-flow") || "pre_purchase" : "pre_purchase";
 			var postPurchase = upsellModule && upsellModule.getAttribute("data-checkflow-post-purchase") === "1";
 			if (!upsellModule || !upsellProductId || upsellAccept.disabled) return;
 			var upsellButtons = upsellModule ? upsellModule.querySelectorAll("button") : [upsellAccept];
@@ -549,7 +553,7 @@
 				button.disabled = true;
 			});
 			upsellModule.classList.add("is-loading");
-			acceptUpsell(upsellProductId, upsellSlot)
+			acceptUpsell(upsellProductId, upsellSlot, upsellFlow)
 				.then(function (res) {
 					if (res && res.success) {
 						upsellModule.hidden = true;

@@ -215,7 +215,8 @@ final class CheckFlow_Frontend_Checkout {
 		}
 
 		ob_start();
-		echo '<div class="' . esc_attr( implode( ' ', $classes ) ) . '" data-checkflow-upsell-product="' . esc_attr( (string) $product->get_id() ) . '" data-checkflow-upsell-slot="' . esc_attr( $slot ) . '" data-checkflow-upsell-countries="' . esc_attr( implode( ',', $country_rules ) ) . '" data-checkflow-upsell-payments="' . esc_attr( implode( ',', $payment_rules ) ) . '"';
+		$flow = $post_purchase ? 'post_purchase' : 'pre_purchase';
+		echo '<div class="' . esc_attr( implode( ' ', $classes ) ) . '" data-checkflow-upsell-product="' . esc_attr( (string) $product->get_id() ) . '" data-checkflow-upsell-slot="' . esc_attr( $slot ) . '" data-checkflow-upsell-flow="' . esc_attr( $flow ) . '" data-checkflow-upsell-countries="' . esc_attr( implode( ',', $country_rules ) ) . '" data-checkflow-upsell-payments="' . esc_attr( implode( ',', $payment_rules ) ) . '"';
 		if ( $hidden ) {
 			echo ' hidden data-checkflow-upsell-manual-hidden="1"';
 		}
@@ -330,6 +331,7 @@ final class CheckFlow_Frontend_Checkout {
 		}
 		$item->add_meta_data( '_checkflow_upsell', 'yes', true );
 		$item->add_meta_data( '_checkflow_upsell_slot', isset( $values['checkflow_upsell_slot'] ) ? sanitize_key( (string) $values['checkflow_upsell_slot'] ) : 'main', true );
+		$item->add_meta_data( '_checkflow_upsell_flow', isset( $values['checkflow_upsell_flow'] ) ? sanitize_key( (string) $values['checkflow_upsell_flow'] ) : 'pre_purchase', true );
 		if ( ! empty( $values['checkflow_upsell_discount_type'] ) && 'none' !== $values['checkflow_upsell_discount_type'] ) {
 			$item->add_meta_data( '_checkflow_upsell_discount_type', sanitize_key( (string) $values['checkflow_upsell_discount_type'] ), true );
 			$item->add_meta_data( '_checkflow_upsell_discount_value', wc_format_decimal( (string) $values['checkflow_upsell_discount_value'] ), true );

@@ -291,6 +291,9 @@ final class CheckFlow_Frontend_Ajax {
 		$settings = CheckFlow_Admin::instance()->get_upsell_settings();
 		$slot     = isset( $_POST['slot'] ) ? sanitize_key( wp_unslash( $_POST['slot'] ) ) : 'main';
 		$slot     = in_array( $slot, array( 'main', 'downsell' ), true ) ? $slot : 'main';
+		$flow     = isset( $_POST['flow'] ) ? sanitize_key( wp_unslash( $_POST['flow'] ) ) : (string) $settings['flow_type'];
+		$flow     = in_array( $flow, array( 'pre_purchase', 'post_purchase' ), true ) ? $flow : (string) $settings['flow_type'];
+		$flow     = $flow === (string) $settings['flow_type'] ? $flow : (string) $settings['flow_type'];
 		$product_id = 'downsell' === $slot ? absint( $settings['downsell_product_id'] ) : absint( $settings['offer_product_id'] );
 		$posted_id  = isset( $_POST['product_id'] ) ? absint( $_POST['product_id'] ) : 0;
 
@@ -315,6 +318,7 @@ final class CheckFlow_Frontend_Ajax {
 						array(
 							'checkout_url' => function_exists( 'wc_get_checkout_url' ) ? wc_get_checkout_url() : '',
 							'slot'         => $slot,
+							'flow'         => $flow,
 						)
 					),
 					__( 'Upsell offer already added.', 'checkflow' )
@@ -327,6 +331,7 @@ final class CheckFlow_Frontend_Ajax {
 		$cart_item_data   = array(
 			'checkflow_upsell'                => true,
 			'checkflow_upsell_slot'           => $slot,
+			'checkflow_upsell_flow'           => $flow,
 			'checkflow_upsell_discount_type'  => (string) $settings['discount_type'],
 			'checkflow_upsell_discount_value' => (string) $settings['discount_value'],
 			'checkflow_upsell_original_price' => (string) $base_price,
@@ -337,7 +342,7 @@ final class CheckFlow_Frontend_Ajax {
 		if ( ! $added ) {
 			$this->send_error( __( 'Could not add upsell offer.', 'checkflow' ), array( 'product_id' ), 400 );
 		}
-		$this->record_upsell_acceptance( 'downsell' === $slot ? 'downsell_accepted' : 'accepted', $base_price, $discounted_price );
+		$this->record_upsell_acceptance( 'downsell' === $slot ? 'downsell_accepted' : 'accepted', $base_price, $discounted_price, $flow );
 		if ( WC()->session ) {
 			WC()->session->set( 'checkflow_upsell_' . $slot . '_accepted', time() );
 		}
@@ -349,6 +354,7 @@ final class CheckFlow_Frontend_Ajax {
 				array(
 					'checkout_url' => function_exists( 'wc_get_checkout_url' ) ? wc_get_checkout_url() : '',
 					'slot'         => $slot,
+					'flow'         => $flow,
 				)
 			),
 			__( 'Upsell offer added.', 'checkflow' )
@@ -366,7 +372,9 @@ final class CheckFlow_Frontend_Ajax {
 			$this->send_error( __( 'Invalid upsell event.', 'checkflow' ), array( 'event' ), 400 );
 		}
 
-		$stats = $this->record_upsell_event( $event );
+		$flow = isset( $_POST['flow'] ) ? sanitize_key( wp_unslash( $_POST['flow'] ) ) : 'pre_purchase';
+		$flow = in_array( $flow, array( 'pre_purchase', 'post_purchase' ), true ) ? $flow : 'pre_purchase';
+		$stats = $this->record_upsell_event( $event, $flow );
 		$this->send_success(
 			array(
 				'event' => $event,
@@ -380,13 +388,18 @@ final class CheckFlow_Frontend_Ajax {
 	 * @param string $event Event key.
 	 * @return array<string,int>
 	 */
-	private function record_upsell_event( $event ) {
+	private function record_upsell_event( $event, $flow = '' ) {
 		$allowed = array( 'shown', 'accepted', 'skipped', 'downsell_shown', 'downsell_accepted' );
 		if ( ! in_array( $event, $allowed, true ) ) {
 			return CheckFlow_Admin::instance()->get_upsell_stats();
 		}
+		$flow = in_array( $flow, array( 'pre_purchase', 'post_purchase' ), true ) ? $flow : '';
 		$stats = CheckFlow_Admin::instance()->get_upsell_stats();
 		$stats[ $event ] = isset( $stats[ $event ] ) ? absint( $stats[ $event ] ) + 1 : 1;
+		if ( $flow ) {
+			$flow_key = $event . '_' . $flow;
+			$stats[ $flow_key ] = isset( $stats[ $flow_key ] ) ? absint( $stats[ $flow_key ] ) + 1 : 1;
+		}
 		update_option( CheckFlow_Admin::UPSELL_STATS_OPTION, $stats, false );
 		return $stats;
 	}
@@ -399,8 +412,8 @@ final class CheckFlow_Frontend_Ajax {
 	 * @param float  $discounted_price Final unit price.
 	 * @return array<string,int>
 	 */
-	private function record_upsell_acceptance( $event, $base_price, $discounted_price ) {
-		$stats = $this->record_upsell_event( $event );
+	private function record_upsell_acceptance( $event, $base_price, $discounted_price, $flow = '' ) {
+		$stats = $this->record_upsell_event( $event, $flow );
 		$revenue_cents  = max( 0, (int) round( $discounted_price * 100 ) );
 		$discount_cents = max( 0, (int) round( ( $base_price - $discounted_price ) * 100 ) );
 

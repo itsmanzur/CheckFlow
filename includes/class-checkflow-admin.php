@@ -1519,6 +1519,16 @@ final class CheckFlow_Admin {
 			'skipped'           => 0,
 			'downsell_shown'    => 0,
 			'downsell_accepted' => 0,
+			'shown_pre_purchase' => 0,
+			'shown_post_purchase' => 0,
+			'accepted_pre_purchase' => 0,
+			'accepted_post_purchase' => 0,
+			'skipped_pre_purchase' => 0,
+			'skipped_post_purchase' => 0,
+			'downsell_shown_pre_purchase' => 0,
+			'downsell_shown_post_purchase' => 0,
+			'downsell_accepted_pre_purchase' => 0,
+			'downsell_accepted_post_purchase' => 0,
 			'revenue_cents'     => 0,
 			'discount_cents'    => 0,
 		);
@@ -1568,6 +1578,8 @@ final class CheckFlow_Admin {
 
 				$slot           = sanitize_key( (string) $item->get_meta( '_checkflow_upsell_slot', true ) );
 				$slot           = '' !== $slot ? $slot : 'main';
+				$flow           = sanitize_key( (string) $item->get_meta( '_checkflow_upsell_flow', true ) );
+				$flow           = in_array( $flow, array( 'pre_purchase', 'post_purchase' ), true ) ? $flow : 'legacy';
 				$quantity       = max( 1, absint( $item->get_quantity() ) );
 				$line_total     = (float) $item->get_total();
 				$line_subtotal  = (float) $item->get_subtotal();
@@ -1590,6 +1602,9 @@ final class CheckFlow_Admin {
 					'slot'           => $slot,
 					'slot_label'     => 'downsell' === $slot ? __( 'Downsell', 'checkflow' ) : __( 'Main offer', 'checkflow' ),
 					'slot_class'     => 'downsell' === $slot ? 'is-downsell' : 'is-main',
+					'flow'           => $flow,
+					'flow_label'     => $this->upsell_flow_label( $flow ),
+					'flow_class'     => 'post_purchase' === $flow ? 'is-post' : ( 'pre_purchase' === $flow ? 'is-pre' : 'is-legacy' ),
 					'discount_type'  => sanitize_key( (string) $item->get_meta( '_checkflow_upsell_discount_type', true ) ),
 					'discount_value' => (string) $item->get_meta( '_checkflow_upsell_discount_value', true ),
 					'original_raw'   => $original_total,
@@ -1611,6 +1626,20 @@ final class CheckFlow_Admin {
 		}
 
 		return $rows;
+	}
+
+	/**
+	 * @param string $flow Upsell flow key.
+	 * @return string
+	 */
+	private function upsell_flow_label( $flow ) {
+		if ( 'post_purchase' === $flow ) {
+			return __( 'Post-purchase', 'checkflow' );
+		}
+		if ( 'pre_purchase' === $flow ) {
+			return __( 'Pre-purchase', 'checkflow' );
+		}
+		return __( 'Legacy', 'checkflow' );
 	}
 
 	/**

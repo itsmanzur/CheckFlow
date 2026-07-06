@@ -816,9 +816,10 @@
 
 		getUpsellSaleRows(true).forEach(function (row) {
 			var slot = row.getAttribute("data-upsell-sale-slot") || "";
+			var flow = row.getAttribute("data-upsell-sale-flow") || "";
 			var timestamp = parseInt(row.getAttribute("data-upsell-sale-timestamp") || "0", 10);
 			var searchable = row.getAttribute("data-upsell-sale-search") || row.textContent.toLowerCase();
-			var filterOk = filter === "all" || slot === filter;
+			var filterOk = filter === "all" || slot === filter || flow === filter;
 			if (filter === "today") {
 				filterOk = timestamp >= dayAgo;
 			}
@@ -872,6 +873,7 @@
 		setText("[data-upsell-sale-customer]", data.customer);
 		setText("[data-upsell-sale-product]", data.product);
 		setText("[data-upsell-sale-slot]", data.slot);
+		setText("[data-upsell-sale-flow]", data.flow);
 		setText("[data-upsell-sale-quantity]", data.quantity ? "Qty " + data.quantity : "");
 		setText("[data-upsell-sale-original]", data.original);
 		setText("[data-upsell-sale-revenue]", data.revenue);
@@ -914,12 +916,12 @@
 			showToast("No upsell sales to export", "error");
 			return;
 		}
-		var headers = ["Order", "Customer", "Product", "Quantity", "Slot", "Original", "Revenue", "Discount", "Discount rule", "Status", "Date"];
+		var headers = ["Order", "Customer", "Product", "Quantity", "Slot", "Flow", "Original", "Revenue", "Discount", "Discount rule", "Status", "Date"];
 		var lines = [headers.map(csvCell).join(",")];
 		rows.forEach(function (row) {
 			var data = parseUpsellSaleDetail(row) || {};
 			var rule = data.discountType && data.discountType !== "none" ? data.discountType + (data.discountValue ? " " + data.discountValue : "") : "No discount";
-			lines.push([data.order, data.customer, data.product, data.quantity, data.slot, data.original, data.revenue, data.discount, rule, data.status, data.date].map(csvCell).join(","));
+			lines.push([data.order, data.customer, data.product, data.quantity, data.slot, data.flow, data.original, data.revenue, data.discount, rule, data.status, data.date].map(csvCell).join(","));
 		});
 		var blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
 		var url = URL.createObjectURL(blob);
