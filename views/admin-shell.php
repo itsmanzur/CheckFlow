@@ -1395,7 +1395,7 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 						<div class="pb">
 							<div class="cf-module-list">
 								<div><strong>1. Trigger check</strong><span>Cart, product, category, country, payment, customer rules.</span></div>
-								<div><strong>2. Offer screen</strong><span>Pre-purchase inline or post-purchase safe new-checkout offer.</span></div>
+								<div><strong>2. Offer screen</strong><span>Pre-purchase inline card, or post-purchase order-received card that opens a new checkout.</span></div>
 								<div><strong>3. Downsell fallback</strong><span>Optional secondary offer if the first offer is skipped.</span></div>
 								<div><strong>4. Return safely</strong><span>Always return to WooCommerce checkout/order-received flow.</span></div>
 							</div>

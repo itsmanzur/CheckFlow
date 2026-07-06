@@ -1658,7 +1658,7 @@
 		var productId = settings && settings.offer_product_id ? String(settings.offer_product_id) : "0";
 		var blockers = [];
 		if (!enabled) blockers.push("Funnel is OFF, so no customer-facing offer will show.");
-		if (flow !== "pre_purchase") blockers.push("Post-purchase offers appear after checkout/order flow, not inside the checkout form.");
+		if (flow !== "pre_purchase") blockers.push("Post-purchase mode: this offer appears on the order-received page after a completed order, not inside the checkout form. Accepting it starts a fresh checkout and keeps the completed order unchanged.");
 		if (!productId || productId === "0") blockers.push("Select a main offer product.");
 		if (settings && settings.trigger_min_total) blockers.push("Cart subtotal must be at least " + settings.trigger_min_total + ".");
 		if (settings && settings.trigger_max_total) blockers.push("Cart subtotal must stay under " + settings.trigger_max_total + ".");
@@ -1671,7 +1671,7 @@
 		} else {
 			blockers.push("Also: if the cart already contains offer product #" + productId + ", CheckFlow hides the upsell to avoid duplicate items.");
 		}
-		box.classList.toggle("is-blocked", blockers.length > 1 || !enabled || flow !== "pre_purchase" || !productId || productId === "0");
+		box.classList.toggle("is-blocked", blockers.length > 1 || !enabled || !productId || productId === "0");
 		copy.textContent = blockers.join(" ");
 	}
 

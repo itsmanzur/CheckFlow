@@ -586,6 +586,8 @@
 			if (slot === "main") {
 				trackUpsellEvent("skipped", skipped);
 			}
+			var postPurchaseSkip = skipped.getAttribute("data-checkflow-post-purchase") === "1";
+			var revealedDownsell = false;
 			skipped.hidden = true;
 			skipped.setAttribute("data-checkflow-upsell-manual-hidden", "1");
 			if (slot === "main" && skipped.parentNode) {
@@ -593,8 +595,12 @@
 				if (downsell) {
 					downsell.hidden = false;
 					downsell.removeAttribute("data-checkflow-upsell-manual-hidden");
+					revealedDownsell = true;
 					trackUpsellEvent("downsell_shown", downsell);
 				}
+			}
+			if (postPurchaseSkip && !revealedDownsell) {
+				showNotice("success", "Offer skipped. Your completed order is unchanged.");
 			}
 			return;
 		}

@@ -17,6 +17,9 @@ final class CheckFlow_Frontend_Checkout {
 	/** @var bool */
 	private $quick_modules_rendered = false;
 
+	/** @var bool */
+	private $post_purchase_upsell_rendered = false;
+
 	private function __construct() {}
 
 	/**
@@ -160,9 +163,10 @@ final class CheckFlow_Frontend_Checkout {
 
 	/**
 	 * @param string $slot Offer slot: main or downsell.
+	 * @param bool   $check_cart Whether to hide when this product is already in the active cart.
 	 * @return WC_Product|null
 	 */
-	private function get_upsell_product( $slot = 'main' ) {
+	private function get_upsell_product( $slot = 'main', $check_cart = true ) {
 		if ( ! function_exists( 'wc_get_product' ) ) {
 			return null;
 		}
@@ -171,7 +175,7 @@ final class CheckFlow_Frontend_Checkout {
 			return null;
 		}
 		$product_id = 'downsell' === $slot ? absint( $settings['downsell_product_id'] ) : absint( $settings['offer_product_id'] );
-		if ( ! $product_id || $this->cart_has_product( $product_id ) ) {
+		if ( ! $product_id || ( $check_cart && $this->cart_has_product( $product_id ) ) ) {
 			return null;
 		}
 		$product = wc_get_product( $product_id );
@@ -232,8 +236,8 @@ final class CheckFlow_Frontend_Checkout {
 		echo '<em>' . wp_kses_post( $price_html ) . '</em>';
 		echo '</div>';
 		echo '<div class="checkflow-upsell-actions">';
-		echo '<button type="button" class="checkflow-upsell-accept">' . esc_html__( 'Add offer', 'checkflow' ) . '</button>';
-		echo '<button type="button" class="checkflow-upsell-skip">' . esc_html__( 'No thanks', 'checkflow' ) . '</button>';
+		echo '<button type="button" class="checkflow-upsell-accept">' . esc_html( $post_purchase ? __( 'Add to new checkout', 'checkflow' ) : __( 'Add offer', 'checkflow' ) ) . '</button>';
+		echo '<button type="button" class="checkflow-upsell-skip">' . esc_html( $post_purchase ? __( 'Skip offer', 'checkflow' ) : __( 'No thanks', 'checkflow' ) ) . '</button>';
 		echo '</div>';
 		echo '</div>';
 		return (string) ob_get_clean();
@@ -730,7 +734,10 @@ final class CheckFlow_Frontend_Checkout {
 	/**
 	 * Render a safe post-purchase upsell slot on the order-received page.
 	 */
-	public function render_order_received_upsell() {
+	public function render_order_received_upsell( $order_id = 0 ) {
+		if ( $this->post_purchase_upsell_rendered ) {
+			return;
+		}
 		if ( is_admin() || wp_doing_ajax() || ! function_exists( 'is_order_received_page' ) || ! is_order_received_page() ) {
 			return;
 		}
@@ -740,16 +747,31 @@ final class CheckFlow_Frontend_Checkout {
 			return;
 		}
 
-		$product = $this->get_upsell_product( 'main' );
+		$product = $this->get_upsell_product( 'main', false );
 		if ( ! $product ) {
 			return;
 		}
+		$this->post_purchase_upsell_rendered = true;
+		$downsell = $this->get_upsell_product( 'downsell', false );
 
-		echo '<div class="checkflow-post-purchase-upsell">';
-		echo '<h3>' . esc_html__( 'Before you go', 'checkflow' ) . '</h3>';
-		echo '<p>' . esc_html__( 'Add this offer to a new checkout. Your completed order stays unchanged.', 'checkflow' ) . '</p>';
-		echo $this->get_upsell_offer_markup( $settings, $product, 'main', false, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<section class="checkflow-post-purchase-upsell" data-checkflow-post-purchase-wrap="1">';
+		echo '<div class="checkflow-post-purchase-head">';
+		echo '<div class="checkflow-post-purchase-titlebar">';
+		echo '<span class="checkflow-post-purchase-eyebrow">' . esc_html__( 'Post-purchase offer', 'checkflow' ) . '</span>';
+		echo '<h3>' . esc_html__( 'Exclusive offer unlocked', 'checkflow' ) . '</h3>';
 		echo '</div>';
+		echo '<p>' . esc_html__( 'Your order is already placed. Accepting this offer opens a fresh checkout, so the completed order stays unchanged.', 'checkflow' ) . '</p>';
+		echo '</div>';
+		echo '<div class="checkflow-post-purchase-steps">';
+		echo '<span>' . esc_html__( 'Completed order safe', 'checkflow' ) . '</span>';
+		echo '<span>' . esc_html__( 'New checkout for the offer', 'checkflow' ) . '</span>';
+		echo '</div>';
+		echo $this->get_upsell_offer_markup( $settings, $product, 'main', false, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		if ( $downsell ) {
+			echo $this->get_upsell_offer_markup( $settings, $downsell, 'downsell', true, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+		echo '<p class="checkflow-post-purchase-note">' . esc_html__( 'Skip safely any time. Nothing will be added unless you accept an offer.', 'checkflow' ) . '</p>';
+		echo '</section>';
 	}
 
 	/**

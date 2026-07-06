@@ -133,9 +133,9 @@ final class CheckFlow {
 		$this->loader->add_action( 'woocommerce_review_order_before_payment', $checkout, 'render_inline_quick_setting_modules', 8 );
 		// Block checkout skips classic template hooks; prepend intro after blocks/shortcodes render.
 		$this->loader->add_filter( 'the_content', $checkout, 'prepend_shell_intro_block_checkout', 12 );
+		$this->loader->add_action( 'woocommerce_thankyou', $checkout, 'render_order_received_upsell', 20, 1 );
 		$this->loader->add_action( 'wp_footer', $checkout, 'render_direct_checkout_script' );
 		$this->loader->add_action( 'wp_footer', $checkout, 'render_quick_setting_modules' );
-		$this->loader->add_action( 'wp_footer', $checkout, 'render_order_received_upsell' );
 		$this->loader->add_action( 'wp_footer', $checkout, 'render_recaptcha_script' );
 		$this->loader->add_action( 'wp_footer', $checkout, 'render_trust_badges' );
 
