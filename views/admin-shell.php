@@ -52,6 +52,8 @@ $dashboard_analytics = $admin_instance->get_dashboard_analytics( '7d' );
 $checkout_analytics_visibility = $admin_instance->get_checkout_analytics_visibility();
 $courier_providers = $admin_instance->get_courier_providers();
 $courier_settings  = $admin_instance->get_courier_settings();
+$payment_providers = $admin_instance->get_payment_providers();
+$payment_settings  = $admin_instance->get_payment_settings();
 $order_bump_settings = $admin_instance->get_order_bump_settings();
 $order_bump_products = $admin_instance->get_order_bump_product_choices();
 $order_bump_product  = ! empty( $order_bump_settings['product_id'] ) && function_exists( 'wc_get_product' ) ? wc_get_product( absint( $order_bump_settings['product_id'] ) ) : null;
@@ -1555,9 +1557,86 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 			</div>
 
 			<div class="cf-pane<?php echo esc_attr( $screen_class( 'bkash_nagad' ) ); ?>" data-pane="bkash_nagad">
-				<div class="g2">
-					<div class="panel"><div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'nav.bkash_nagad' ) ); ?></div><div class="pa">Sandbox</div></div><div class="pb"><div class="cf-module-list"><div><strong>bKash</strong><span>App key, secret, merchant number</span></div><div><strong>Nagad</strong><span>Merchant ID, RSA keys, callback URL</span></div><div><strong>Rocket</strong><span>Merchant settings via gateway module</span></div><div><strong>SSLCOMMERZ</strong><span>Store ID, password, IPN</span></div></div></div></div>
-					<div class="panel"><div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'payment.title' ) ); ?></div></div><div class="pb"><div class="plist"><div class="pi"><div class="pdot" style="background:#ff4081"></div><div class="pname"><?php echo esc_html( checkflow_str( 'payment.bkash' ) ); ?></div><div class="pbw"><div class="pbar" style="width:48%;background:#ff4081"></div></div><div class="ppct"><?php echo esc_html( checkflow_str( 'payment.pct48' ) ); ?></div></div><div class="pi"><div class="pdot" style="background:var(--or)"></div><div class="pname"><?php echo esc_html( checkflow_str( 'payment.nagad' ) ); ?></div><div class="pbw"><div class="pbar" style="width:22%;background:var(--or)"></div></div><div class="ppct"><?php echo esc_html( checkflow_str( 'payment.pct22' ) ); ?></div></div><div class="pi"><div class="pdot" style="background:var(--pr)"></div><div class="pname"><?php echo esc_html( checkflow_str( 'payment.card' ) ); ?></div><div class="pbw"><div class="pbar" style="width:12%;background:var(--pr)"></div></div><div class="ppct"><?php echo esc_html( checkflow_str( 'payment.pct12' ) ); ?></div></div></div></div></div>
+				<div class="cf-payment-layout">
+					<div class="panel">
+						<div class="ph">
+							<div class="pt"><?php echo esc_html( checkflow_str( 'nav.bkash_nagad' ) ); ?></div>
+							<div class="pa">Gateway setup foundation</div>
+						</div>
+						<div class="pb">
+							<div class="cf-payment-providers">
+								<?php foreach ( $payment_providers as $provider_key => $provider ) : ?>
+									<?php
+									$is_default = $payment_settings['default_provider'] === $provider_key;
+									$is_enabled = ! empty( $payment_settings[ $provider_key . '_enabled' ] );
+									$is_configured = 'bkash' === $provider_key
+										? ( ! empty( $payment_settings['bkash_app_key'] ) && ! empty( $payment_settings['bkash_app_secret'] ) && ! empty( $payment_settings['bkash_username'] ) && ! empty( $payment_settings['bkash_password'] ) )
+										: ( ! empty( $payment_settings['nagad_merchant_id'] ) && ! empty( $payment_settings['nagad_public_key'] ) && ! empty( $payment_settings['nagad_private_key'] ) );
+									$status_label = $is_enabled ? ( $is_configured ? __( 'Configured', 'checkflow' ) : __( 'Needs credentials', 'checkflow' ) ) : __( 'Disabled', 'checkflow' );
+									?>
+									<div class="cf-payment-provider<?php echo $is_default ? ' is-default' : ''; ?>" data-payment-provider-card="<?php echo esc_attr( $provider_key ); ?>" style="--payment-accent:<?php echo esc_attr( $provider['color'] ); ?>">
+										<div class="cf-payment-provider-head">
+											<div>
+												<strong><?php echo esc_html( $provider['label'] ); ?></strong>
+												<span><?php echo esc_html( $provider['copy'] ); ?></span>
+											</div>
+											<label><input type="radio" name="cf_payment_default" value="<?php echo esc_attr( $provider_key ); ?>" data-payment-default <?php checked( $is_default ); ?> /> Default</label>
+										</div>
+										<div class="cf-payment-status-row">
+											<span class="cf-payment-status<?php echo $is_enabled ? ' is-on' : ' is-off'; ?>"><?php echo esc_html( $status_label ); ?></span>
+											<span><?php echo esc_html( 'live' === $payment_settings[ $provider_key . '_mode' ] ? 'Live mode' : 'Sandbox mode' ); ?></span>
+										</div>
+										<div class="cf-payment-fields">
+											<label class="cf-field-switch"><span>Enable gateway</span><input type="checkbox" data-payment-setting="<?php echo esc_attr( $provider_key . '_enabled' ); ?>" <?php checked( $is_enabled ); ?> /></label>
+											<label><span>Mode</span><select data-payment-setting="<?php echo esc_attr( $provider_key . '_mode' ); ?>"><option value="sandbox" <?php selected( $payment_settings[ $provider_key . '_mode' ], 'sandbox' ); ?>>Sandbox</option><option value="live" <?php selected( $payment_settings[ $provider_key . '_mode' ], 'live' ); ?>>Live</option></select></label>
+											<?php if ( 'bkash' === $provider_key ) : ?>
+												<label><span>App key</span><input type="text" data-payment-setting="bkash_app_key" value="<?php echo esc_attr( $payment_settings['bkash_app_key'] ); ?>" placeholder="bKash app key" /></label>
+												<label><span>App secret</span><input type="password" data-payment-setting="bkash_app_secret" value="<?php echo esc_attr( $payment_settings['bkash_app_secret'] ); ?>" placeholder="bKash app secret" /></label>
+												<label><span>Username</span><input type="text" data-payment-setting="bkash_username" value="<?php echo esc_attr( $payment_settings['bkash_username'] ); ?>" placeholder="API username" /></label>
+												<label><span>Password</span><input type="password" data-payment-setting="bkash_password" value="<?php echo esc_attr( $payment_settings['bkash_password'] ); ?>" placeholder="API password" /></label>
+												<label><span>Merchant number</span><input type="text" data-payment-setting="bkash_merchant_number" value="<?php echo esc_attr( $payment_settings['bkash_merchant_number'] ); ?>" placeholder="01XXXXXXXXX" /></label>
+												<label><span>Callback URL</span><input type="url" data-payment-setting="bkash_callback_url" value="<?php echo esc_url( $payment_settings['bkash_callback_url'] ); ?>" /></label>
+												<label><span>IPN URL</span><input type="url" data-payment-setting="bkash_ipn_url" value="<?php echo esc_url( $payment_settings['bkash_ipn_url'] ); ?>" /></label>
+											<?php else : ?>
+												<label><span>Merchant ID</span><input type="text" data-payment-setting="nagad_merchant_id" value="<?php echo esc_attr( $payment_settings['nagad_merchant_id'] ); ?>" placeholder="Nagad merchant ID" /></label>
+												<label><span>Merchant number</span><input type="text" data-payment-setting="nagad_merchant_number" value="<?php echo esc_attr( $payment_settings['nagad_merchant_number'] ); ?>" placeholder="01XXXXXXXXX" /></label>
+												<label><span>Public key</span><textarea data-payment-setting="nagad_public_key" rows="3" placeholder="Nagad public key"><?php echo esc_textarea( $payment_settings['nagad_public_key'] ); ?></textarea></label>
+												<label><span>Private key</span><textarea data-payment-setting="nagad_private_key" rows="3" placeholder="Nagad private key"><?php echo esc_textarea( $payment_settings['nagad_private_key'] ); ?></textarea></label>
+												<label><span>Callback URL</span><input type="url" data-payment-setting="nagad_callback_url" value="<?php echo esc_url( $payment_settings['nagad_callback_url'] ); ?>" /></label>
+												<label><span>IPN URL</span><input type="url" data-payment-setting="nagad_ipn_url" value="<?php echo esc_url( $payment_settings['nagad_ipn_url'] ); ?>" /></label>
+											<?php endif; ?>
+										</div>
+									</div>
+								<?php endforeach; ?>
+							</div>
+							<div class="cf-payment-save-row">
+								<span data-payment-save-status>Credentials save locally now. WooCommerce payment gateway activation will be a dedicated implementation pass.</span>
+								<button type="button" class="btn-p" data-save-payment-settings>Save payment settings</button>
+							</div>
+						</div>
+					</div>
+					<div class="gcol">
+						<div class="panel">
+							<div class="ph"><div class="pt">Gateway readiness</div><div class="pa">Native checkout safe</div></div>
+							<div class="pb">
+								<div class="cf-module-list cf-payment-readiness">
+									<div><strong>Settings storage</strong><span>Enabled, mode, IDs, keys, callback and IPN URLs save in WordPress options.</span></div>
+									<div><strong>Checkout behavior</strong><span>No payment method is injected yet, so current WooCommerce gateways stay untouched.</span></div>
+									<div><strong>Next API pass</strong><span>Token creation, payment create/execute, query, refund, webhook/IPN validation.</span></div>
+								</div>
+							</div>
+						</div>
+						<div class="panel">
+							<div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'payment.title' ) ); ?></div><div class="pa">Current mix</div></div>
+							<div class="pb">
+								<div class="plist">
+									<div class="pi"><div class="pdot" style="background:#ff4081"></div><div class="pname"><?php echo esc_html( checkflow_str( 'payment.bkash' ) ); ?></div><div class="pbw"><div class="pbar" style="width:48%;background:#ff4081"></div></div><div class="ppct"><?php echo esc_html( checkflow_str( 'payment.pct48' ) ); ?></div></div>
+									<div class="pi"><div class="pdot" style="background:var(--or)"></div><div class="pname"><?php echo esc_html( checkflow_str( 'payment.nagad' ) ); ?></div><div class="pbw"><div class="pbar" style="width:22%;background:var(--or)"></div></div><div class="ppct"><?php echo esc_html( checkflow_str( 'payment.pct22' ) ); ?></div></div>
+									<div class="pi"><div class="pdot" style="background:var(--pr)"></div><div class="pname"><?php echo esc_html( checkflow_str( 'payment.card' ) ); ?></div><div class="pbw"><div class="pbar" style="width:12%;background:var(--pr)"></div></div><div class="ppct"><?php echo esc_html( checkflow_str( 'payment.pct12' ) ); ?></div></div>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 

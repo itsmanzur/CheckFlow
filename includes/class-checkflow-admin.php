@@ -26,6 +26,8 @@ final class CheckFlow_Admin {
 
 	const PIXEL_SETTINGS_OPTION = 'checkflow_pixel_settings';
 
+	const PAYMENT_SETTINGS_OPTION = 'checkflow_payment_settings';
+
 	const ORDER_BUMP_OPTION = 'checkflow_order_bump_settings';
 
 	const UPSELL_OPTION = 'checkflow_upsell_settings';
@@ -136,6 +138,7 @@ final class CheckFlow_Admin {
 				'checkoutTemplates' => $this->get_checkout_templates(),
 				'courierSettings' => $this->get_courier_settings(),
 				'pixelSettings' => $this->get_pixel_settings(),
+				'paymentSettings' => $this->get_payment_settings(),
 				'orderBumpSettings' => $this->get_order_bump_settings(),
 				'upsellSettings' => $this->get_upsell_settings(),
 				'screens' => array(
@@ -1145,6 +1148,46 @@ final class CheckFlow_Admin {
 	}
 
 	/**
+	 * Save mobile payment gateway foundation settings.
+	 */
+	public function ajax_save_payment_settings() {
+		check_ajax_referer( 'checkflow_admin', 'nonce' );
+
+		if ( ! current_user_can( self::caps() ) ) {
+			wp_send_json_error(
+				array( 'message' => __( 'Permission denied.', 'checkflow' ) ),
+				403
+			);
+		}
+
+		$settings = $this->get_payment_settings();
+		foreach ( array_keys( $this->get_payment_providers() ) as $provider ) {
+			$settings[ $provider . '_enabled' ] = isset( $_POST[ $provider . '_enabled' ] ) ? (bool) absint( wp_unslash( $_POST[ $provider . '_enabled' ] ) ) : false;
+			$settings[ $provider . '_mode' ]    = isset( $_POST[ $provider . '_mode' ] ) && 'live' === sanitize_key( wp_unslash( $_POST[ $provider . '_mode' ] ) ) ? 'live' : 'sandbox';
+		}
+
+		foreach ( array_keys( $settings ) as $key ) {
+			if ( preg_match( '/^(bkash|nagad)_(app_key|app_secret|username|password|merchant_number|merchant_id|public_key|private_key|callback_url|ipn_url)$/', $key ) && isset( $_POST[ $key ] ) ) {
+				$settings[ $key ] = sanitize_textarea_field( wp_unslash( $_POST[ $key ] ) );
+			}
+		}
+
+		$settings['default_provider'] = isset( $_POST['default_provider'] ) ? sanitize_key( wp_unslash( $_POST['default_provider'] ) ) : 'bkash';
+		if ( ! isset( $this->get_payment_providers()[ $settings['default_provider'] ] ) ) {
+			$settings['default_provider'] = 'bkash';
+		}
+
+		update_option( self::PAYMENT_SETTINGS_OPTION, $settings, false );
+
+		wp_send_json_success(
+			array(
+				'message'  => __( 'Payment settings saved.', 'checkflow' ),
+				'settings' => $settings,
+			)
+		);
+	}
+
+	/**
 	 * Prepare a courier draft on the WooCommerce order.
 	 */
 	public function ajax_prepare_courier() {
@@ -1394,6 +1437,60 @@ final class CheckFlow_Admin {
 		);
 		$saved = get_option( self::COURIER_SETTINGS_OPTION, array() );
 		return wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+	}
+
+	/**
+	 * @return array<string,array<string,string>>
+	 */
+	public function get_payment_providers() {
+		return array(
+			'bkash' => array(
+				'label' => 'bKash',
+				'color' => '#d92367',
+				'copy'  => __( 'Tokenized checkout credentials for future WooCommerce gateway activation.', 'checkflow' ),
+			),
+			'nagad' => array(
+				'label' => 'Nagad',
+				'color' => '#f97316',
+				'copy'  => __( 'Merchant keys and callback URLs saved locally for the real gateway pass.', 'checkflow' ),
+			),
+		);
+	}
+
+	/**
+	 * @return array<string,mixed>
+	 */
+	public function get_payment_settings() {
+		$defaults = array(
+			'default_provider'       => 'bkash',
+			'bkash_enabled'         => false,
+			'bkash_mode'            => 'sandbox',
+			'bkash_app_key'         => '',
+			'bkash_app_secret'      => '',
+			'bkash_username'        => '',
+			'bkash_password'        => '',
+			'bkash_merchant_number' => '',
+			'bkash_callback_url'    => home_url( '/wc-api/checkflow-bkash-callback/' ),
+			'bkash_ipn_url'         => home_url( '/wc-api/checkflow-bkash-ipn/' ),
+			'nagad_enabled'         => false,
+			'nagad_mode'            => 'sandbox',
+			'nagad_merchant_id'     => '',
+			'nagad_merchant_number' => '',
+			'nagad_public_key'      => '',
+			'nagad_private_key'     => '',
+			'nagad_callback_url'    => home_url( '/wc-api/checkflow-nagad-callback/' ),
+			'nagad_ipn_url'         => home_url( '/wc-api/checkflow-nagad-ipn/' ),
+		);
+		$saved = get_option( self::PAYMENT_SETTINGS_OPTION, array() );
+		$settings = wp_parse_args( is_array( $saved ) ? $saved : array(), $defaults );
+		foreach ( array_keys( $this->get_payment_providers() ) as $provider ) {
+			$settings[ $provider . '_enabled' ] = ! empty( $settings[ $provider . '_enabled' ] );
+			$settings[ $provider . '_mode' ] = 'live' === $settings[ $provider . '_mode' ] ? 'live' : 'sandbox';
+		}
+		if ( ! isset( $this->get_payment_providers()[ $settings['default_provider'] ] ) ) {
+			$settings['default_provider'] = 'bkash';
+		}
+		return $settings;
 	}
 
 	/**

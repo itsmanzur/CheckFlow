@@ -972,6 +972,24 @@
 		return data;
 	}
 
+	function collectPaymentSettings() {
+		var root = document.getElementById("checkflow-admin");
+		var data = {};
+		if (!root) {
+			return data;
+		}
+		root.querySelectorAll("[data-payment-setting]").forEach(function (field) {
+			var key = field.getAttribute("data-payment-setting");
+			if (!key) {
+				return;
+			}
+			data[key] = field.type === "checkbox" ? (field.checked ? "1" : "0") : field.value;
+		});
+		var checkedDefault = root.querySelector("[data-payment-default]:checked");
+		data.default_provider = checkedDefault ? checkedDefault.value : "bkash";
+		return data;
+	}
+
 	function collectPixelSettings() {
 		var root = document.getElementById("checkflow-admin");
 		var data = {};
@@ -1296,6 +1314,50 @@
 			})
 			.fail(function (xhr) {
 				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not save courier settings";
+				showToast(message, "error");
+			})
+			.always(function () {
+				if (button) {
+					button.disabled = false;
+				}
+			});
+	}
+
+	function savePaymentSettings(buttonEl) {
+		var ajaxUrl = getAdminAjaxUrl();
+		if (!ajaxUrl) {
+			return;
+		}
+		var data = collectPaymentSettings();
+		data.action = "checkflow_save_payment_settings";
+		data.nonce = checkflowAdmin.nonce;
+		var button = buttonEl || document.querySelector("[data-save-payment-settings]");
+		var status = document.querySelector("[data-payment-save-status]");
+		if (button) {
+			button.disabled = true;
+		}
+		$.ajax({
+			url: ajaxUrl,
+			method: "POST",
+			dataType: "json",
+			data: data,
+		})
+			.done(function (res) {
+				if (res && res.success) {
+					if (window.checkflowAdmin) {
+						checkflowAdmin.paymentSettings = res.data.settings || data;
+					}
+					var savedSettings = (res.data && res.data.settings) || data;
+					if (status) {
+						status.textContent = (res.data.message || "Payment settings saved.") + " Default: " + (savedSettings.default_provider || "bkash") + ". Gateway activation stays in the next API pass.";
+					}
+					showToast(res.data.message || "Payment settings saved");
+					return;
+				}
+				showToast((res && res.data && res.data.message) || "Could not save payment settings", "error");
+			})
+			.fail(function (xhr) {
+				var message = xhr && xhr.responseJSON && xhr.responseJSON.data ? xhr.responseJSON.data.message : "Could not save payment settings";
 				showToast(message, "error");
 			})
 			.always(function () {
@@ -3742,6 +3804,10 @@
 			saveCourierSettings(this);
 		});
 
+		$(document).on("click", "[data-save-payment-settings]", function () {
+			savePaymentSettings(this);
+		});
+
 		$(document).on("click", "[data-save-order-bump]", function () {
 			saveOrderBumpSettings(this);
 		});
@@ -3832,6 +3898,12 @@
 				if (label) {
 					label.textContent = card.classList.contains("is-default") ? "Default provider" : "Courier provider";
 				}
+			}, this);
+		});
+
+		$(document).on("change", "[data-payment-default]", function () {
+			document.querySelectorAll("[data-payment-provider-card]").forEach(function (card) {
+				card.classList.toggle("is-default", card.getAttribute("data-payment-provider-card") === this.value);
 			}, this);
 		});
 
