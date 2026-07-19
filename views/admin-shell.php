@@ -149,6 +149,15 @@ $pixel_provider_status = array(
 $str_keys       = $i18n->get_flat_keys_sorted();
 $quick_settings = $admin_instance->get_quick_settings();
 $admin_theme    = $admin_instance->get_admin_theme();
+$quick_setting_cards = array(
+	'direct_checkout' => array( 'Direct checkout', 'Send shoppers to checkout after add-to-cart.' ),
+	'popup_checkout'  => array( 'Popup checkout', 'Show the fast add-to-cart decision popup.' ),
+	'slide_checkout'  => array( 'Slide-in checkout', 'Use the drawer-style cart handoff.' ),
+	'order_bump'      => array( 'Order bump', 'Show configured checkout bump offers.' ),
+	'urgency_timer'   => array( 'Urgency timer', 'Show checkout reservation timer.' ),
+	'recaptcha'       => array( 'reCAPTCHA guard', 'Protect checkout when keys are configured.' ),
+	'guest_checkout'  => array( 'Guest checkout', 'Keep WooCommerce guest checkout open.' ),
+);
 $checkout_templates = $admin_instance->get_checkout_templates();
 $active_checkout_template = $admin_instance->get_checkout_template();
 $field_rows     = class_exists( 'CheckFlow_Field_Editor' ) ? CheckFlow_Field_Editor::instance()->get_admin_rows() : array();
@@ -200,6 +209,15 @@ $screen_titles  = array(
 	'settings'     => array( 'nav.settings', 'screen.settings.sub' ),
 );
 $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $active_pane ] : $screen_titles['dashboard'];
+$active_quick_count = count( array_filter( $quick_settings ) );
+$checkout_page_id = function_exists( 'wc_get_page_id' ) ? wc_get_page_id( 'checkout' ) : 0;
+$checkout_page_ready = $checkout_page_id > 0 && 'publish' === get_post_status( $checkout_page_id );
+$payment_configured_count = 0;
+foreach ( array( 'bkash', 'nagad' ) as $provider_key ) {
+	if ( ! empty( $payment_settings[ $provider_key . '_enabled' ] ) ) {
+		$payment_configured_count++;
+	}
+}
 ?>
 <div id="checkflow-admin" class="checkflow-root<?php echo 'light' === $admin_theme ? ' is-light' : ''; ?>" data-admin-theme="<?php echo esc_attr( $admin_theme ); ?>">
 	<aside class="sb">
@@ -1583,8 +1601,8 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 											<label><input type="radio" name="cf_payment_default" value="<?php echo esc_attr( $provider_key ); ?>" data-payment-default <?php checked( $is_default ); ?> /> Default</label>
 										</div>
 										<div class="cf-payment-status-row">
-											<span class="cf-payment-status<?php echo $is_enabled ? ' is-on' : ' is-off'; ?>"><?php echo esc_html( $status_label ); ?></span>
-											<span><?php echo esc_html( 'live' === $payment_settings[ $provider_key . '_mode' ] ? 'Live mode' : 'Sandbox mode' ); ?></span>
+											<span class="cf-payment-status<?php echo $is_enabled ? ' is-on' : ' is-off'; ?>" data-payment-status="<?php echo esc_attr( $provider_key ); ?>"><?php echo esc_html( $status_label ); ?></span>
+											<span data-payment-mode-label="<?php echo esc_attr( $provider_key ); ?>"><?php echo esc_html( 'live' === $payment_settings[ $provider_key . '_mode' ] ? 'Live mode' : 'Sandbox mode' ); ?></span>
 										</div>
 										<div class="cf-payment-fields">
 											<label class="cf-field-switch"><span>Enable gateway</span><input type="checkbox" data-payment-setting="<?php echo esc_attr( $provider_key . '_enabled' ); ?>" <?php checked( $is_enabled ); ?> /></label>
@@ -1641,12 +1659,97 @@ $title_keys     = isset( $screen_titles[ $active_pane ] ) ? $screen_titles[ $act
 			</div>
 
 			<div class="cf-pane<?php echo esc_attr( $screen_class( 'settings' ) ); ?>" data-pane="settings">
-				<div class="panel">
-					<div class="ph"><div class="pt"><?php echo esc_html( checkflow_str( 'nav.settings' ) ); ?></div></div>
+				<div class="cf-settings-hero panel">
 					<div class="pb">
-						<p style="color:var(--tx2);font-size:12px;margin-bottom:12px"><?php echo esc_html( checkflow_str( 'settings.strings_help' ) ); ?></p>
-						<div style="margin-bottom:10px;display:flex;align-items:center;gap:10px;color:var(--tx);font-size:13px">
-							<label for="cf-edit-locale" style="font-weight:700"><?php echo esc_html( checkflow_str( 'settings.strings_locale' ) ); ?></label>
+						<div>
+							<span class="cf-settings-eyebrow">Plugin control center</span>
+							<h2>CheckFlow system settings</h2>
+							<p>Review active checkout behavior, admin appearance, module readiness, and localization from one clean control panel.</p>
+						</div>
+						<div class="cf-settings-hero-stats">
+							<div><strong><?php echo esc_html( $active_quick_count ); ?>/<?php echo esc_html( count( $quick_setting_cards ) ); ?></strong><span>Quick controls active</span></div>
+							<div><strong><?php echo esc_html( ucfirst( $admin_theme ) ); ?></strong><span>Admin theme</span></div>
+							<div><strong><?php echo $checkout_page_ready ? 'Ready' : 'Needs setup'; ?></strong><span>Checkout page</span></div>
+						</div>
+					</div>
+				</div>
+				<div class="cf-settings-grid">
+					<div class="panel">
+						<div class="ph"><div class="pt">Checkout behavior</div><div class="pa">Live quick settings</div></div>
+						<div class="pb">
+							<div class="cf-settings-toggle-list">
+								<?php foreach ( $quick_setting_cards as $setting_key => $setting_card ) : ?>
+									<div class="cf-settings-toggle-card">
+										<div>
+											<strong><?php echo esc_html( $setting_card[0] ); ?></strong>
+											<span><?php echo esc_html( $setting_card[1] ); ?></span>
+										</div>
+										<div class="tgl<?php echo esc_attr( $toggle_class( $setting_key ) ); ?>" data-setting="<?php echo esc_attr( $setting_key ); ?>" role="switch" aria-checked="<?php echo ! empty( $quick_settings[ $setting_key ] ) ? 'true' : 'false'; ?>" tabindex="0"></div>
+									</div>
+								<?php endforeach; ?>
+							</div>
+						</div>
+					</div>
+					<div class="gcol">
+						<div class="panel">
+							<div class="ph"><div class="pt">Admin appearance</div><div class="pa">Workspace comfort</div></div>
+							<div class="pb">
+								<div class="cf-settings-action-list">
+									<div>
+										<strong>Theme</strong>
+										<span>Switch between light and dark admin panels.</span>
+										<button type="button" class="cf-settings-action" data-admin-theme-toggle><span data-admin-theme-icon><?php echo 'light' === $admin_theme ? '☀' : '☾'; ?></span> Toggle theme</button>
+									</div>
+									<div>
+										<strong>Focus mode</strong>
+										<span>Hide or restore the native WordPress side menu while working in CheckFlow.</span>
+										<button type="button" class="cf-settings-action" data-focus-mode-toggle><span class="cf-focus-toggle-dot" aria-hidden="true"></span><span data-focus-mode-label>WP Menu</span></button>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="panel">
+							<div class="ph"><div class="pt">System health</div><div class="pa">Readiness</div></div>
+							<div class="pb">
+								<div class="cf-settings-health">
+									<div class="<?php echo class_exists( 'WooCommerce' ) ? 'is-ok' : 'is-warn'; ?>"><strong>WooCommerce</strong><span><?php echo class_exists( 'WooCommerce' ) ? 'Active' : 'Not detected'; ?></span></div>
+									<div class="<?php echo $checkout_page_ready ? 'is-ok' : 'is-warn'; ?>"><strong>Checkout page</strong><span><?php echo $checkout_page_ready ? '#' . esc_html( $checkout_page_id ) . ' published' : 'Needs WooCommerce checkout page'; ?></span></div>
+									<div class="<?php echo ! empty( $pixel_settings['local_enabled'] ) ? 'is-ok' : 'is-warn'; ?>"><strong>Local analytics</strong><span><?php echo ! empty( $pixel_settings['local_enabled'] ) ? 'Logging enabled' : 'Logging paused'; ?></span></div>
+									<div class="<?php echo $payment_configured_count > 0 ? 'is-ok' : 'is-warn'; ?>"><strong>Mobile payments</strong><span><?php echo esc_html( $payment_configured_count ); ?> provider enabled</span></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="cf-settings-grid">
+					<div class="panel">
+						<div class="ph"><div class="pt">Data tools</div><div class="pa">Safe utilities</div></div>
+						<div class="pb">
+							<div class="cf-settings-tools">
+								<button type="button" class="cf-settings-tool" data-export-settings-snapshot>Export settings snapshot</button>
+								<button type="button" class="cf-settings-tool" data-copy-settings-diagnostics>Copy diagnostics</button>
+								<span data-settings-tools-status>Exports are browser-only snapshots for QA and support. They do not change store data.</span>
+							</div>
+						</div>
+					</div>
+					<div class="panel">
+						<div class="ph"><div class="pt">Current active stack</div><div class="pa">At a glance</div></div>
+						<div class="pb">
+							<div class="cf-settings-stack">
+								<span>Template: <?php echo esc_html( isset( $checkout_templates[ $active_checkout_template ]['name'] ) ? $checkout_templates[ $active_checkout_template ]['name'] : $active_checkout_template ); ?></span>
+								<span>Order bump: <?php echo ! empty( $order_bump_settings['enabled'] ) ? 'Enabled' : 'Disabled'; ?></span>
+								<span>Upsell funnel: <?php echo ! empty( $upsell_settings['enabled'] ) ? 'Enabled' : 'Disabled'; ?></span>
+								<span>Payment foundation: <?php echo esc_html( $payment_configured_count ); ?> enabled</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="panel">
+					<div class="ph"><div class="pt">Localization editor</div><div class="pa">Admin copy</div></div>
+					<div class="pb">
+						<p class="cf-settings-help"><?php echo esc_html( checkflow_str( 'settings.strings_help' ) ); ?></p>
+						<div class="cf-settings-locale-row">
+							<label for="cf-edit-locale"><?php echo esc_html( checkflow_str( 'settings.strings_locale' ) ); ?></label>
 							<select id="cf-edit-locale" class="cf-str-locale-picker">
 								<?php foreach ( $labels as $code => $label ) : ?>
 									<option value="<?php echo esc_attr( $code ); ?>" <?php selected( $edit_locale, $code ); ?>><?php echo esc_html( $label ); ?></option>

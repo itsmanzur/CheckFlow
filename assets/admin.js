@@ -990,6 +990,53 @@
 		return data;
 	}
 
+	function paymentProviderConfigured(provider, data) {
+		if (provider === "bkash") {
+			return !!(data.bkash_app_key && data.bkash_app_secret && data.bkash_username && data.bkash_password);
+		}
+		if (provider === "nagad") {
+			return !!(data.nagad_merchant_id && data.nagad_public_key && data.nagad_private_key);
+		}
+		return false;
+	}
+
+	function refreshPaymentProviderStates(isDirty) {
+		var root = document.getElementById("checkflow-admin");
+		if (!root) {
+			return;
+		}
+		var data = collectPaymentSettings();
+		["bkash", "nagad"].forEach(function (provider) {
+			var card = root.querySelector('[data-payment-provider-card="' + provider + '"]');
+			var status = root.querySelector('[data-payment-status="' + provider + '"]');
+			var modeLabel = root.querySelector('[data-payment-mode-label="' + provider + '"]');
+			var enabled = data[provider + "_enabled"] === "1";
+			var configured = paymentProviderConfigured(provider, data);
+			if (card) {
+				card.classList.toggle("is-default", data.default_provider === provider);
+				card.classList.toggle("is-enabled", enabled);
+				card.classList.toggle("is-configured", enabled && configured);
+			}
+			if (status) {
+				status.classList.toggle("is-on", enabled);
+				status.classList.toggle("is-off", !enabled);
+				status.textContent = enabled ? (configured ? "Configured" : "Needs credentials") : "Disabled";
+			}
+			if (modeLabel) {
+				modeLabel.textContent = data[provider + "_mode"] === "live" ? "Live mode" : "Sandbox mode";
+			}
+		});
+		var button = root.querySelector("[data-save-payment-settings]");
+		var saveStatus = root.querySelector("[data-payment-save-status]");
+		if (button && isDirty) {
+			button.disabled = false;
+			button.textContent = "Save payment settings";
+		}
+		if (saveStatus && isDirty) {
+			saveStatus.textContent = "Unsaved payment changes. Save to keep these gateway settings after refresh.";
+		}
+	}
+
 	function collectPixelSettings() {
 		var root = document.getElementById("checkflow-admin");
 		var data = {};
@@ -1333,6 +1380,7 @@
 		data.nonce = checkflowAdmin.nonce;
 		var button = buttonEl || document.querySelector("[data-save-payment-settings]");
 		var status = document.querySelector("[data-payment-save-status]");
+		var saved = false;
 		if (button) {
 			button.disabled = true;
 		}
@@ -1348,9 +1396,15 @@
 						checkflowAdmin.paymentSettings = res.data.settings || data;
 					}
 					var savedSettings = (res.data && res.data.settings) || data;
+					refreshPaymentProviderStates(false);
 					if (status) {
 						status.textContent = (res.data.message || "Payment settings saved.") + " Default: " + (savedSettings.default_provider || "bkash") + ". Gateway activation stays in the next API pass.";
 					}
+					if (button) {
+						button.textContent = "Saved";
+						button.disabled = true;
+					}
+					saved = true;
 					showToast(res.data.message || "Payment settings saved");
 					return;
 				}
@@ -1361,7 +1415,7 @@
 				showToast(message, "error");
 			})
 			.always(function () {
-				if (button) {
+				if (button && !saved) {
 					button.disabled = false;
 				}
 			});
@@ -2023,9 +2077,8 @@
 		if (el.classList.contains("is-saving")) return;
 
 		var next = !el.classList.contains("on");
-		el.classList.toggle("on", next);
+		syncSettingToggles(setting, next);
 		el.classList.add("is-saving");
-		el.setAttribute("aria-checked", next ? "true" : "false");
 
 		$.ajax({
 			url: ajaxUrl,
@@ -2040,8 +2093,7 @@
 		})
 			.done(function (res) {
 				if (!res || !res.success) {
-					el.classList.toggle("on", !next);
-					el.setAttribute("aria-checked", !next ? "true" : "false");
+					syncSettingToggles(setting, !next);
 					showToast("Could not save " + settingLabel(setting), "error");
 					return;
 				}
@@ -2051,13 +2103,82 @@
 				showToast(settingLabel(setting) + (next ? " is ON" : " is OFF"));
 			})
 			.fail(function () {
-				el.classList.toggle("on", !next);
-				el.setAttribute("aria-checked", !next ? "true" : "false");
+				syncSettingToggles(setting, !next);
 				showToast("Could not save " + settingLabel(setting), "error");
 			})
 			.always(function () {
 				el.classList.remove("is-saving");
 			});
+	}
+
+	function syncSettingToggles(setting, enabled) {
+		document.querySelectorAll('[data-setting="' + setting + '"]').forEach(function (toggle) {
+			toggle.classList.toggle("on", !!enabled);
+			toggle.setAttribute("aria-checked", enabled ? "true" : "false");
+		});
+	}
+
+	function getSettingsSnapshot() {
+		return {
+			generatedAt: new Date().toISOString(),
+			adminTheme: window.checkflowAdmin ? checkflowAdmin.adminTheme : "",
+			quickSettings: window.checkflowAdmin ? checkflowAdmin.settings || {} : {},
+			checkoutTemplate: window.checkflowAdmin ? checkflowAdmin.checkoutTemplate : "",
+			courier: window.checkflowAdmin ? checkflowAdmin.courierSettings || {} : {},
+			payment: window.checkflowAdmin ? checkflowAdmin.paymentSettings || {} : {},
+			pixel: window.checkflowAdmin ? checkflowAdmin.pixelSettings || {} : {},
+			orderBump: window.checkflowAdmin ? checkflowAdmin.orderBumpSettings || {} : {},
+			upsell: window.checkflowAdmin ? checkflowAdmin.upsellSettings || {} : {},
+		};
+	}
+
+	function exportSettingsSnapshot() {
+		var snapshot = getSettingsSnapshot();
+		var blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" });
+		var url = URL.createObjectURL(blob);
+		var link = document.createElement("a");
+		link.href = url;
+		link.download = "checkflow-settings-snapshot.json";
+		document.body.appendChild(link);
+		link.click();
+		link.remove();
+		URL.revokeObjectURL(url);
+		setSettingsToolsStatus("Settings snapshot exported.");
+		showToast("Settings snapshot exported");
+	}
+
+	function copySettingsDiagnostics() {
+		var snapshot = getSettingsSnapshot();
+		var quick = snapshot.quickSettings || {};
+		var activeQuick = Object.keys(quick).filter(function (key) {
+			return !!quick[key];
+		}).length;
+		var lines = [
+			"CheckFlow diagnostics",
+			"Theme: " + (snapshot.adminTheme || "unknown"),
+			"Quick settings active: " + activeQuick + "/" + Object.keys(quick).length,
+			"Template: " + (snapshot.checkoutTemplate || "unknown"),
+			"Payment default: " + ((snapshot.payment && snapshot.payment.default_provider) || "unknown"),
+			"Pixel local: " + (snapshot.pixel && snapshot.pixel.local_enabled ? "enabled" : "disabled"),
+		];
+		var text = lines.join("\n");
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(text).then(function () {
+				setSettingsToolsStatus("Diagnostics copied to clipboard.");
+				showToast("Diagnostics copied");
+			}).catch(function () {
+				setSettingsToolsStatus(text);
+			});
+			return;
+		}
+		setSettingsToolsStatus(text);
+	}
+
+	function setSettingsToolsStatus(message) {
+		var status = document.querySelector("[data-settings-tools-status]");
+		if (status) {
+			status.textContent = message;
+		}
 	}
 
 	function refreshStats(period) {
@@ -3800,12 +3921,24 @@
 			setFocusModePreference(next);
 		});
 
+		$(document).on("click", "[data-export-settings-snapshot]", function () {
+			exportSettingsSnapshot();
+		});
+
+		$(document).on("click", "[data-copy-settings-diagnostics]", function () {
+			copySettingsDiagnostics();
+		});
+
 		$(document).on("click", "[data-save-courier-settings]", function () {
 			saveCourierSettings(this);
 		});
 
 		$(document).on("click", "[data-save-payment-settings]", function () {
 			savePaymentSettings(this);
+		});
+
+		$(document).on("input change", "[data-payment-setting]", function () {
+			refreshPaymentProviderStates(true);
 		});
 
 		$(document).on("click", "[data-save-order-bump]", function () {
@@ -3902,9 +4035,7 @@
 		});
 
 		$(document).on("change", "[data-payment-default]", function () {
-			document.querySelectorAll("[data-payment-provider-card]").forEach(function (card) {
-				card.classList.toggle("is-default", card.getAttribute("data-payment-provider-card") === this.value);
-			}, this);
+			refreshPaymentProviderStates(true);
 		});
 
 		$(document).on("click", "[data-order-status-draft]", function () {
